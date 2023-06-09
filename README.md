@@ -13,4 +13,4 @@ npm start
 npm run make
 ```
 
-Built with (Electron-Forge)[https://www.electronforge.io/]
+Built with [Electron-Forge](https://www.electronforge.io/)
