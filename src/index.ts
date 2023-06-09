@@ -35,10 +35,12 @@ if (!gotTheLock) {
       mainWindow.focus();
     }
 
-    dialog.showErrorBox(
-      "Welcome Back",
-      `You arrived from: ${commandLine.pop().slice(0, -1)}`
-    );
+    // dialog.showErrorBox(
+    //   "Welcome Back",
+    //   `You arrived from: ${commandLine.pop().slice(0, -1)}`
+    // );
+
+    mainWindow?.webContents.send("open-url", commandLine.pop().slice(0, -1));
   });
 
   // Create mainWindow, load the rest of the app, etc...
@@ -57,7 +59,10 @@ if (!gotTheLock) {
     .catch(console.log);
 
   app.on("open-url", (event, url) => {
-    dialog.showErrorBox("Welcome Back", `You arrived from: ${url}`);
+    // dialog.showErrorBox("Welcome Back", `You arrived from: ${url}`);
+    mainWindow?.focus();
+
+    mainWindow?.webContents.send("open-url", url);
   });
 }
 
