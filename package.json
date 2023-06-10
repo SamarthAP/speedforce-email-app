@@ -2,7 +2,7 @@
   "name": "speedforce",
   "productName": "speedforce",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "An improved email experience.",
   "main": ".webpack/main",
   "scripts": {
     "start": "electron-forge start",
@@ -46,6 +46,7 @@
     "typescript": "~4.5.4"
   },
   "dependencies": {
+    "@auth0/auth0-spa-js": "^2.0.7",
     "dotenv": "^16.1.4",
     "electron-squirrel-startup": "^1.0.0",
     "react": "^18.2.0",

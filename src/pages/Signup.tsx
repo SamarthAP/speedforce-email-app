@@ -36,7 +36,7 @@ export default function Signup() {
     <div className="flex flex-col h-screen place-items-center bg-gradient-to-bl from-slate-400 via-slate-100 to-slate-400">
       <div className="m-auto text-center">
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-          Welcome to Speedforce {process.env.NODE_ENV ?? "not set"}
+          Welcome to Speedforce
         </h1>
         <p className="mt-4 text-lg leading-8 text-gray-600">
           Sign up with one of the following
