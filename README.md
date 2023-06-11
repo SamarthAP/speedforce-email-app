@@ -18,8 +18,8 @@ npm run make
 Create a `.env` file in the root directory with the following variables:
 
 ```
-AUTH0_DOMAIN=
-AUTH0_CLIENT_ID=
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
 ```
 
 Built with [Electron-Forge](https://www.electronforge.io/)
