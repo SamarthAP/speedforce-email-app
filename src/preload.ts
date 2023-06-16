@@ -10,6 +10,7 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron";
 // In this case, we explicitly state which channels renderer is allowed to use.
 
 export type Channels = "ipc-example" | "open-url" | "open-link-in-browser";
+// Example use: window.electron.ipcRenderer.sendMessage("open-link-in-browser", url);
 
 const electronHandler = {
   ipcRenderer: {

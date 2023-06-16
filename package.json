@@ -48,7 +48,7 @@
   "dependencies": {
     "@auth0/auth0-react": "^2.1.0",
     "@auth0/auth0-spa-js": "^2.0.7",
-    "@supabase/auth-helpers-react": "^0.4.0",
+    "@headlessui/react": "^1.7.15",
     "@supabase/supabase-js": "^2.24.0",
     "dotenv": "^16.1.4",
     "electron-squirrel-startup": "^1.0.0",

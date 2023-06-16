@@ -1,25 +1,20 @@
-import { useEffect } from "react";
-import GoogleLogo from "../assets/googleLogo.svg";
-import MicrosoftLogo from "../assets/microsoftLogo.svg";
+import { useEffect, useState } from "react";
+// import MeshGradient from "../assets/meshgradient.svg";
 import supabase from "../lib/supabase";
-import { Provider } from "@supabase/supabase-js";
+import LoginOTPModal from "../components/modals/LoginOTPModal";
 
 export default function Login() {
-  async function supabaseLogin(provider: Provider) {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: "https://speedforce.me/auth/login", // This is also set in Supabase Dashboard
-        skipBrowserRedirect: true,
-      },
+  const [open, setOpen] = useState(false);
+  const [phone, setPhone] = useState("");
+
+  async function supabaseLogin() {
+    const { error } = await supabase.auth.signInWithOtp({
+      phone,
     });
 
-    if (error) {
-      // TODO: handle error
-      console.log(error);
+    if (!error) {
+      setOpen(true);
     }
-
-    window.electron.ipcRenderer.sendMessage("open-link-in-browser", data.url);
   }
 
   // receives deep link from main process
@@ -47,30 +42,41 @@ export default function Login() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen place-items-center bg-gradient-to-bl from-slate-400 via-slate-100 to-slate-400">
-      <div className="m-auto text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-          Welcome to Speedforce
-        </h1>
-        <p className="mt-4 text-lg leading-8 text-gray-600">
-          Sign up with one of the following
-        </p>
-        <div className="flex flex-col items-center">
-          <button
-            onClick={() => supabaseLogin("google")}
-            className="mt-8 bg-gray-100 w-2/5 flex p-1 rounded-md  border-gray-300 border hover:bg-gray-200"
+    <div className="w-screen h-screen flex flex-col items-center justify-center bg-maroongradient">
+      <LoginOTPModal phone={phone} open={open} setOpen={setOpen} />
+
+      <h1 className="text-6xl font-bold text-white">Speedforce</h1>
+      <p className="my-8 text-white">
+        Log in with your phone number to get started
+      </p>
+      <div className="flex flex-col">
+        <div>
+          {/* <label
+            htmlFor="phone"
+            className="block text-sm font-medium leading-6 text-white"
           >
-            <GoogleLogo />
-            <div className="rounded px-3 py-3 text-lg font-semibold text-gray-600 shadow-sm">
-              Google
-            </div>
-          </button>
-          <button className="mt-2 bg-gray-100 w-2/5 flex p-1 rounded-md border-gray-300 border hover:bg-gray-200">
-            <MicrosoftLogo />
-            <div className="rounded px-3 py-3 text-lg font-semibold text-gray-600 shadow-sm">
-              Microsoft
-            </div>
-          </button>
+            Phone Number
+          </label> */}
+          <div className="mt-2">
+            <input
+              type="tel"
+              name="phone"
+              id="phone"
+              className="block w-full rounded-md border-0 py-2 px-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:outline-none text-sm leading-6"
+              placeholder="+14448880000"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+            <button
+              type="button"
+              className="inline-flex w-full justify-center rounded-md bg-gray-900 px-3 py-2 mt-4 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              onClick={() => {
+                supabaseLogin();
+              }}
+            >
+              Log in
+            </button>
+          </div>
         </div>
       </div>
     </div>
