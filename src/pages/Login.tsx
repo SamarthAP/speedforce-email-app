@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 // import MeshGradient from "../assets/meshgradient.svg";
 import supabase from "../lib/supabase";
 import LoginOTPModal from "../components/modals/LoginOTPModal";
@@ -16,30 +16,6 @@ export default function Login() {
       setOpen(true);
     }
   }
-
-  // receives deep link from main process
-  useEffect(() => {
-    window.electron.ipcRenderer.on("open-url", async (args) => {
-      try {
-        const url = new URL(args as string);
-        const code = url.searchParams.get("code");
-        if (code) {
-          if (code === "error") {
-            // do something
-          } else {
-            const { error } = await supabase.auth.exchangeCodeForSession(code);
-            if (error) {
-              // TODO: make them log in again
-              console.log(error);
-            }
-          }
-        }
-      } catch (e) {
-        // TODO: make them log in again
-        console.log(e);
-      }
-    });
-  }, []);
 
   return (
     <div className="w-screen h-screen flex flex-col items-center justify-center bg-maroongradient">
