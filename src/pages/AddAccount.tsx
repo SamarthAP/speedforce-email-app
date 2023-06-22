@@ -1,9 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getAuthURL } from "../api/auth";
 import GoogleLogo from "../assets/googleLogo.svg";
 import MicrosoftLogo from "../assets/microsoftLogo.svg";
 
 export default function AddAccount() {
+  const [clientId, setClientId] = useState("");
+
+  useEffect(() => {
+    window.electron.ipcRenderer.invoke("store-get", "client.id").then((id) => {
+      setClientId(id);
+    });
+  }, [clientId]);
+
   // Old code for reference:
   // useEffect(() => {
   //   window.electron.ipcRenderer.on("open-url", async (args) => {
@@ -69,6 +77,7 @@ export default function AddAccount() {
           <MicrosoftLogo />
           Sign in with Microsoft
         </button>
+        <p>client id: {clientId}</p>
       </div>
     </div>
   );

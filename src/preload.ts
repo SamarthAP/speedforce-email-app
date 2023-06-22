@@ -9,7 +9,11 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron";
 // Make sure to limit the renderer's access to Electron APIs as much as possible.
 // In this case, we explicitly state which channels renderer is allowed to use.
 
-export type Channels = "ipc-example" | "open-url" | "open-link-in-browser";
+export type Channels =
+  | "ipc-example"
+  | "open-url"
+  | "open-link-in-browser"
+  | "store-get";
 // Example use: window.electron.ipcRenderer.sendMessage("open-link-in-browser", url);
 
 const electronHandler = {
@@ -28,6 +32,9 @@ const electronHandler = {
     },
     once(channel: Channels, func: (...args: unknown[]) => void) {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
+    },
+    invoke(channel: Channels, ...args: unknown[]) {
+      return ipcRenderer.invoke(channel, ...args);
     },
   },
 };
