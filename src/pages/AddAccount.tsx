@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
-import { getAuthURL } from "../api/auth";
+import { useEffect, useRef, useState } from "react";
+import { exchangeCodeForToken, getAuthURL } from "../api/auth";
 import GoogleLogo from "../assets/googleLogo.svg";
 import MicrosoftLogo from "../assets/microsoftLogo.svg";
 
 export default function AddAccount() {
   const [clientId, setClientId] = useState("");
+  const renderCounter = useRef(0);
+  renderCounter.current = renderCounter.current + 1;
 
   useEffect(() => {
     window.electron.ipcRenderer.invoke("store-get", "client.id").then((id) => {
@@ -12,34 +14,46 @@ export default function AddAccount() {
     });
   }, [clientId]);
 
-  // Old code for reference:
-  // useEffect(() => {
-  //   window.electron.ipcRenderer.on("open-url", async (args) => {
-  //     try {
-  //       const url = new URL(args as string);
-  //       const code = url.searchParams.get("code");
-  //       if (code) {
-  //         if (code === "error") {
-  //           // do something
-  //         } else {
-  //           const { error } = await supabase.auth.exchangeCodeForSession(code);
-  //           if (error) {
-  //             // TODO: make them log in again
-  //             console.log(error);
-  //           }
-  //         }
-  //       }
-  //     } catch (e) {
-  //       // TODO: make them log in again
-  //       console.log(e);
-  //     }
-  //   });
-  // }, []);
   useEffect(() => {
-    window.electron.ipcRenderer.on("open-url", (args) => {
-      console.log(args as string);
-    });
-  }, []);
+    async function handler(args: string) {
+      try {
+        const url = new URL(args);
+        const code = url.searchParams.get("code");
+
+        let provider: "google" | "outlook";
+        if (url.pathname === "//auth/google/callback") {
+          provider = "google";
+        } else if (url.pathname === "//auth/outlook/callback") {
+          provider = "outlook";
+        } else {
+          // TODO: handle error
+          return;
+        }
+
+        if (code) {
+          if (code === "error") {
+            // TODO: do something
+          } else {
+            const { data, error } = await exchangeCodeForToken(
+              clientId,
+              provider,
+              code
+            );
+
+            if (error) {
+              // TODO: do something
+            }
+
+            // TODO: handle data
+          }
+        }
+      } catch (e) {
+        // TODO: do something
+      }
+    }
+
+    return window.electron.ipcRenderer.on("open-url", handler);
+  }, [clientId]);
 
   /**
    * Opens a URL in the default browser
@@ -77,8 +91,9 @@ export default function AddAccount() {
           <MicrosoftLogo />
           Sign in with Microsoft
         </button>
-        <p>client id: {clientId}</p>
       </div>
+      <p>client id: {clientId}</p>
+      <p>render count: {renderCounter.current}</p>
     </div>
   );
 }
