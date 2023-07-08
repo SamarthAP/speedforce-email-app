@@ -2,8 +2,25 @@ import { useEffect, useRef, useState } from "react";
 import { exchangeCodeForToken, getAuthURL } from "../api/auth";
 import GoogleLogo from "../assets/googleLogo.svg";
 import MicrosoftLogo from "../assets/microsoftLogo.svg";
+import { db } from "../lib/db";
+import { useNavigate } from "react-router-dom";
+
+async function insertEmail(
+  email: string,
+  provider: string,
+  accessToken: string,
+  expiresAt: number
+) {
+  await db.emails.put({
+    email,
+    provider,
+    accessToken,
+    expiresAt,
+  });
+}
 
 export default function AddAccount() {
+  const navigate = useNavigate();
   const [clientId, setClientId] = useState("");
   const renderCounter = useRef(0);
   renderCounter.current = renderCounter.current + 1;
@@ -40,11 +57,18 @@ export default function AddAccount() {
               code
             );
 
-            if (error) {
+            if (error || !data) {
               // TODO: do something
+              return;
             }
 
-            // TODO: handle data
+            // TODO: handle data and set current email
+            await insertEmail(
+              data.email,
+              data.provider,
+              data.accessToken,
+              data.expiresAt
+            );
           }
         }
       } catch (e) {
@@ -52,7 +76,8 @@ export default function AddAccount() {
       }
     }
 
-    return window.electron.ipcRenderer.on("open-url", handler);
+    // return window.electron.ipcRenderer.on("open-url", handler);
+    return window.electron.ipcRenderer.onOpenUrl(handler);
   }, [clientId]);
 
   /**
@@ -66,7 +91,7 @@ export default function AddAccount() {
   async function providerSignIn(provider: "google" | "outlook") {
     const { data, error } = await getAuthURL(provider);
 
-    if (error) {
+    if (error || !data) {
       console.error(error);
       return;
     }
@@ -92,6 +117,28 @@ export default function AddAccount() {
           Sign in with Microsoft
         </button>
       </div>
+      {process.env.NODE_ENV === "development" && (
+        <button
+          onClick={() => {
+            insertEmail(
+              "samarth@sigilinnovation.com",
+              "google",
+              "ya29.something",
+              1688333423087 // new Date().getTime()
+            );
+          }}
+          className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+        >
+          Manually Add Email to DB
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => navigate("/")}
+        className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+      >
+        Go To Home
+      </button>
       <p>client id: {clientId}</p>
       <p>render count: {renderCounter.current}</p>
     </div>

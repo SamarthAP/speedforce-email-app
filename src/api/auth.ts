@@ -6,9 +6,10 @@ interface GetAuthURLDataType {
 }
 
 // provider can be 'google' or 'outlook'
-export const getAuthURL = async (provider: "google" | "outlook") => {
+export const getAuthURL = async (provider: string) => {
   const authHeader = await getJWTHeaders();
-  let data: GetAuthURLDataType | null, error: string | null;
+  let data: GetAuthURLDataType | null = null;
+  let error: string | null = null;
 
   try {
     const res: Response = await fetch(
@@ -28,22 +29,25 @@ export const getAuthURL = async (provider: "google" | "outlook") => {
   } catch (e) {
     error = "Error fetching auth url";
   }
+
   return { data, error };
 };
 
 interface ExchangeCodeForTokenDataType {
   email: string;
+  provider: string;
   accessToken: string;
   expiresAt: number;
 }
 
 export const exchangeCodeForToken = async (
   clientId: string,
-  provider: "google" | "outlook",
+  provider: string,
   code: string
 ) => {
   const authHeader = await getJWTHeaders();
-  let data: ExchangeCodeForTokenDataType, error: string | null;
+  let data: ExchangeCodeForTokenDataType | null = null;
+  let error: string | null = null;
 
   try {
     const res: Response = await fetch(
@@ -69,6 +73,48 @@ export const exchangeCodeForToken = async (
     }
   } catch (e) {
     error = "Error exchanging code for token";
+  }
+  return { data, error };
+};
+
+interface RefreshAccessTokenDataType {
+  accessToken: string;
+  expiresAt: number;
+}
+
+export const refreshAccessToken = async (
+  email: string,
+  provider: string,
+  clientId: string
+) => {
+  const authHeader = await getJWTHeaders();
+  let data: RefreshAccessTokenDataType | null = null;
+  let error: string | null = null;
+
+  try {
+    const res: Response = await fetch(
+      SPEEDFORCE_API_URL + "/auth/refreshAccessToken",
+      {
+        method: "POST",
+        headers: {
+          ...authHeader,
+          "speedforce-client-id": clientId,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          provider,
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      error = "Error refreshing access token";
+    } else {
+      data = await res.json();
+    }
+  } catch (e) {
+    error = "Error refreshing access token";
   }
   return { data, error };
 };

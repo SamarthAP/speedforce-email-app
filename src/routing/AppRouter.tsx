@@ -6,8 +6,8 @@ export default function AppRouter() {
   return (
     <Router>
       <Routes>
-        <Route path="/home" element={<Home />} />
-        <Route path="/" element={<AddAccount />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/addAccount" element={<AddAccount />} />
       </Routes>
     </Router>
   );

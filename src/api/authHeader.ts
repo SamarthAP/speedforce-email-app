@@ -3,10 +3,12 @@ export const getJWTHeaders = async () => {
   const { data, error } = await supabase.auth.getSession();
 
   if (error) {
-    return {};
+    return {
+      Authorization: "",
+    };
   }
 
-  const jwt = data?.session.access_token;
+  const jwt = data?.session?.access_token;
 
   return {
     Authorization: `Bearer ${jwt}`,

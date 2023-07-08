@@ -26,6 +26,14 @@ const electronHandler = {
         ipcRenderer.removeListener(channel, subscription);
       };
     },
+    onOpenUrl(func: (url: string) => void) {
+      const subscription = (_event: IpcRendererEvent, url: string) => func(url);
+      ipcRenderer.on("open-url", subscription);
+
+      return () => {
+        ipcRenderer.removeListener("open-url", subscription);
+      };
+    },
     once(channel: Channels, func: (...args: unknown[]) => void) {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
     },

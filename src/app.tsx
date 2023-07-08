@@ -5,12 +5,10 @@ import AppRouter from "./routing/AppRouter";
 import supabase from "./lib/supabase";
 import Login from "./pages/Login";
 import { SessionContext } from "./contexts/SessionContext";
-
-const container = document.getElementById("root");
-const root = createRoot(container); // createRoot(container!) if you use TypeScript
+import { Session } from "@supabase/supabase-js";
 
 function App() {
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -50,4 +48,7 @@ function App() {
   );
 }
 
+const container = document.getElementById("root");
+if (!container) throw new Error("No root element found");
+const root = createRoot(container); // createRoot(container!) if you use TypeScript
 root.render(<App />);
