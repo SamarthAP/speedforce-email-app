@@ -26,7 +26,7 @@ const electronHandler = {
         ipcRenderer.removeListener(channel, subscription);
       };
     },
-    onOpenUrl(func: (url: string) => void) {
+    onOpenUrl(func: (url: string) => unknown) {
       const subscription = (_event: IpcRendererEvent, url: string) => func(url);
       ipcRenderer.on("open-url", subscription);
 

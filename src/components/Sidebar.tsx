@@ -1,23 +1,67 @@
-import { Dialog, Transition } from "@headlessui/react";
-import { Fragment, useState } from "react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useState } from "react";
+import {
+  ClipboardDocumentIcon,
+  ClockIcon,
+  FireIcon,
+  InboxIcon,
+  PaperAirplaneIcon,
+  PlusIcon,
+  ViewColumnsIcon,
+} from "@heroicons/react/24/outline";
 
 import { useNavigate } from "react-router-dom";
+
+const navigation = [
+  { name: "Inbox", href: "#", icon: InboxIcon, current: true },
+  { name: "Drafts", href: "#", icon: ClipboardDocumentIcon, current: false },
+  { name: "Sent", href: "#", icon: PaperAirplaneIcon, current: false },
+  { name: "Spam", href: "#", icon: FireIcon, current: false },
+  { name: "Scheduled", href: "#", icon: ClockIcon, current: false },
+  { name: "Add Account", href: "/addAccount", icon: PlusIcon, current: false },
+];
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(true);
   return (
-    <div className="h-screen w-[200px] min-w-[256px] bg-slate-300 text-white flex flex-col items-center justify-center">
-      <div>hello</div>
-      <button
-        type="button"
-        onClick={() => navigate("/addAccount")}
-        className="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded"
-      >
-        Go to Add Account
-      </button>
+    <div className="flex-shrink-0 w-20 overflow-y-auto bg-slate-300 pb-4">
+      <div className="flex h-16 shrink-0 items-center justify-center cursor-pointer">
+        <div className="text-slate-600 hover:bg-slate-200 flex gap-x-3 rounded-md p-3 text-sm leading-6 font-semibold">
+          <ViewColumnsIcon className="h-6 w-6 shrink-0" aria-hidden="true" />
+        </div>
+      </div>
+      <nav className="mt-8">
+        <ul role="list" className="flex flex-col items-center space-y-1">
+          {navigation.map((item) => (
+            <li className="cursor-pointer" key={item.name}>
+              <div
+                onClick={() => navigate(item.href)}
+                className={`
+                ${
+                  item.current
+                    ? "bg-slate-300 text-slate-100"
+                    : "text-slate-600 hover:bg-slate-200"
+                } 'group flex gap-x-3 rounded-md p-3 text-sm leading-6 font-semibold'
+              `}
+              >
+                <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
+                <span className="sr-only">{item.name}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </div>
+    // <div className="h-screen w-[200px] min-w-[256px] bg-slate-300 text-white flex flex-col items-center justify-center">
+    //   <div>hello</div>
+    //   <button
+    //     type="button"
+    //     onClick={() => navigate("/addAccount")}
+    //     className="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded"
+    //   >
+    //     Go to Add Account
+    //   </button>
+    // </div>
     // <Transition.Root show={open} as={Fragment}>
     //   <Dialog as="div" className="relative z-10" onClose={setOpen}>
     //     <div className="fixed inset-0" />

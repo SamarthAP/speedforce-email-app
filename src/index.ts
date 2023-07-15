@@ -16,7 +16,7 @@ if (require("electron-squirrel-startup")) {
 let mainWindow: BrowserWindow | null = null;
 
 ipcMain.on("open-link-in-browser", (_event, url) => {
-  shell.openExternal(url);
+  void shell.openExternal(url);
 });
 
 ipcMain.handle("store-get", (_event, key) => {
@@ -50,7 +50,7 @@ if (!gotTheLock) {
     //   `You arrived from: ${commandLine.pop().slice(0, -1)}`
     // );
 
-    mainWindow?.webContents.send("open-url", commandLine.pop().slice(0, -1));
+    mainWindow?.webContents.send("open-url", commandLine.pop()?.slice(0, -1));
   });
 
   // Create mainWindow, load the rest of the app, etc...
@@ -98,7 +98,7 @@ const createWindow = (): void => {
   });
 
   // and load the index.html of the app.
-  mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+  void mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();

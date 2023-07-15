@@ -53,11 +53,13 @@
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
     "@supabase/supabase-js": "^2.24.0",
+    "@types/he": "^1.2.0",
     "dexie": "^3.2.4",
     "dexie-react-hooks": "^1.1.6",
     "dotenv": "^16.1.4",
     "electron-squirrel-startup": "^1.0.0",
     "electron-store": "^8.1.0",
+    "he": "^1.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.12.1"

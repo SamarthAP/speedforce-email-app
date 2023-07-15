@@ -19,6 +19,21 @@ async function insertEmail(
   });
 }
 
+const manualInsertEmail = async () => {
+  await insertEmail(
+    "samarth@sigilinnovation.com",
+    "google",
+    "ya29.something",
+    1688333423087 // new Date().getTime()
+  );
+
+  await db.selectedEmail.put({
+    id: 1,
+    email: "samarth@sigilinnovation.com",
+    provider: "google",
+  });
+};
+
 export default function AddAccount() {
   const navigate = useNavigate();
   const [clientId, setClientId] = useState("");
@@ -26,9 +41,11 @@ export default function AddAccount() {
   renderCounter.current = renderCounter.current + 1;
 
   useEffect(() => {
-    window.electron.ipcRenderer.invoke("store-get", "client.id").then((id) => {
-      setClientId(id);
-    });
+    void window.electron.ipcRenderer
+      .invoke("store-get", "client.id")
+      .then((id) => {
+        setClientId(id);
+      });
   }, [clientId]);
 
   useEffect(() => {
@@ -69,6 +86,12 @@ export default function AddAccount() {
               data.accessToken,
               data.expiresAt
             );
+
+            await db.selectedEmail.put({
+              id: 1,
+              email: data.email,
+              provider: data.provider,
+            });
           }
         }
       } catch (e) {
@@ -102,7 +125,7 @@ export default function AddAccount() {
     <div className="h-screen w-screen flex flex-col items-center justify-center">
       <div className="flex flex-col">
         <button
-          onClick={() => providerSignIn("google")}
+          onClick={() => void providerSignIn("google")}
           type="button"
           className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
         >
@@ -119,14 +142,7 @@ export default function AddAccount() {
       </div>
       {process.env.NODE_ENV === "development" && (
         <button
-          onClick={() => {
-            insertEmail(
-              "samarth@sigilinnovation.com",
-              "google",
-              "ya29.something",
-              1688333423087 // new Date().getTime()
-            );
-          }}
+          onClick={() => void manualInsertEmail()}
           className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
         >
           Manually Add Email to DB
