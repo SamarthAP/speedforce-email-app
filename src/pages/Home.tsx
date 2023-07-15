@@ -24,9 +24,9 @@ export default function Home({ selectedEmail }: HomeProps) {
   }
 
   return (
-    <div className="h-screen w-screen flex">
+    <main className="h-screen w-screen flex">
       <Sidebar />
-      <div className="w-full overflow-y-scroll">
+      <div className="w-full h-screen flex flex-col overflow-hidden">
         <h2 className="text-2xl pl-8 font-light tracking-wide my-8">
           Important
         </h2>
@@ -46,9 +46,8 @@ export default function Home({ selectedEmail }: HomeProps) {
             Full Sync Google
           </button>
         </div>
-
         <ThreadList threads={threads} />
       </div>
-    </div>
+    </main>
   );
 }

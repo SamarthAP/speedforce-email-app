@@ -37,8 +37,8 @@ interface ThreadListProps {
 
 export default function ThreadList({ threads }: ThreadListProps) {
   return (
-    <div className="w-full">
-      <div className="flex flex-col">
+    <div className="h-full overflow-y-scroll">
+      <div className="flex flex-col w-full">
         {threads?.map((thread, index) => {
           return (
             <div key={index}>
@@ -59,9 +59,7 @@ export default function ThreadList({ threads }: ThreadListProps) {
                 <div className="pl-8 text-sm text-slate-400 my-2">
                   Last 7 days
                 </div>
-              ) : (
-                <div></div>
-              )}
+              ) : null}
 
               {index === 0 && isOlderThanSevenDays(new Date(thread.date)) ? (
                 <div className="pl-8 text-sm text-slate-400 mb-2">
