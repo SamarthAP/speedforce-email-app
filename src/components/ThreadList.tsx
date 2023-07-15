@@ -14,19 +14,19 @@ function isToday(date: Date) {
 
 function isLastSevenDaysButNotToday(date: Date) {
   const today = new Date();
-  const yesterday = new Date(today.setDate(today.getDate() - 1));
-  const sevenDaysAgo = new Date(today.setDate(today.getDate() - 7)); // NOTE: setDate() mutates the Date object so the second call to setDate() is actually subtracting 8 days from today
+  today.setHours(0, 0, 0, 0);
 
-  if (date <= yesterday && date >= sevenDaysAgo) {
-    return true;
-  }
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  return false;
+  return date < today && date >= sevenDaysAgo;
 }
 
 function isOlderThanSevenDays(date: Date) {
-  const today = new Date();
-  const sevenDaysAgo = new Date(today.setDate(today.getDate() - 8));
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
   return date < sevenDaysAgo;
 }
