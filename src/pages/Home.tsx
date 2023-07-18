@@ -1,16 +1,33 @@
 import ThreadList from "../components/ThreadList";
 import Sidebar from "../components/Sidebar";
 import supabase from "../lib/supabase";
-import { ISelectedEmail, db } from "../lib/db";
+import { db } from "../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
-import { fullSyncGoogle, partialSyncGoogle } from "../lib/sync";
-import Titlebar from "../components/Titlebar";
+import React, { useEffect } from "react";
+import { useEmailPageOutletContext } from "./_emailPage";
+import { ThreadFeed } from "./ThreadFeed";
+import { partialSyncGoogle, fullSyncGoogle } from "../lib/sync";
 
-interface HomeProps {
-  selectedEmail: ISelectedEmail;
-}
+export default function Home() {
+  const { selectedEmail } = useEmailPageOutletContext();
+  const [selectedThread, setSelectedThread] = React.useState<string>("");
+  const [scrollPosition, setScrollPosition] = React.useState<number>(0);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
 
-export default function Home({ selectedEmail }: HomeProps) {
+  useEffect(() => {
+    if (scrollRef.current) {
+      const divVisibleHeight = scrollRef.current.clientHeight;
+      const divScrollHeight = scrollRef.current.scrollHeight;
+      const maxScroll = divScrollHeight - divVisibleHeight;
+
+      if (scrollPosition > maxScroll) {
+        setScrollPosition(maxScroll);
+      }
+
+      scrollRef.current.scrollTo(0, scrollPosition);
+    }
+  }, [selectedThread, scrollPosition]);
+
   const threads = useLiveQuery(() => {
     return db.googleThreads
       .where("email")
@@ -24,34 +41,46 @@ export default function Home({ selectedEmail }: HomeProps) {
     console.log(error);
   }
 
+  if (selectedThread) {
+    return (
+      <ThreadFeed
+        selectedThread={selectedThread}
+        setSelectedThread={setSelectedThread}
+      />
+    );
+  }
+
   return (
-    <main className="h-screen w-screen flex flex-col">
-      <Titlebar />
-      <div className="flex h-full overflow-hidden">
-        <Sidebar />
-        <div className="w-full flex flex-col overflow-hidden">
-          <h2 className="text-xl pl-8 font-light tracking-wide my-8">
-            Important
-          </h2>
-          <div className="flex absolute bottom-0 right-0 m-8">
-            <button
-              type="button"
-              className="bg-slate-400 rounded-md py-1 px-2 mr-2 text-white shadow-lg"
-              onClick={() => void partialSyncGoogle(selectedEmail.email)}
-            >
-              Partial Sync Google
-            </button>
-            <button
-              type="button"
-              className="bg-slate-400 rounded-md py-1 px-2 text-white shadow-lg"
-              onClick={() => void fullSyncGoogle(selectedEmail.email)}
-            >
-              Full Sync Google
-            </button>
-          </div>
-          <ThreadList selectedEmail={selectedEmail} threads={threads} />
+    <React.Fragment>
+      <Sidebar />
+      <div className="w-full flex flex-col overflow-hidden">
+        <h2 className="text-xl pl-8 font-light tracking-wide my-8">
+          Important
+        </h2>
+        <div className="flex absolute bottom-0 right-0 m-8">
+          <button
+            type="button"
+            className="bg-slate-400 rounded-md py-1 px-2 mr-2 text-white shadow-lg"
+            onClick={() => void partialSyncGoogle(selectedEmail.email)}
+          >
+            Partial Sync Google
+          </button>
+          <button
+            type="button"
+            className="bg-slate-400 rounded-md py-1 px-2 text-white shadow-lg"
+            onClick={() => void fullSyncGoogle(selectedEmail.email)}
+          >
+            Full Sync Google
+          </button>
         </div>
+        <ThreadList
+          selectedEmail={selectedEmail}
+          threads={threads}
+          setSelectedThread={setSelectedThread}
+          setScrollPosition={setScrollPosition}
+          scrollRef={scrollRef}
+        />
       </div>
-    </main>
+    </React.Fragment>
   );
 }

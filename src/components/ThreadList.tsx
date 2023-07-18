@@ -36,11 +36,17 @@ function isOlderThanSevenDays(date: Date) {
 interface ThreadListProps {
   selectedEmail: ISelectedEmail;
   threads?: IGoogleThread[]; // TODO: change for outlook thread
+  setSelectedThread: (threadId: string) => void;
+  setScrollPosition: (position: number) => void;
+  scrollRef: React.RefObject<HTMLDivElement>;
 }
 
 export default function ThreadList({
   selectedEmail,
   threads,
+  setSelectedThread,
+  setScrollPosition,
+  scrollRef,
 }: ThreadListProps) {
   const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -71,11 +77,17 @@ export default function ThreadList({
   }, [observerTarget, threads, selectedEmail.email]);
 
   return (
-    <div className="h-full overflow-y-scroll">
+    <div ref={scrollRef} className="h-full overflow-y-scroll">
       <div className="flex flex-col w-full">
         {threads?.map((thread, index) => {
           return (
-            <div key={index}>
+            <div
+              onClick={() => {
+                setScrollPosition(scrollRef.current?.scrollTop || 0);
+                setSelectedThread(thread.id);
+              }}
+              key={index}
+            >
               {index === 0 && isToday(new Date(thread.date)) ? (
                 <div className="pl-8 text-sm text-slate-400 mb-2">Today</div>
               ) : null}

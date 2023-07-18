@@ -17,7 +17,12 @@ const navigation = [
   { name: "Sent", href: "#", icon: PaperAirplaneIcon, current: false },
   { name: "Spam", href: "#", icon: FireIcon, current: false },
   { name: "Scheduled", href: "#", icon: ClockIcon, current: false },
-  { name: "Add Account", href: "/addAccount", icon: PlusIcon, current: false },
+  {
+    name: "Add Account",
+    href: "/page/addAccount",
+    icon: PlusIcon,
+    current: false,
+  },
 ];
 
 export default function Sidebar() {

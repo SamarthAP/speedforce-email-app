@@ -95,7 +95,6 @@ export async function fullSyncGoogle(email: string) {
 }
 
 export async function partialSyncGoogle(email: string) {
-  console.log("partialSyncGoogle");
   const accessToken = await getAccessToken(email);
   const metadata = await db.googleMetadata.get(email);
 
