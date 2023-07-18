@@ -4,6 +4,7 @@ import GoogleLogo from "../assets/googleLogo.svg";
 import MicrosoftLogo from "../assets/microsoftLogo.svg";
 import { db } from "../lib/db";
 import { useNavigate } from "react-router-dom";
+import Titlebar from "../components/Titlebar";
 
 async function insertEmail(
   email: string,
@@ -31,6 +32,12 @@ const manualInsertEmail = async () => {
     id: 1,
     email: "samarth@sigilinnovation.com",
     provider: "google",
+  });
+
+  await db.googleMetadata.put({
+    email: "samarth@sigilinnovation.com",
+    historyId: "0",
+    threadsListNextPageToken: "",
   });
 };
 
@@ -79,7 +86,7 @@ export default function AddAccount() {
               return;
             }
 
-            // TODO: handle data and set current email
+            // handle data and set current email
             await insertEmail(
               data.email,
               data.provider,
@@ -91,6 +98,12 @@ export default function AddAccount() {
               id: 1,
               email: data.email,
               provider: data.provider,
+            });
+
+            await db.googleMetadata.put({
+              email: data.email,
+              historyId: "0",
+              threadsListNextPageToken: "",
             });
           }
         }
@@ -122,41 +135,44 @@ export default function AddAccount() {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center">
-      <div className="flex flex-col">
+    <div className="h-screen w-screen flex flex-col">
+      <Titlebar />
+      <div className="h-full w-screen flex flex-col items-center justify-center">
+        <div className="flex flex-col">
+          <button
+            onClick={() => void providerSignIn("google")}
+            type="button"
+            className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+          >
+            <GoogleLogo />
+            Sign in with Google
+          </button>
+          <button
+            type="button"
+            className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+          >
+            <MicrosoftLogo />
+            Sign in with Microsoft
+          </button>
+        </div>
+        {process.env.NODE_ENV === "development" && (
+          <button
+            onClick={() => void manualInsertEmail()}
+            className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+          >
+            Manually Add Email to DB
+          </button>
+        )}
         <button
-          onClick={() => void providerSignIn("google")}
           type="button"
-          className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
-        >
-          <GoogleLogo />
-          Sign in with Google
-        </button>
-        <button
-          type="button"
+          onClick={() => navigate("/")}
           className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
         >
-          <MicrosoftLogo />
-          Sign in with Microsoft
+          Go To Home
         </button>
+        <p>client id: {clientId}</p>
+        <p>render count: {renderCounter.current}</p>
       </div>
-      {process.env.NODE_ENV === "development" && (
-        <button
-          onClick={() => void manualInsertEmail()}
-          className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
-        >
-          Manually Add Email to DB
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={() => navigate("/")}
-        className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
-      >
-        Go To Home
-      </button>
-      <p>client id: {clientId}</p>
-      <p>render count: {renderCounter.current}</p>
     </div>
   );
 }

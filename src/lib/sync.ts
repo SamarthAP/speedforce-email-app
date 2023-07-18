@@ -1,6 +1,7 @@
 import {
   get as gThreadGet,
   list as gThreadList,
+  listNextPage as gThreadListNextPage,
 } from "../api/gmail/users/threads";
 import { list as gHistoryList } from "../api/gmail/users/history";
 
@@ -94,10 +95,12 @@ export async function fullSyncGoogle(email: string) {
 }
 
 export async function partialSyncGoogle(email: string) {
+  console.log("partialSyncGoogle");
   const accessToken = await getAccessToken(email);
   const metadata = await db.googleMetadata.get(email);
 
   if (!metadata) {
+    console.log("no metadata");
     return;
   }
 
@@ -120,5 +123,34 @@ export async function partialSyncGoogle(email: string) {
 
   if (newThreadIds.size > 0) {
     await handleNewThreads(accessToken, email, Array.from(newThreadIds));
+  }
+}
+
+export async function loadNextPageGoogle(email: string) {
+  const accessToken = await getAccessToken(email);
+  const metadata = await db.googleMetadata.get(email);
+
+  if (!metadata) {
+    return;
+  }
+
+  const tList = await gThreadListNextPage(
+    accessToken,
+    metadata.threadsListNextPageToken
+  );
+
+  if (tList.error || !tList.data) {
+    return;
+  }
+
+  const nextPageToken = tList.data.nextPageToken;
+  await db.googleMetadata.update(email, {
+    threadsListNextPageToken: nextPageToken,
+  });
+
+  const threadIds = tList.data.threads.map((thread) => thread.id);
+
+  if (threadIds.length > 0) {
+    await handleNewThreads(accessToken, email, threadIds);
   }
 }

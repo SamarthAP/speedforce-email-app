@@ -1,6 +1,8 @@
 import UnreadDot from "./UnreadDot";
-import { IGoogleThread } from "../lib/db";
+import { IGoogleThread, ISelectedEmail } from "../lib/db";
 import he from "he";
+import { useEffect, useRef } from "react";
+import { loadNextPageGoogle } from "../lib/sync";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -32,10 +34,42 @@ function isOlderThanSevenDays(date: Date) {
 }
 
 interface ThreadListProps {
+  selectedEmail: ISelectedEmail;
   threads?: IGoogleThread[]; // TODO: change for outlook thread
 }
 
-export default function ThreadList({ threads }: ThreadListProps) {
+export default function ThreadList({
+  selectedEmail,
+  threads,
+}: ThreadListProps) {
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  // 'threads' is initially empty so the div with 'observerTarget' doesn't render, so observerTarget is null,
+  // and when the list is updated with data, the div renders but it doesnt update observerTarget. To fix this,
+  // we add 'threads' to the dependency array of the useEffect hook.
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          void loadNextPageGoogle(selectedEmail.email);
+        }
+      },
+      { root: null, rootMargin: "0px", threshold: 1 }
+    );
+
+    const target = observerTarget.current;
+
+    if (target) {
+      observer.observe(target);
+    }
+
+    return () => {
+      if (target) {
+        observer.unobserve(target);
+      }
+    };
+  }, [observerTarget, threads, selectedEmail.email]);
+
   return (
     <div className="h-full overflow-y-scroll">
       <div className="flex flex-col w-full">
@@ -110,6 +144,14 @@ export default function ThreadList({ threads }: ThreadListProps) {
             </div>
           );
         })}
+        {threads?.length ? (
+          <div
+            className="text-center text-xs text-slate-400 py-2"
+            ref={observerTarget}
+          >
+            Loading more emails...
+          </div>
+        ) : null}
       </div>
     </div>
   );

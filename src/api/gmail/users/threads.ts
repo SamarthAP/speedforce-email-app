@@ -37,6 +37,36 @@ export const list = async (accessToken: string) => {
   return { data, error };
 };
 
+export const listNextPage = async (
+  accessToken: string,
+  nextPageToken: string
+) => {
+  let data: ThreadsListDataType | null = null;
+  let error: string | null = null;
+
+  try {
+    const res: Response = await fetch(
+      `${GMAIL_API_URL}/threads?maxResults=20&pageToken=${nextPageToken}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      error = "Error fetching threads";
+    } else {
+      data = await res.json();
+    }
+  } catch (e) {
+    console.log(e);
+    error = "Error fetching threads";
+  }
+
+  return { data, error };
+};
+
 interface ThreadsGetDataType {
   historyId: string;
   id: string;

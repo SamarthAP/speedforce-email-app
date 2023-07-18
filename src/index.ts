@@ -91,7 +91,18 @@ const createWindow = (): void => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     height: 600,
-    width: 800,
+    width: 1024,
+    minHeight: 457,
+    minWidth: 879,
+    center: true,
+    frame: false,
+    // titleBarStyle: "hidden",
+    titleBarStyle: "hidden",
+    trafficLightPosition: {
+      x: 8,
+      y: 8,
+    },
+    titleBarOverlay: false,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
