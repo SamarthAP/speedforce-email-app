@@ -35,7 +35,16 @@ function App() {
     return "light"; // default to light
   });
 
-  const themeValue = useMemo(() => ({ theme, setTheme }), [theme, setTheme]);
+  const themeValue = useMemo(
+    () => ({
+      theme,
+      setTheme: (_theme: string) => {
+        localStorage.setItem("theme", _theme); // save theme to localstorage
+        setTheme(_theme); // set theme in react
+      },
+    }),
+    [theme, setTheme]
+  );
 
   return (
     <SessionContext.Provider value={session}>

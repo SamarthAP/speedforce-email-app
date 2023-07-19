@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   ClipboardDocumentIcon,
   ClockIcon,
@@ -27,11 +26,11 @@ const navigation = [
 
 export default function Sidebar() {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(true);
+
   return (
     <div className="flex-shrink-0 w-20 overflow-y-auto pb-4">
       <div className="flex h-16 shrink-0 items-center justify-center cursor-pointer">
-        <div className="text-slate-600 hover:bg-slate-200 flex gap-x-3 rounded-md p-3 text-sm leading-6 font-semibold">
+        <div className="text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 flex gap-x-3 rounded-md p-3 text-sm leading-6 font-semibold">
           <ViewColumnsIcon className="h-6 w-6 shrink-0" aria-hidden="true" />
         </div>
       </div>
@@ -43,8 +42,10 @@ export default function Sidebar() {
                 onClick={() => navigate(item.href)}
                 className={`
                 ${
-                  item.current ? "bg-slate-100" : "hover:bg-slate-100"
-                } 'group flex gap-x-3 rounded-md p-3 text-sm text-slate-600 leading-6 font-semibold'
+                  item.current
+                    ? "bg-slate-100 dark:bg-zinc-800"
+                    : "hover:bg-slate-100 dark:hover:bg-zinc-800"
+                } 'group flex gap-x-3 rounded-md p-3 text-sm text-slate-600 dark:text-zinc-300 leading-6 font-semibold'
               `}
               >
                 <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />

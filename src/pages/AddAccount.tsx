@@ -135,21 +135,21 @@ export default function AddAccount() {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col">
+    <div className="h-screen w-screen flex flex-col dark:bg-zinc-900">
       <Titlebar />
       <div className="h-full w-screen flex flex-col items-center justify-center">
         <div className="flex flex-col">
           <button
             onClick={() => void providerSignIn("google")}
             type="button"
-            className="inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+            className="inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
           >
             <GoogleLogo />
             Sign in with Google
           </button>
           <button
             type="button"
-            className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+            className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
           >
             <MicrosoftLogo />
             Sign in with Microsoft
@@ -158,7 +158,7 @@ export default function AddAccount() {
         {process.env.NODE_ENV === "development" && (
           <button
             onClick={() => void manualInsertEmail()}
-            className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+            className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
           >
             Manually Add Email to DB
           </button>
@@ -166,12 +166,12 @@ export default function AddAccount() {
         <button
           type="button"
           onClick={() => navigate("/")}
-          className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+          className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
         >
           Go To Home
         </button>
-        <p>client id: {clientId}</p>
-        <p>render count: {renderCounter.current}</p>
+        <p className="dark:text-white">client id: {clientId}</p>
+        <p className="dark:text-white">render count: {renderCounter.current}</p>
       </div>
     </div>
   );

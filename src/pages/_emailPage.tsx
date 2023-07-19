@@ -12,7 +12,7 @@ interface EmailPageProps {
 
 export default function EmailPage({ selectedEmail }: EmailPageProps) {
   return (
-    <main className="h-screen w-screen flex flex-col">
+    <main className="h-screen w-screen flex flex-col dark:bg-zinc-900">
       <Titlebar />
       <div className="flex h-full overflow-hidden">
         <Outlet context={{ selectedEmail }} />
