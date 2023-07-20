@@ -37,6 +37,7 @@ interface ThreadListProps {
   selectedEmail: ISelectedEmail;
   threads?: IGoogleThread[]; // TODO: change for outlook thread
   setSelectedThread: (threadId: string) => void;
+  setHoveredThread: (thread: IGoogleThread | null) => void;
   setScrollPosition: (position: number) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
 }
@@ -45,6 +46,7 @@ export default function ThreadList({
   selectedEmail,
   threads,
   setSelectedThread,
+  setHoveredThread,
   setScrollPosition,
   scrollRef,
 }: ThreadListProps) {
@@ -86,6 +88,7 @@ export default function ThreadList({
                 setScrollPosition(scrollRef.current?.scrollTop || 0);
                 setSelectedThread(thread.id);
               }}
+              onMouseOver={() => setHoveredThread(thread)}
               key={index}
             >
               {index === 0 && isToday(new Date(thread.date)) ? (
@@ -142,7 +145,7 @@ export default function ThreadList({
                     {thread.subject}
                   </div>
                   <div className="col-span-8 flex">
-                    <div className="text-sm truncate text-zinc-400 dark:text-zinc-500 w-full">
+                    <div className="text-sm truncate text-slate-400 dark:text-zinc-500 w-full">
                       {/* {he.decode(
                         thread.snippet.slice(0, thread.snippet.indexOf("\n"))
                       )} */}
