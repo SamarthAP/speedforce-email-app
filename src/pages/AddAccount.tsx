@@ -5,6 +5,7 @@ import MicrosoftLogo from "../assets/microsoftLogo.svg";
 import { db } from "../lib/db";
 import { useNavigate } from "react-router-dom";
 import Titlebar from "../components/Titlebar";
+import { useLiveQuery } from "dexie-react-hooks";
 
 async function insertEmail(
   email: string,
@@ -54,6 +55,10 @@ export default function AddAccount() {
         setClientId(id);
       });
   }, [clientId]);
+
+  const signedInEmails = useLiveQuery(() => {
+    return db.emails.orderBy("email").toArray();
+  });
 
   useEffect(() => {
     async function handler(args: string) {
@@ -148,6 +153,7 @@ export default function AddAccount() {
             Sign in with Google
           </button>
           <button
+            onClick={() => void providerSignIn("outlook")}
             type="button"
             className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
           >

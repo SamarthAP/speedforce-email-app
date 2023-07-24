@@ -1,14 +1,6 @@
 import { GMAIL_API_URL } from "../constants";
+import { ThreadsListDataType, ThreadsGetDataType } from "../../model/users.thread";
 
-interface ThreadsListDataType {
-  nextPageToken: string;
-  resultSizeEstimate: number;
-  threads: {
-    id: string;
-    snippet: string;
-    historyId: string;
-  }[];
-}
 // in endpoints that will not be called often, we can use the async/await syntax
 export const list = async (accessToken: string) => {
   let data: ThreadsListDataType | null = null;
@@ -28,6 +20,7 @@ export const list = async (accessToken: string) => {
       error = "Error fetching threads";
     } else {
       data = await res.json();
+      console.log(data)
     }
   } catch (e) {
     console.log(e);
@@ -66,27 +59,6 @@ export const listNextPage = async (
 
   return { data, error };
 };
-
-interface ThreadsGetDataType {
-  historyId: string;
-  id: string;
-  messages: {
-    historyId: string;
-    id: string;
-    internalDate: string;
-    labelIds: string[];
-    sizeEstimate: number;
-    snippet: string;
-    threadId: string;
-    payload: {
-      headers: {
-        name: string;
-        value: string;
-      }[];
-      mimeType: string;
-    };
-  }[];
-}
 
 // in endpoints that will be called often, we use the promise syntax so that the
 // calling function can Promise.all() them or handle them in whatever way it wants

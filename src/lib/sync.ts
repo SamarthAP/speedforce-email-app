@@ -5,8 +5,13 @@ import {
 } from "../api/gmail/users/threads";
 import { list as gHistoryList } from "../api/gmail/users/history";
 
+import {
+  list as mThreadList,
+  listNextPage as mThreadListNextPage
+} from "../api/outlook/users/threads";
+
 import { getAccessToken } from "../api/accessToken";
-import { IGoogleThread, db } from "./db";
+import { IEmailThread, db } from "./db";
 
 async function handleNewThreads(
   accessToken: string,
@@ -21,7 +26,7 @@ async function handleNewThreads(
 
   try {
     const threads = await Promise.all(promises);
-    const parsedThreads: IGoogleThread[] = [];
+    const parsedThreads: IEmailThread[] = [];
 
     threads.forEach((thread) => {
       if (parseInt(thread.historyId) > maxHistoryId) {
@@ -60,7 +65,7 @@ async function handleNewThreads(
       });
 
     // save threads
-    await db.googleThreads.bulkPut(parsedThreads);
+    await db.emailThreads.bulkPut(parsedThreads);
 
     // TODO: save messages and uses format=full
     return;
@@ -92,6 +97,38 @@ export async function fullSyncGoogle(email: string) {
   if (threadIds.length > 0) {
     await handleNewThreads(accessToken, email, threadIds);
   }
+}
+
+export async function fullSyncOutlook(email: string) {
+  const accessToken = await getAccessToken(email);
+
+  // get a list of thread ids
+  const tList = await mThreadList(accessToken);
+
+  if (tList.error || !tList.data) {
+    // TODO: send error syncing mailbox
+    return;
+  }
+
+  const nextPageToken = tList.data.nextPageToken;
+  await db.outlookMetadata.update(email, {
+    threadsListNextPageToken: nextPageToken,
+  });
+
+  let parsedThreads = tList.data.value.map((thread: any) => {
+    return {
+      id: thread.id,
+      historyId: "yuh",
+      email: email,
+      from: thread.from.emailAddress.address,
+      subject: thread.subject,
+      snippet: thread.bodyPreview,
+      date: new Date(thread.receivedDateTime).getTime(),
+      unread: !thread.isRead,
+    }
+  })
+
+  await db.emailThreads.bulkPut(parsedThreads);
 }
 
 export async function partialSyncGoogle(email: string) {

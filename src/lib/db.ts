@@ -13,7 +13,7 @@ export interface ISelectedEmail {
   provider: string;
 }
 
-export interface IGoogleThread {
+export interface IEmailThread {
   id: string;
   historyId: string;
   email: string;
@@ -35,11 +35,17 @@ export interface IGoogleMetadata {
   threadsListNextPageToken: string;
 }
 
+export interface IOutlookMetadata {
+  email: string;
+  threadsListNextPageToken: string;
+}
+
 export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
-  googleThreads!: Table<IGoogleThread, string>;
+  emailThreads!: Table<IEmailThread, string>;
   googleMetadata!: Table<IGoogleMetadata, string>;
+  outlookMetadata!: Table<IOutlookMetadata, string>;
   // TODO: add googleMessages table
 
   constructor() {
@@ -47,9 +53,10 @@ export class SubClassedDexie extends Dexie {
     this.version(1).stores({
       emails: "email, provider, accessToken, expiresAt",
       selectedEmail: "id, email, provider",
-      googleThreads:
+      emailThreads:
         "id, historyId, email, from, subject, snippet, date, unread",
       googleMetadata: "email, historyId, threadsListNextPageToken",
+      outlookMetadata: "email, threadsListNextPageToken",
     });
   }
 }
