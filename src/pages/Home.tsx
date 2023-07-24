@@ -4,7 +4,7 @@ import { IGoogleThread, db } from "../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import React, { useEffect, useRef, useState } from "react";
 import { useEmailPageOutletContext } from "./_emailPage";
-import { ThreadFeed } from "./ThreadFeed";
+import { ThreadFeed } from "../components/ThreadFeed";
 import AssistBar from "../components/AssistBar";
 import { TestSyncButtons } from "../lib/experiments";
 

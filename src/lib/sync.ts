@@ -6,7 +6,8 @@ import {
 import { list as gHistoryList } from "../api/gmail/users/history";
 
 import { getAccessToken } from "../api/accessToken";
-import { IGoogleThread, db } from "./db";
+import { IGoogleMessage, IGoogleThread, db } from "./db";
+import { getGoogleMessageHeader as getHeader } from "./util";
 
 async function handleNewThreads(
   accessToken: string,
@@ -22,8 +23,10 @@ async function handleNewThreads(
   try {
     const threads = await Promise.all(promises);
     const parsedThreads: IGoogleThread[] = [];
+    const parsedMessages: IGoogleMessage[] = [];
 
     threads.forEach((thread) => {
+      // thread history id i think will be max of all messages' history ids
       if (parseInt(thread.historyId) > maxHistoryId) {
         maxHistoryId = parseInt(thread.historyId);
       }
@@ -34,19 +37,56 @@ async function handleNewThreads(
         id: thread.id,
         historyId: thread.historyId,
         email: email,
-        from: thread.messages[0].payload.headers.filter(
-          (header) => header.name === "From"
-        )[0].value,
-        subject: thread.messages[0].payload.headers.filter(
-          (header) => header.name === "Subject"
-        )[0].value,
-        snippet: thread.messages[lastMessageIndex].snippet, // this should be the latest message's snippet
-        date: new Date(
-          thread.messages[0].payload.headers.filter(
-            (header) => header.name === "Date"
-          )[0].value
-        ).getTime(),
+        from: getHeader(thread.messages[0].payload.headers, "From"),
+        subject: getHeader(thread.messages[0].payload.headers, "Subject"),
+        snippet: thread.messages[lastMessageIndex].snippet || "", // this should be the latest message's snippet
+        date: parseInt(thread.messages[lastMessageIndex].internalDate),
         unread: thread.messages[lastMessageIndex].labelIds.includes("UNREAD"),
+      });
+
+      thread.messages.forEach((message) => {
+        // multipart/alternative is text and html, multipart/mixed is attachment
+        // const textData =
+        //   message.payload.mimeType === "multipart/alternative"
+        //     ? message.payload.parts[0].body.data || ""
+        //     : message.payload.parts[0].parts[0].body?.data || "";
+        // const htmlData =
+        //   message.payload.mimeType === "multipart/alternative"
+        //     ? message.payload.parts[1].body.data || ""
+        //     : message.payload.parts[0].parts[1].body?.data || "";
+
+        let textData = "";
+        let htmlData = "";
+
+        message.payload.parts.forEach((part) => {
+          if (part.mimeType === "text/plain") {
+            textData = part.body.data || "";
+          } else if (part.mimeType === "text/html") {
+            htmlData = part.body.data || "";
+          }
+
+          if (part.parts) {
+            part.parts.forEach((nestedPart) => {
+              if (nestedPart.mimeType === "text/plain") {
+                textData = nestedPart.body.data || "";
+              } else if (nestedPart.mimeType === "text/html") {
+                htmlData = nestedPart.body.data || "";
+              }
+            });
+          }
+        });
+
+        parsedMessages.push({
+          id: message.id,
+          threadId: message.threadId,
+          labelIds: message.labelIds,
+          from: getHeader(message.payload.headers, "From"),
+          to: getHeader(message.payload.headers, "To"),
+          snippet: message.snippet || "",
+          textData,
+          htmlData,
+          date: parseInt(message.internalDate),
+        });
       });
     });
 
@@ -61,8 +101,8 @@ async function handleNewThreads(
 
     // save threads
     await db.googleThreads.bulkPut(parsedThreads);
+    await db.googleMessages.bulkPut(parsedMessages);
 
-    // TODO: save messages and uses format=full
     return;
   } catch (e) {
     console.log("Could not sync mailbox");

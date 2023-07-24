@@ -26,7 +26,15 @@ export interface IGoogleThread {
 
 export interface IGoogleMessage {
   id: string;
-  // TODO: add more fields
+  threadId: string;
+  labelIds: string[];
+  from: string;
+  to: string; // TODO: what if more than one recipient?
+  snippet: string;
+  textData: string;
+  htmlData: string;
+  date: number;
+  // TODO: add more fields like cc, bcc, attachments, etc.
 }
 
 export interface IGoogleMetadata {
@@ -40,6 +48,7 @@ export class SubClassedDexie extends Dexie {
   selectedEmail!: Table<ISelectedEmail, number>;
   googleThreads!: Table<IGoogleThread, string>;
   googleMetadata!: Table<IGoogleMetadata, string>;
+  googleMessages!: Table<IGoogleMessage, string>;
   // TODO: add googleMessages table
 
   constructor() {
@@ -50,6 +59,8 @@ export class SubClassedDexie extends Dexie {
       googleThreads:
         "id, historyId, email, from, subject, snippet, date, unread",
       googleMetadata: "email, historyId, threadsListNextPageToken",
+      googleMessages:
+        "id, threadId, labelIds, from, to, snippet, textData, htmlData, date",
     });
   }
 }
