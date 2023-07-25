@@ -18,7 +18,7 @@ export const list = async (accessToken: string) => {
 
   try {
     const res: Response = await fetch(
-      `${OUTLOOK_API_URL}/mailfolders/inbox/messages?$top=20`,
+      `${OUTLOOK_API_URL}/mailfolders/inbox/messages?$select=id,subject,bodyPreview,sender,receivedDateTime,isRead&$top=20`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
