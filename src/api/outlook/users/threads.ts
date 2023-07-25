@@ -1,14 +1,24 @@
-import { GMAIL_API_URL } from "../constants";
+import { OUTLOOK_API_URL } from "../constants";
 import { ThreadsListDataType, ThreadsGetDataType } from "../../model/users.thread";
 
 // in endpoints that will not be called often, we can use the async/await syntax
 export const list = async (accessToken: string) => {
-  let data: ThreadsListDataType | null = null;
+  let data;
   let error: string | null = null;
+
+  data = {
+    nextPageToken: "nextPageToken",
+    resultSizeEstimate: 1,
+    threads: [{
+      id: "id",
+      snippet: "snippet",
+      historyId: "history id"
+    }]
+  }
 
   try {
     const res: Response = await fetch(
-      `${GMAIL_API_URL}/threads?maxResults=20`,
+      `${OUTLOOK_API_URL}/mailfolders/inbox/messages?$select=id,subject,bodyPreview,sender,receivedDateTime,isRead&$top=20`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -19,8 +29,7 @@ export const list = async (accessToken: string) => {
     if (!res.ok) {
       error = "Error fetching threads";
     } else {
-      data = await res.json();
-      console.log(data)
+      data = await res.json()
     }
   } catch (e) {
     console.log(e);
@@ -28,20 +37,20 @@ export const list = async (accessToken: string) => {
   }
 
   return { data, error };
-};
+}
 
 export const listNextPage = async (
   accessToken: string,
   nextPageToken: string
 ) => {
-  let data: ThreadsListDataType | null = null;
+  let data;
   let error: string | null = null;
 
   try {
     const res: Response = await fetch(
-      `${GMAIL_API_URL}/threads?maxResults=20&pageToken=${nextPageToken}`,
+      `${nextPageToken}`, // Outlook nextPageToken is the entire URL to fetch the next page
       {
-        headers: {
+        headers: { 
           Authorization: `Bearer ${accessToken}`,
         },
       }
@@ -62,21 +71,21 @@ export const listNextPage = async (
 
 // in endpoints that will be called often, we use the promise syntax so that the
 // calling function can Promise.all() them or handle them in whatever way it wants
-export const get = async (accessToken: string, threadId: string) => {
-  const response = await fetch(
-    `${GMAIL_API_URL}/threads/${threadId}?format=full`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
-  );
+// export const get = async (accessToken: string, threadId: string) => {
+  // const response = await fetch(
+  //   `${OUTLOOK_API_URL}/threads/${threadId}?format=metadata`,
+  //   {
+  //     headers: {
+  //       Authorization: `Bearer ${accessToken}`,
+  //     },
+  //   }
+  // );
 
-  if (!response.ok) {
-    throw Error("Error fetching thread");
-  }
+  // if (!response.ok) {
+  //   throw Error("Error fetching thread");
+  // }
 
-  const data: ThreadsGetDataType = await response.json();
+  // const data: ThreadsGetDataType = await response.json();
 
-  return data;
-};
+  // return data;
+// };

@@ -20,7 +20,7 @@ export function ThreadFeed({
   });
 
   const thread = useLiveQuery(() => {
-    return db.googleThreads.get(selectedThread);
+    return db.emailThreads.get(selectedThread);
   });
 
   useEffect(() => {

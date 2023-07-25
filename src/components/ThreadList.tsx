@@ -1,8 +1,8 @@
 import UnreadDot from "./UnreadDot";
-import { IGoogleThread, ISelectedEmail } from "../lib/db";
+import { IEmailThread, ISelectedEmail } from "../lib/db";
 import he from "he";
 import { useEffect, useRef } from "react";
-import { loadNextPageGoogle } from "../lib/sync";
+import { loadNextPage } from "../lib/sync";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -35,9 +35,9 @@ function isOlderThanSevenDays(date: Date) {
 
 interface ThreadListProps {
   selectedEmail: ISelectedEmail;
-  threads?: IGoogleThread[]; // TODO: change for outlook thread
+  threads?: IEmailThread[]; // TODO: change for outlook thread
   setSelectedThread: (threadId: string) => void;
-  setHoveredThread: (thread: IGoogleThread | null) => void;
+  setHoveredThread: (thread: IEmailThread | null) => void;
   setScrollPosition: (position: number) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
 }
@@ -59,7 +59,7 @@ export default function ThreadList({
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          void loadNextPageGoogle(selectedEmail.email);
+          void loadNextPage(selectedEmail.email, selectedEmail.provider);
         }
       },
       { root: null, rootMargin: "0px", threshold: 1 }

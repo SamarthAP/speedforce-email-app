@@ -2,7 +2,7 @@ import Dexie, { Table } from "dexie";
 
 export interface IEmail {
   email: string;
-  provider: string;
+  provider: "google" | "outlook";
   accessToken: string;
   expiresAt: number;
 }
@@ -10,10 +10,10 @@ export interface IEmail {
 export interface ISelectedEmail {
   id: number;
   email: string;
-  provider: string;
+  provider: "google" | "outlook";
 }
 
-export interface IGoogleThread {
+export interface IEmailThread {
   id: string;
   historyId: string;
   email: string;
@@ -43,22 +43,28 @@ export interface IGoogleMetadata {
   threadsListNextPageToken: string;
 }
 
+export interface IOutlookMetadata {
+  email: string;
+  threadsListNextPageToken: string;
+}
+
 export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
-  googleThreads!: Table<IGoogleThread, string>;
+  emailThreads!: Table<IEmailThread, string>;
   googleMetadata!: Table<IGoogleMetadata, string>;
+  outlookMetadata!: Table<IOutlookMetadata, string>;
   googleMessages!: Table<IGoogleMessage, string>;
-  // TODO: add googleMessages table
 
   constructor() {
     super("SpeedforceDB");
     this.version(1).stores({
       emails: "email, provider, accessToken, expiresAt",
       selectedEmail: "id, email, provider",
-      googleThreads:
+      emailThreads:
         "id, historyId, email, from, subject, snippet, date, unread",
       googleMetadata: "email, historyId, threadsListNextPageToken",
+      outlookMetadata: "email, threadsListNextPageToken",
       googleMessages:
         "id, threadId, labelIds, from, to, snippet, textData, htmlData, date",
     });

@@ -8,7 +8,7 @@ import Titlebar from "../components/Titlebar";
 
 async function insertEmail(
   email: string,
-  provider: string,
+  provider: "google" | "outlook",
   accessToken: string,
   expiresAt: number
 ) {
@@ -100,11 +100,18 @@ export default function AddAccount() {
               provider: data.provider,
             });
 
-            await db.googleMetadata.put({
-              email: data.email,
-              historyId: "0",
-              threadsListNextPageToken: "",
-            });
+            if(data.provider == "google"){
+              await db.googleMetadata.put({
+                email: data.email,
+                historyId: "0",
+                threadsListNextPageToken: "",
+              });
+            } else {
+              await db.outlookMetadata.put({
+                email: data.email,
+                threadsListNextPageToken: "",
+              });
+            }
           }
         }
       } catch (e) {
@@ -148,6 +155,7 @@ export default function AddAccount() {
             Sign in with Google
           </button>
           <button
+            onClick={() => void providerSignIn("outlook")}
             type="button"
             className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
           >
