@@ -12,19 +12,49 @@ export interface ThreadsGetDataType {
   historyId: string;
   id: string;
   messages: {
-    historyId: string;
     id: string;
-    internalDate: string;
-    labelIds: string[];
-    sizeEstimate: number;
-    snippet: string;
     threadId: string;
+    labelIds: string[];
+    snippet: string;
     payload: {
+      partId: string;
+      mimeType: string;
+      filename: string;
       headers: {
         name: string;
         value: string;
       }[];
-      mimeType: string;
+      parts: {
+        partId: string;
+        mimeType: string; // use this mimetype to determine if it's text or html or attachment
+        filename: string;
+        headers: {
+          name: string;
+          value: string;
+        }[];
+        body: {
+          size: number;
+          data?: string; // only for messages with only text or html
+          attachmentId?: string; // only for attachments
+        };
+        parts?: {
+          // you will get this nested part when there is text/html and attachments, and this specific nested part is only for the text/html
+          partId: string;
+          mimeType: string;
+          filename: string;
+          headers: {
+            name: string;
+            value: string;
+          }[];
+          body: {
+            size: number;
+            data?: string; // only for mimeType:text or mimeType:html
+          };
+        }[];
+      }[];
     };
+    sizeEstimate: number;
+    historyId: string;
+    internalDate: string;
   }[];
 }

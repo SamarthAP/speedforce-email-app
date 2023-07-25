@@ -64,7 +64,7 @@ export const listNextPage = async (
 // calling function can Promise.all() them or handle them in whatever way it wants
 export const get = async (accessToken: string, threadId: string) => {
   const response = await fetch(
-    `${GMAIL_API_URL}/threads/${threadId}?format=metadata`,
+    `${GMAIL_API_URL}/threads/${threadId}?format=full`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
