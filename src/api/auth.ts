@@ -35,14 +35,14 @@ export const getAuthURL = async (provider: string) => {
 
 interface ExchangeCodeForTokenDataType {
   email: string;
-  provider: string;
+  provider: "google" | "outlook";
   accessToken: string;
   expiresAt: number;
 }
 
 export const exchangeCodeForToken = async (
   clientId: string,
-  provider: string,
+  provider: "google" | "outlook",
   code: string
 ) => {
   const authHeader = await getJWTHeaders();
@@ -84,7 +84,7 @@ interface RefreshAccessTokenDataType {
 
 export const refreshAccessToken = async (
   email: string,
-  provider: string,
+  provider: "google" | "outlook",
   clientId: string
 ) => {
   const authHeader = await getJWTHeaders();

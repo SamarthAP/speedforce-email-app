@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { fullSyncGoogle, partialSyncGoogle, fullSyncOutlook } from "./sync";
+import { fullSync, partialSync } from "./sync";
 import { db } from "./db";
 import { useEffect, useRef, useState } from "react";
 
@@ -71,30 +71,16 @@ const TestSyncButtons = () => {
       <button
         type="button"
         className="bg-slate-400 dark:bg-zinc-700 rounded-md py-1 px-2 mr-2 text-white shadow-lg text-xs"
-        onClick={() => void partialSyncGoogle(selectedEmail.email)}
+        onClick={() => void partialSync(selectedEmail.email, selectedEmail.provider)}
       >
-        Partial Sync Google
+        Partial Sync (Gmail only)
       </button>
       <button
         type="button"
         className="bg-slate-400 dark:bg-zinc-700 rounded-md py-1 px-2 mr-2 text-white shadow-lg text-xs"
-        onClick={() => void fullSyncGoogle(selectedEmail.email)}
+        onClick={() => void fullSync(selectedEmail.email, selectedEmail.provider)}
       >
-        Full Sync Google
-      </button>
-      <button
-        type="button"
-        className="bg-slate-400 dark:bg-zinc-700 rounded-md py-1 px-2 mr-2 text-white shadow-lg text-xs"
-        onClick={() => void partialSyncGoogle(selectedEmail.email)}
-      >
-        Partial Sync Microsoft
-      </button>
-      <button
-        type="button"
-        className="bg-slate-400 dark:bg-zinc-700 rounded-md py-1 px-2 text-white shadow-lg text-xs"
-        onClick={() => void fullSyncOutlook(selectedEmail.email)}
-      >
-        Full Sync Microsoft
+        Full Sync
       </button>
     </div>
   );

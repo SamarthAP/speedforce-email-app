@@ -5,11 +5,10 @@ import MicrosoftLogo from "../assets/microsoftLogo.svg";
 import { db } from "../lib/db";
 import { useNavigate } from "react-router-dom";
 import Titlebar from "../components/Titlebar";
-import { useLiveQuery } from "dexie-react-hooks";
 
 async function insertEmail(
   email: string,
-  provider: string,
+  provider: "google" | "outlook",
   accessToken: string,
   expiresAt: number
 ) {
@@ -56,10 +55,6 @@ export default function AddAccount() {
       });
   }, [clientId]);
 
-  const signedInEmails = useLiveQuery(() => {
-    return db.emails.orderBy("email").toArray();
-  });
-
   useEffect(() => {
     async function handler(args: string) {
       try {
@@ -105,11 +100,18 @@ export default function AddAccount() {
               provider: data.provider,
             });
 
-            await db.googleMetadata.put({
-              email: data.email,
-              historyId: "0",
-              threadsListNextPageToken: "",
-            });
+            if(data.provider == "google"){
+              await db.googleMetadata.put({
+                email: data.email,
+                historyId: "0",
+                threadsListNextPageToken: "",
+              });
+            } else {
+              await db.outlookMetadata.put({
+                email: data.email,
+                threadsListNextPageToken: "",
+              });
+            }
           }
         }
       } catch (e) {

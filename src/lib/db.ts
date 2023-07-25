@@ -2,7 +2,7 @@ import Dexie, { Table } from "dexie";
 
 export interface IEmail {
   email: string;
-  provider: string;
+  provider: "google" | "outlook";
   accessToken: string;
   expiresAt: number;
 }
@@ -10,7 +10,7 @@ export interface IEmail {
 export interface ISelectedEmail {
   id: number;
   email: string;
-  provider: string;
+  provider: "google" | "outlook";
 }
 
 export interface IEmailThread {

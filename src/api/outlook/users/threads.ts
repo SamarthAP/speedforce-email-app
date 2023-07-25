@@ -29,7 +29,6 @@ export const list = async (accessToken: string) => {
     if (!res.ok) {
       error = "Error fetching threads";
     } else {
-      // data = await res.json();
       data = await res.json()
     }
   } catch (e) {
@@ -44,28 +43,28 @@ export const listNextPage = async (
   accessToken: string,
   nextPageToken: string
 ) => {
-  let data: ThreadsListDataType | null = null;
+  let data;
   let error: string | null = null;
 
-  // try {
-  //   const res: Response = await fetch(
-  //     `${GMAIL_API_URL}/threads?maxResults=20&pageToken=${nextPageToken}`,
-  //     {
-  //       headers: {
-  //         Authorization: `Bearer ${accessToken}`,
-  //       },
-  //     }
-  //   );
+  try {
+    const res: Response = await fetch(
+      `${nextPageToken}`, // Outlook nextPageToken is the entire URL to fetch the next page
+      {
+        headers: { 
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
 
-  //   if (!res.ok) {
-  //     error = "Error fetching threads";
-  //   } else {
-  //     data = await res.json();
-  //   }
-  // } catch (e) {
-  //   console.log(e);
-  //   error = "Error fetching threads";
-  // }
+    if (!res.ok) {
+      error = "Error fetching threads";
+    } else {
+      data = await res.json();
+    }
+  } catch (e) {
+    console.log(e);
+    error = "Error fetching threads";
+  }
 
   return { data, error };
 };
