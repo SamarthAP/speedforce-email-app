@@ -5,6 +5,7 @@ import MicrosoftLogo from "../assets/microsoftLogo.svg";
 import { db } from "../lib/db";
 import { useNavigate } from "react-router-dom";
 import Titlebar from "../components/Titlebar";
+import RandomDots from '../components/animations/RandomDots';
 
 async function insertEmail(
   email: string,
@@ -22,7 +23,7 @@ async function insertEmail(
 
 const manualInsertEmail = async () => {
   await insertEmail(
-    "samarth@sigilinnovation.com",
+    "dwipatel00@gmail.com",
     "google",
     "ya29.something",
     1688333423087 // new Date().getTime()
@@ -30,12 +31,12 @@ const manualInsertEmail = async () => {
 
   await db.selectedEmail.put({
     id: 1,
-    email: "samarth@sigilinnovation.com",
+    email: "dwipatel00@gmail.com",
     provider: "google",
   });
 
   await db.googleMetadata.put({
-    email: "samarth@sigilinnovation.com",
+    email: "dwipatel00@gmail.com",
     historyId: "0",
     threadsListNextPageToken: "",
   });
@@ -100,7 +101,7 @@ export default function AddAccount() {
               provider: data.provider,
             });
 
-            if(data.provider == "google"){
+            if (data.provider == "google") {
               await db.googleMetadata.put({
                 email: data.email,
                 historyId: "0",
@@ -143,9 +144,14 @@ export default function AddAccount() {
 
   return (
     <div className="h-screen w-screen flex flex-col dark:bg-zinc-900">
-      <Titlebar />
+      <div className="z-10">
+        <Titlebar />
+      </div>
+      <div className="absolute top-0 left-0 h-full w-screen z-0">
+        <RandomDots />
+      </div>
       <div className="h-full w-screen flex flex-col items-center justify-center">
-        <div className="flex flex-col">
+        <div className="flex flex-col z-20">
           <button
             onClick={() => void providerSignIn("google")}
             type="button"
@@ -166,7 +172,7 @@ export default function AddAccount() {
         {process.env.NODE_ENV === "development" && (
           <button
             onClick={() => void manualInsertEmail()}
-            className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+            className="z-20 mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
           >
             Manually Add Email to DB
           </button>
@@ -174,7 +180,7 @@ export default function AddAccount() {
         <button
           type="button"
           onClick={() => navigate("/")}
-          className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+          className="z-20 mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
         >
           Go To Home
         </button>
