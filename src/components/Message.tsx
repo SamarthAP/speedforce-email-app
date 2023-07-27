@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import { cleanHtmlString } from "../lib/util";
 import { IGoogleMessage } from "../lib/db";
 import ShadowDom from "./ShadowDom";
+import { ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
 
 interface MessageProps {
   message: IGoogleMessage;
@@ -20,9 +21,12 @@ export default function Message({ message }: MessageProps) {
         <p className="dark:text-zinc-400 text-slate-500 text-sm">
           {message.from}
         </p>
-        <p className="dark:text-zinc-400 text-slate-500 text-sm">
-          {dayjs(message.date).format("MMM D, YYYY h:mm A")}
-        </p>
+        <div className="flex items-center">
+          <ArrowUturnLeftIcon className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2" />
+          <p className="dark:text-zinc-400 text-slate-500 text-sm">
+            {dayjs(message.date).format("MMM D, YYYY h:mm A")}
+          </p>
+        </div>
       </div>
       {showBody && (
         <div className="pb-4 px-4">

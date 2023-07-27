@@ -39,8 +39,8 @@ export function ThreadFeed({
   }, [setSelectedThread]);
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="dark:text-white p-4">{thread?.subject}</div>
+    <div className="w-full h-full flex flex-col overflow-hidden">
+      <div className="dark:text-white p-4 w-full">{thread?.subject}</div>
       <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll">
         {messages?.map((message) => {
           return <Message message={message} key={message.id} />;

@@ -1,6 +1,6 @@
 import ThreadList from "../components/ThreadList";
 import Sidebar from "../components/Sidebar";
-import { IEmail, IGoogleThread, db } from "../lib/db";
+import { IEmail, IEmailThread, db } from "../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import React, { useEffect, useRef, useState } from "react";
 import { useEmailPageOutletContext } from "./_emailPage";
@@ -8,13 +8,11 @@ import { ThreadFeed } from "../components/ThreadFeed";
 import AssistBar from "../components/AssistBar";
 import { TestSyncButtons } from "../lib/experiments";
 import { UserCircleIcon, CheckIcon } from "@heroicons/react/24/outline";
-import { Menu } from '@headlessui/react'
+import { Menu } from "@headlessui/react";
 
 export default function Home() {
   const { selectedEmail } = useEmailPageOutletContext();
-  const [hoveredThread, setHoveredThread] = useState<IGoogleThread | null>(
-    null
-  );
+  const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
   const [selectedThread, setSelectedThread] = useState<string>("");
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -34,7 +32,6 @@ export default function Home() {
   }, [selectedThread, scrollPosition]);
 
   const threads = useLiveQuery(() => {
-
     const emailThreads = db.emailThreads
       .where("email")
       .equals(selectedEmail.email)
@@ -66,7 +63,7 @@ export default function Home() {
       email: email.email,
       provider: email.provider,
     });
-  }
+  };
 
   return (
     <React.Fragment>
@@ -82,23 +79,22 @@ export default function Home() {
                 <UserCircleIcon className="h-6 w-6 mr-3 shrink-0 text-black dark:text-white" />
               </Menu.Button>
               <Menu.Items className="absolute right-0 top-8">
-                {
-                  signedInEmails?.map((email) => (
-                    <Menu.Item key={email.email}>
-                      {({ active }) => (
-                        <div className="px-3 py-2 bg-gray-300 hover:bg-gray-400 flex flex-row justify-between items-center" key={email.email} onClick={() => setSelectedEmail(email)}>
-                          <div className="text-md">{email.email}</div>
-                          {
-                            email.email === selectedEmail.email && (
-                              <CheckIcon className="h-4 w-4 shrink-0 text-black" />
-                            )
-                          }
-                        </div> 
-                      )}
-                    </Menu.Item>
-                  ))
-                }
-
+                {signedInEmails?.map((email) => (
+                  <Menu.Item key={email.email}>
+                    {({ active }) => (
+                      <div
+                        className="px-3 py-2 bg-gray-300 hover:bg-gray-400 flex flex-row justify-between items-center"
+                        key={email.email}
+                        onClick={() => void setSelectedEmail(email)}
+                      >
+                        <div className="text-md">{email.email}</div>
+                        {email.email === selectedEmail.email && (
+                          <CheckIcon className="h-4 w-4 shrink-0 text-black" />
+                        )}
+                      </div>
+                    )}
+                  </Menu.Item>
+                ))}
               </Menu.Items>
             </Menu>
           </div>

@@ -7,7 +7,7 @@ import { list as gHistoryList } from "../api/gmail/users/history";
 
 import {
   list as mThreadList,
-  listNextPage as mThreadListNextPage
+  listNextPage as mThreadListNextPage,
 } from "../api/outlook/users/threads";
 
 import { getAccessToken } from "../api/accessToken";
@@ -155,7 +155,7 @@ async function fullSyncOutlook(email: string) {
     threadsListNextPageToken: nextPageToken,
   });
 
-  let parsedThreads = tList.data.value.map((thread: any) => {
+  const parsedThreads = tList.data.value.map((thread: any) => {
     return {
       id: thread.id,
       historyId: "yuh",
@@ -165,8 +165,8 @@ async function fullSyncOutlook(email: string) {
       snippet: thread.bodyPreview,
       date: new Date(thread.receivedDateTime).getTime(),
       unread: !thread.isRead,
-    }
-  })
+    };
+  });
 
   await db.emailThreads.bulkPut(parsedThreads);
 }
@@ -258,7 +258,7 @@ async function loadNextPageOutlook(email: string) {
     threadsListNextPageToken: nextPageToken,
   });
 
-  let parsedThreads = tList.data.value.map((thread: any) => {
+  const parsedThreads = tList.data.value.map((thread: any) => {
     return {
       id: thread.id,
       historyId: "yuh",
@@ -268,32 +268,38 @@ async function loadNextPageOutlook(email: string) {
       snippet: thread.bodyPreview,
       date: new Date(thread.receivedDateTime).getTime(),
       unread: !thread.isRead,
-    }
-  })
+    };
+  });
 
   await db.emailThreads.bulkPut(parsedThreads);
 }
 
-export async function fullSync(email: string, provider: 'google' | 'outlook') {
-  if (provider === 'google') {
+export async function fullSync(email: string, provider: "google" | "outlook") {
+  if (provider === "google") {
     await fullSyncGoogle(email);
-  } else if (provider === 'outlook') {
+  } else if (provider === "outlook") {
     await fullSyncOutlook(email);
   }
 }
 
-export async function partialSync(email: string, provider: 'google' | 'outlook') {
-  if (provider === 'google') {
+export async function partialSync(
+  email: string,
+  provider: "google" | "outlook"
+) {
+  if (provider === "google") {
     await partialSyncGoogle(email);
-  } else if (provider === 'outlook') {
+  } else if (provider === "outlook") {
     await partialSyncOutlook(email);
   }
 }
 
-export async function loadNextPage(email: string, provider: 'google' | 'outlook') {
-  if (provider === 'google') {
+export async function loadNextPage(
+  email: string,
+  provider: "google" | "outlook"
+) {
+  if (provider === "google") {
     await loadNextPageGoogle(email);
-  } else if (provider === 'outlook') {
+  } else if (provider === "outlook") {
     await loadNextPageOutlook(email);
   }
 }

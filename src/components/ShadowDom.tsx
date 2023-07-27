@@ -45,5 +45,7 @@ export default function ShadowDom({ htmlString }: ShadowDomProps) {
     }
   }, [theme]);
 
-  return <div className="bg-zinc-900" ref={shadowRef}></div>;
+  return (
+    <div className="bg-zinc-900 w-full overflow-x-scroll" ref={shadowRef}></div>
+  );
 }
