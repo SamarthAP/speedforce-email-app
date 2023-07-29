@@ -6,6 +6,7 @@ import supabase from "./lib/supabase";
 import Login from "./pages/Login";
 import { SessionContext } from "./contexts/SessionContext";
 import { Session } from "@supabase/supabase-js";
+import { ErrorBoundary } from "@sentry/react"
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -47,13 +48,15 @@ function App() {
   );
 
   return (
-    <SessionContext.Provider value={session}>
-      <div className={`${theme}`}>
-        <ThemeContext.Provider value={themeValue}>
-          {session ? <AppRouter /> : <Login />}
-        </ThemeContext.Provider>
-      </div>
-    </SessionContext.Provider>
+    <ErrorBoundary showDialog>
+      <SessionContext.Provider value={session}>
+        <div className={`${theme}`}>
+          <ThemeContext.Provider value={themeValue}>
+            {session ? <AppRouter /> : <Login />}
+          </ThemeContext.Provider>
+        </div>
+      </SessionContext.Provider>
+    </ErrorBoundary>
   );
 }
 

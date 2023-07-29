@@ -28,4 +28,7 @@ export const rendererConfig: Configuration = {
     extensions: [".js", ".ts", ".jsx", ".tsx", ".css"],
   },
   devtool: "source-map", // fixes Content Security Policy error (script-src 'self')
+  externals: {
+    electron: "commonjs electron",
+  },
 };

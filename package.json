@@ -9,7 +9,8 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org speedforce --project speedforce-app ./out && sentry-cli sourcemaps upload --org speedforce --project speedforce-app ./out"
   },
   "keywords": [],
   "author": {
@@ -50,6 +51,8 @@
   "dependencies": {
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
+    "@sentry/electron": "^4.8.0",
+    "@sentry/react": "^7.60.1",
     "@supabase/supabase-js": "^2.24.0",
     "@types/dompurify": "^3.0.2",
     "@types/he": "^1.2.0",

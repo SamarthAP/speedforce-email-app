@@ -27,6 +27,12 @@
  */
 
 import "./index.css";
+import {init} from "@sentry/electron/renderer"
+
+init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || "development",
+});
 
 console.log(
   '👋 This message is being logged by "renderer.js", included via webpack'
