@@ -2,7 +2,7 @@ import UnreadDot from "./UnreadDot";
 import { IEmailThread, ISelectedEmail } from "../lib/db";
 import he from "he";
 import { useEffect, useRef } from "react";
-import { loadNextPage } from "../lib/sync";
+import { loadNextPage, markRead } from "../lib/sync";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -76,7 +76,7 @@ export default function ThreadList({
         observer.unobserve(target);
       }
     };
-  }, [observerTarget, threads, selectedEmail.email]);
+  }, [observerTarget, threads, selectedEmail.email, selectedEmail.provider]);
 
   return (
     <div ref={scrollRef} className="h-full overflow-y-scroll">
@@ -87,6 +87,11 @@ export default function ThreadList({
               onClick={() => {
                 setScrollPosition(scrollRef.current?.scrollTop || 0);
                 setSelectedThread(thread.id);
+                void markRead(
+                  selectedEmail.email,
+                  selectedEmail.provider,
+                  thread.id
+                );
               }}
               onMouseOver={() => setHoveredThread(thread)}
               key={index}

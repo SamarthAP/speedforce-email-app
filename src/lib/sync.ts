@@ -2,6 +2,7 @@ import {
   get as gThreadGet,
   list as gThreadList,
   listNextPage as gThreadListNextPage,
+  removeLabelIds,
 } from "../api/gmail/users/threads";
 import { list as gHistoryList } from "../api/gmail/users/history";
 
@@ -301,5 +302,32 @@ export async function loadNextPage(
     await loadNextPageGoogle(email);
   } else if (provider === "outlook") {
     await loadNextPageOutlook(email);
+  }
+}
+
+export async function markRead(
+  email: string,
+  provider: "google" | "outlook",
+  threadId: string
+) {
+  const accessToken = await getAccessToken(email);
+  if (provider === "google") {
+    const { data, error } = await removeLabelIds(accessToken, threadId, [
+      "UNREAD",
+    ]);
+
+    if (error || !data) {
+      console.log("Error marking thread as read");
+      return;
+    } else {
+      const promises = data.messages.map((message) => {
+        return db.googleMessages.update(message.id, {
+          labelIds: message.labelIds,
+        });
+      });
+
+      await Promise.all(promises);
+      await db.emailThreads.update(threadId, { unread: false });
+    }
   }
 }

@@ -58,3 +58,12 @@ export interface ThreadsGetDataType {
     internalDate: string;
   }[];
 }
+
+export interface ThreadsModifyDataType {
+  id: string;
+  messages: {
+    id: string;
+    threadId: string;
+    labelIds: string[];
+  }[];
+}
