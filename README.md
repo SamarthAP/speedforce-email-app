@@ -10,7 +10,15 @@ npm start
 ### Build distributables
 
 ```
-npm run make
+npm run make # builds for current OS
+```
+
+```
+npm run make -- --arch=universal --platform=darwin # single build that works on intel and apple silicon, but doubles size
+```
+
+```
+electron-forge package --arch=x64 --platform=darwin # untested but is supposed to build for intel only
 ```
 
 ### Environment variables

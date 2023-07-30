@@ -24,7 +24,7 @@ export interface ThreadsGetDataType {
         name: string;
         value: string;
       }[];
-      parts: {
+      parts?: {
         partId: string;
         mimeType: string; // use this mimetype to determine if it's text or html or attachment
         filename: string;

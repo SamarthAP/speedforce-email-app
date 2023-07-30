@@ -1,5 +1,8 @@
 import { GMAIL_API_URL } from "../constants";
-import { ThreadsListDataType, ThreadsGetDataType } from "../../model/users.thread";
+import {
+  ThreadsListDataType,
+  ThreadsGetDataType,
+} from "../../model/users.thread";
 
 // in endpoints that will not be called often, we can use the async/await syntax
 export const list = async (accessToken: string) => {
@@ -20,7 +23,6 @@ export const list = async (accessToken: string) => {
       error = "Error fetching threads";
     } else {
       data = await res.json();
-      console.log(data)
     }
   } catch (e) {
     console.log(e);

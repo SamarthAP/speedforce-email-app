@@ -100,7 +100,7 @@ export default function AddAccount() {
               provider: data.provider,
             });
 
-            if(data.provider == "google"){
+            if (data.provider === "google") {
               await db.googleMetadata.put({
                 email: data.email,
                 historyId: "0",

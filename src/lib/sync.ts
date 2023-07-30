@@ -63,7 +63,7 @@ async function handleNewThreads(
         let textData = "";
         let htmlData = "";
 
-        message.payload.parts.forEach((part) => {
+        message.payload.parts?.forEach((part) => {
           if (part.mimeType === "text/plain") {
             textData = part.body.data || "";
           } else if (part.mimeType === "text/html") {
