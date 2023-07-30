@@ -87,11 +87,13 @@ export default function ThreadList({
               onClick={() => {
                 setScrollPosition(scrollRef.current?.scrollTop || 0);
                 setSelectedThread(thread.id);
-                void markRead(
-                  selectedEmail.email,
-                  selectedEmail.provider,
-                  thread.id
-                );
+                if (thread.unread) {
+                  void markRead(
+                    selectedEmail.email,
+                    selectedEmail.provider,
+                    thread.id
+                  );
+                }
               }}
               onMouseOver={() => setHoveredThread(thread)}
               key={index}
