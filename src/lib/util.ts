@@ -5,9 +5,15 @@ export function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-export function cleanHtmlString(htmlStringBase64: string) {
-  const decoded = decodeGoogleMessageData(htmlStringBase64);
-  const htmlWithBlobs = replaceDataURIsWithBlobs(decoded);
+export function cleanHtmlString(htmlString: string, encoded: boolean = false) {
+  let decodedHTML = "";
+  if (encoded) {
+    decodedHTML = decodeGoogleMessageData(htmlString);
+  } else {
+    decodedHTML = htmlString;
+  }
+
+  const htmlWithBlobs = replaceDataURIsWithBlobs(decodedHTML);
   const sanitized = DomPurify.sanitize(htmlWithBlobs, {
     USE_PROFILES: { html: true, svg: false, mathMl: false },
   });

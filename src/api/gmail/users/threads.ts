@@ -1,13 +1,13 @@
 import { GMAIL_API_URL } from "../constants";
 import {
-  ThreadsListDataType,
-  ThreadsGetDataType,
-  ThreadsModifyDataType,
+  GoogleThreadsListDataType,
+  GoogleThreadsGetDataType,
+  GoogleThreadsModifyDataType,
 } from "../../model/users.thread";
 
 // in endpoints that will not be called often, we can use the async/await syntax
 export const list = async (accessToken: string) => {
-  let data: ThreadsListDataType | null = null;
+  let data: GoogleThreadsListDataType | null = null;
   let error: string | null = null;
 
   try {
@@ -37,7 +37,7 @@ export const listNextPage = async (
   accessToken: string,
   nextPageToken: string
 ) => {
-  let data: ThreadsListDataType | null = null;
+  let data: GoogleThreadsListDataType | null = null;
   let error: string | null = null;
 
   try {
@@ -79,7 +79,7 @@ export const get = async (accessToken: string, threadId: string) => {
     throw Error("Error fetching thread");
   }
 
-  const data: ThreadsGetDataType = await response.json();
+  const data: GoogleThreadsGetDataType = await response.json();
 
   return data;
 };
@@ -89,7 +89,7 @@ export const removeLabelIds = async (
   threadId: string,
   labelIds: string[]
 ) => {
-  let data: ThreadsModifyDataType | null = null;
+  let data: GoogleThreadsModifyDataType | null = null;
   let error: string | null = null;
 
   try {

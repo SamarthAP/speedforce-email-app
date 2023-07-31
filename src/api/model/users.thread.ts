@@ -1,4 +1,4 @@
-export interface ThreadsListDataType {
+export interface GoogleThreadsListDataType {
   nextPageToken: string;
   resultSizeEstimate: number;
   threads: {
@@ -8,7 +8,7 @@ export interface ThreadsListDataType {
   }[];
 }
 
-export interface ThreadsGetDataType {
+export interface GoogleThreadsGetDataType {
   historyId: string;
   id: string;
   messages: {
@@ -59,11 +59,45 @@ export interface ThreadsGetDataType {
   }[];
 }
 
-export interface ThreadsModifyDataType {
+export interface GoogleThreadsModifyDataType {
   id: string;
   messages: {
     id: string;
     threadId: string;
     labelIds: string[];
+  }[];
+}
+
+export interface OutlookThreadsListDataType {
+  nextPageToken: string;
+  value: {
+    id: string;
+    subject: string;
+    conversationId: string;
+    receivedDateTime: string;
+    isRead: boolean;
+    bodyPreview: string;
+    body: {
+      contentType: string;
+      content: string;
+    };
+    sender: {
+      emailAddress: {
+        name: string;
+        address: string;
+      };  
+    };
+    from: {
+      emailAddress: {
+        name: string;
+        address: string;
+      };
+    };
+    toRecipients: {
+      emailAddress: {
+        name: string;
+        address: string;
+      };
+    }[];
   }[];
 }
