@@ -1,18 +1,21 @@
 import { createRef, useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { cleanHtmlString } from "../lib/util";
-import { IGoogleMessage } from "../lib/db";
+import { IMessage } from "../lib/db";
 import ShadowDom from "./ShadowDom";
 import { ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
 import EmailEditor from "./EmailEditor";
 import { Editor } from "draft-js";
+import { useEmailPageOutletContext } from "../pages/_emailPage";
 
 interface MessageProps {
-  message: IGoogleMessage;
+  message: IMessage;
   key: string;
 }
 
 export default function Message({ message }: MessageProps) {
+  const { selectedEmail } = useEmailPageOutletContext();
+
   const [showBody, setShowBody] = useState(true);
   const [showReply, setShowReply] = useState(false);
 
@@ -59,7 +62,8 @@ export default function Message({ message }: MessageProps) {
       </div>
       {showBody && (
         <div className="pb-4 px-4">
-          <ShadowDom htmlString={cleanHtmlString(message.htmlData)} />
+          {/* TODO: Verify that this is valid solution -> Assume google HTML is encoded and outlook is not */}
+          <ShadowDom htmlString={cleanHtmlString(message.htmlData, selectedEmail.provider === "google")} />
         </div>
       )}
       {showReply && (

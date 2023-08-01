@@ -1,24 +1,16 @@
 import { OUTLOOK_API_URL } from "../constants";
-import { ThreadsListDataType, ThreadsGetDataType } from "../../model/users.thread";
+import { OutlookThreadsListDataType, GoogleThreadsGetDataType } from "../../model/users.thread";
 
 // in endpoints that will not be called often, we can use the async/await syntax
 export const list = async (accessToken: string) => {
-  let data;
+  let data: OutlookThreadsListDataType | null = null;
   let error: string | null = null;
-
-  data = {
-    nextPageToken: "nextPageToken",
-    resultSizeEstimate: 1,
-    threads: [{
-      id: "id",
-      snippet: "snippet",
-      historyId: "history id"
-    }]
-  }
 
   try {
     const res: Response = await fetch(
-      `${OUTLOOK_API_URL}/mailfolders/inbox/messages?$select=id,subject,bodyPreview,sender,receivedDateTime,isRead&$top=20`,
+      `${OUTLOOK_API_URL}/messages?
+        $select=id,conversationId&
+        $top=20`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -29,7 +21,11 @@ export const list = async (accessToken: string) => {
     if (!res.ok) {
       error = "Error fetching threads";
     } else {
-      data = await res.json()
+      let resData = await res.json();
+      data = {
+        nextPageToken: resData["@odata.nextLink"],
+        value: resData.value
+      }
     }
   } catch (e) {
     console.log(e);
@@ -43,7 +39,7 @@ export const listNextPage = async (
   accessToken: string,
   nextPageToken: string
 ) => {
-  let data;
+  let data: OutlookThreadsListDataType | null = null;
   let error: string | null = null;
 
   try {
@@ -71,21 +67,43 @@ export const listNextPage = async (
 
 // in endpoints that will be called often, we use the promise syntax so that the
 // calling function can Promise.all() them or handle them in whatever way it wants
-// export const get = async (accessToken: string, threadId: string) => {
-  // const response = await fetch(
-  //   `${OUTLOOK_API_URL}/threads/${threadId}?format=metadata`,
-  //   {
-  //     headers: {
-  //       Authorization: `Bearer ${accessToken}`,
-  //     },
-  //   }
-  // );
+export const get = async (accessToken: string, threadId: string) => {
+  const response = await fetch(
+    `${OUTLOOK_API_URL}/messages?
+      $select=id,subject,bodyPreview,body,sender,toRecipients,from,receivedDateTime,isRead,conversationId&
+      $filter=conversationId eq '${threadId}'`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
 
-  // if (!response.ok) {
-  //   throw Error("Error fetching thread");
-  // }
+  if (!response.ok) {
+    throw Error("Error fetching thread");
+  }
 
-  // const data: ThreadsGetDataType = await response.json();
+  const data: OutlookThreadsListDataType = await response.json();
+  return data;
+};
 
-  // return data;
-// };
+export const markRead = async (accessToken: string, threadId: string) => {
+  const response = await fetch(
+    `${OUTLOOK_API_URL}/messages/${threadId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      },
+      method: "PATCH",
+      body: JSON.stringify({ isRead: true })
+    }
+  );
+
+  if (!response.ok) {
+    throw Error("Error updating thread");
+  }
+
+  const data = await response.json();
+  return data;
+}

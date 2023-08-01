@@ -13,9 +13,10 @@ export function ThreadFeed({
   setSelectedThread,
 }: ThreadFeedProps) {
   const messages = useLiveQuery(() => {
-    return db.googleMessages
+    return db.messages
       .where("threadId")
       .equals(selectedThread)
+      .reverse()
       .sortBy("date");
   });
 

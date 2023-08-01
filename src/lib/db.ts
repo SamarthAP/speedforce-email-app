@@ -24,7 +24,7 @@ export interface IEmailThread {
   unread: boolean;
 }
 
-export interface IGoogleMessage {
+export interface IMessage {
   id: string;
   threadId: string;
   labelIds: string[];
@@ -54,7 +54,7 @@ export class SubClassedDexie extends Dexie {
   emailThreads!: Table<IEmailThread, string>;
   googleMetadata!: Table<IGoogleMetadata, string>;
   outlookMetadata!: Table<IOutlookMetadata, string>;
-  googleMessages!: Table<IGoogleMessage, string>;
+  messages!: Table<IMessage, string>;
 
   constructor() {
     super("SpeedforceDB");
@@ -65,7 +65,7 @@ export class SubClassedDexie extends Dexie {
         "id, historyId, email, from, subject, snippet, date, unread",
       googleMetadata: "email, historyId, threadsListNextPageToken",
       outlookMetadata: "email, threadsListNextPageToken",
-      googleMessages:
+      messages:
         "id, threadId, labelIds, from, to, snippet, textData, htmlData, date",
     });
   }
