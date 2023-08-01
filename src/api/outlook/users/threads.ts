@@ -86,3 +86,24 @@ export const get = async (accessToken: string, threadId: string) => {
   const data: OutlookThreadsListDataType = await response.json();
   return data;
 };
+
+export const markRead = async (accessToken: string, threadId: string) => {
+  const response = await fetch(
+    `${OUTLOOK_API_URL}/messages/${threadId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      },
+      method: "PATCH",
+      body: JSON.stringify({ isRead: true })
+    }
+  );
+
+  if (!response.ok) {
+    throw Error("Error updating thread");
+  }
+
+  const data = await response.json();
+  return data;
+}

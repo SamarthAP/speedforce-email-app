@@ -10,6 +10,7 @@ import {
   get as mThreadGet,
   list as mThreadList,
   listNextPage as mThreadListNextPage,
+  markRead as mThreadMarkRead,
 } from "../api/outlook/users/threads";
 
 import { getAccessToken } from "../api/accessToken";
@@ -404,5 +405,15 @@ export async function markRead(
       await Promise.all(promises);
       await db.emailThreads.update(threadId, { unread: false });
     }
+  } else if (provider === "outlook") {
+    const messages = await db.messages.where("threadId").equals(threadId).toArray();
+    const apiPromises = messages.map((message) => {
+      return mThreadMarkRead(accessToken, message.id);
+    });
+
+    // mark all messages in conversation as read since isRead is tied to the message, not the thread
+    // TODO: error handling
+    await Promise.all(apiPromises);
+    await db.emailThreads.update(threadId, { unread: false });
   }
 }
