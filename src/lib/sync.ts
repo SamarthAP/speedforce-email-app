@@ -82,6 +82,10 @@ async function handleNewThreads(
           }
         });
 
+        if (htmlData === "") {
+          htmlData = message.payload.body.data || "";
+        }
+
         parsedMessages.push({
           id: message.id,
           threadId: message.threadId,
@@ -89,6 +93,7 @@ async function handleNewThreads(
           from: getHeader(message.payload.headers, "From"),
           to: getHeader(message.payload.headers, "To"),
           snippet: message.snippet || "",
+          headers: message.payload.headers,
           textData,
           htmlData,
           date: parseInt(message.internalDate),

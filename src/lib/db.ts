@@ -31,6 +31,10 @@ export interface IGoogleMessage {
   from: string;
   to: string; // TODO: what if more than one recipient?
   snippet: string;
+  headers: {
+    name: string;
+    value: string;
+  }[];
   textData: string;
   htmlData: string;
   date: number;
@@ -66,7 +70,7 @@ export class SubClassedDexie extends Dexie {
       googleMetadata: "email, historyId, threadsListNextPageToken",
       outlookMetadata: "email, threadsListNextPageToken",
       googleMessages:
-        "id, threadId, labelIds, from, to, snippet, textData, htmlData, date",
+        "id, threadId, labelIds, from, to, snippet, headers, textData, htmlData, date",
     });
   }
 }

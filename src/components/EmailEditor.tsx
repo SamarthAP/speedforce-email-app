@@ -1,19 +1,32 @@
-import { Editor, EditorState /* , convertToRaw */ } from "draft-js";
-import { useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
+import { Editor, EditorState } from "draft-js";
 
 interface EmailEditorProps {
   editorRef?: React.RefObject<Editor>;
 }
 
-export default function EmailEditor({ editorRef }: EmailEditorProps = {}) {
+export interface EditorComponentRef {
+  getEditorState: () => EditorState;
+}
+
+function EmailEditor(
+  { editorRef }: EmailEditorProps,
+  ref: React.Ref<EditorComponentRef>
+) {
   const [editorState, setEditorState] = useState(() =>
     EditorState.createEmpty()
   );
 
-  // console.log(convertToRaw(editorState.getCurrentContent()));
+  const getEditorState = () => {
+    return editorState;
+  };
+
+  useImperativeHandle(ref, () => ({
+    getEditorState,
+  }));
 
   return (
-    <div className="p-4 border-t border-t-slate-200 dark:border-t-zinc-700">
+    <div className="text-sm text-black dark:text-white">
       <Editor
         ref={editorRef}
         editorState={editorState}
@@ -22,3 +35,5 @@ export default function EmailEditor({ editorRef }: EmailEditorProps = {}) {
     </div>
   );
 }
+
+export default forwardRef(EmailEditor);

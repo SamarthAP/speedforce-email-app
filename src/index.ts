@@ -112,7 +112,9 @@ const createWindow = (): void => {
   void mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  if (process.env.NODE_ENV === "development") {
+    mainWindow.webContents.openDevTools();
+  }
 };
 
 // Quit when all windows are closed, except on macOS. There, it's common

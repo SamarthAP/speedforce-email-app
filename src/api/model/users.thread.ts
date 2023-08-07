@@ -52,6 +52,10 @@ export interface ThreadsGetDataType {
           };
         }[];
       }[];
+      body: {
+        size: number;
+        data?: string; // only for messages with only text or html
+      };
     };
     sizeEstimate: number;
     historyId: string;
