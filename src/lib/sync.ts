@@ -128,7 +128,7 @@ async function handleNewThreadsGoogle(
 async function batchGetThreads(
   accessToken: string,
   threadIds: string[],
-  batchSize = 5
+  batchSize = 4
 ) {
   const threads = [];
   const batches = _.chunk(threadIds, batchSize);
@@ -205,7 +205,7 @@ async function handleNewThreadsOutlook(
             message.from?.emailAddress?.address ||
             message.sender?.emailAddress?.address ||
             "No Sender",
-          to: message.toRecipients[0].emailAddress.address, // TODO: add multiple recipients
+          to: message.toRecipients[0]?.emailAddress.address || "No Recipient", // TODO: add multiple recipients
           snippet: message.bodyPreview || "",
           headers: [],
           textData,
