@@ -69,7 +69,7 @@ export class SubClassedDexie extends Dexie {
         "id, historyId, email, from, subject, snippet, date, unread",
       googleMetadata: "email, historyId, threadsListNextPageToken",
       outlookMetadata: "email, threadsListNextPageToken",
-      googleMessages:
+      messages:
         "id, threadId, labelIds, from, to, snippet, headers, textData, htmlData, date",
     });
   }

@@ -125,12 +125,16 @@ async function handleNewThreadsGoogle(
   }
 }
 
-async function batchGetThreads(accessToken: string, threadIds: string[], batchSize: number = 5){
+async function batchGetThreads(
+  accessToken: string,
+  threadIds: string[],
+  batchSize = 5
+) {
   const threads = [];
   const batches = _.chunk(threadIds, batchSize);
-  for(let batch of batches) {
+  for (const batch of batches) {
     const promises = [];
-    for(let threadId of batch) {
+    for (const threadId of batch) {
       promises.push(mThreadGet(accessToken, threadId));
     }
 
@@ -140,7 +144,6 @@ async function batchGetThreads(accessToken: string, threadIds: string[], batchSi
 
   return threads;
 }
-
 
 async function handleNewThreadsOutlook(
   accessToken: string,
@@ -156,11 +159,10 @@ async function handleNewThreadsOutlook(
     const parsedThreads: IEmailThread[] = [];
     const parsedMessages: IMessage[] = [];
     threads.forEach((thread) => {
-
       const lastMessageIndex = thread.value.length - 1;
 
       let unread = false;
-      for(let message of thread.value) {
+      for (const message of thread.value) {
         if (!message.isRead) {
           unread = true;
           break;
@@ -171,10 +173,15 @@ async function handleNewThreadsOutlook(
         id: thread.value[lastMessageIndex].conversationId,
         historyId: "",
         email: email,
-        from: thread.value[lastMessageIndex].from.emailAddress.address,
+        from:
+          thread.value[lastMessageIndex].from?.emailAddress?.address ||
+          thread.value[lastMessageIndex].sender?.emailAddress?.address ||
+          "No Sender",
         subject: thread.value[lastMessageIndex].subject,
         snippet: thread.value[lastMessageIndex].bodyPreview,
-        date: new Date(thread.value[lastMessageIndex].receivedDateTime).getTime(),
+        date: new Date(
+          thread.value[lastMessageIndex].receivedDateTime
+        ).getTime(),
         unread: unread,
       });
 
@@ -194,19 +201,22 @@ async function handleNewThreadsOutlook(
           threadId: message.conversationId,
           // labelIds: message.labelIds,
           labelIds: [],
-          from: message.from.emailAddress.address,
+          from:
+            message.from?.emailAddress?.address ||
+            message.sender?.emailAddress?.address ||
+            "No Sender",
           to: message.toRecipients[0].emailAddress.address, // TODO: add multiple recipients
           snippet: message.bodyPreview || "",
+          headers: [],
           textData,
           htmlData,
           date: new Date(message.receivedDateTime).getTime(),
         });
       });
-    })
+    });
 
     await db.emailThreads.bulkPut(parsedThreads);
     await db.messages.bulkPut(parsedMessages);
-
   } catch (e) {
     console.log("Could not sync mailbox");
     console.log(e);
@@ -253,7 +263,9 @@ async function fullSyncOutlook(email: string) {
     threadsListNextPageToken: nextPageToken,
   });
 
-  const threadIds = _.uniq(tList.data.value.map((thread) => thread.conversationId));
+  const threadIds = _.uniq(
+    tList.data.value.map((thread) => thread.conversationId)
+  );
 
   if (threadIds.length > 0) {
     await handleNewThreadsOutlook(accessToken, email, threadIds);
@@ -330,27 +342,21 @@ async function loadNextPageGoogle(email: string) {
 async function loadNextPageOutlook(email: string) {
   // const accessToken = await getAccessToken(email);
   // const metadata = await db.outlookMetadata.get(email);
-
   // if (!metadata || !metadata.threadsListNextPageToken) {
   //   return;
   // }
-
   // const tList = await mThreadListNextPage(
   //   accessToken,
   //   metadata.threadsListNextPageToken
   // );
-
   // if (tList.error || !tList.data) {
   //   return;
   // }
-
   // const nextPageToken = tList.data.nextPageToken;
   // await db.outlookMetadata.update(email, {
   //   threadsListNextPageToken: nextPageToken,
   // });
-
   // const threadIds = _.uniq(tList.data.value.map((thread) => thread.conversationId));
-
   // if (threadIds.length > 0) {
   //   await handleNewThreadsOutlook(accessToken, email, threadIds);
   // }
@@ -411,7 +417,10 @@ export async function markRead(
       await db.emailThreads.update(threadId, { unread: false });
     }
   } else if (provider === "outlook") {
-    const messages = await db.messages.where("threadId").equals(threadId).toArray();
+    const messages = await db.messages
+      .where("threadId")
+      .equals(threadId)
+      .toArray();
     const apiPromises = messages.map((message) => {
       return mThreadMarkRead(accessToken, message.id);
     });

@@ -13,11 +13,7 @@ export function ThreadFeed({
   setSelectedThread,
 }: ThreadFeedProps) {
   const messages = useLiveQuery(() => {
-    return db.messages
-      .where("threadId")
-      .equals(selectedThread)
-      .reverse()
-      .sortBy("date");
+    return db.messages.where("threadId").equals(selectedThread).sortBy("date");
   });
 
   const thread = useLiveQuery(() => {
