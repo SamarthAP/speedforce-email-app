@@ -7,13 +7,19 @@ import { useEmailPageOutletContext } from "./_emailPage";
 import { ThreadFeed } from "../components/ThreadFeed";
 import AssistBar from "../components/AssistBar";
 import { TestSyncButtons } from "../lib/experiments";
-import { UserCircleIcon, CheckIcon } from "@heroicons/react/24/outline";
+import {
+  UserCircleIcon,
+  CheckIcon,
+  PencilSquareIcon,
+} from "@heroicons/react/24/outline";
 import { Menu } from "@headlessui/react";
+import { WriteMessage } from "../components/WriteMessage";
 
 export default function Home() {
   const { selectedEmail } = useEmailPageOutletContext();
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
   const [selectedThread, setSelectedThread] = useState<string>("");
+  const [writeEmailMode, setWriteEmailMode] = useState<boolean>(false);
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -45,6 +51,23 @@ export default function Home() {
     return db.emails.orderBy("email").toArray();
   });
 
+  const setSelectedEmail = async (email: IEmail) => {
+    await db.selectedEmail.put({
+      id: 1,
+      email: email.email,
+      provider: email.provider,
+    });
+  };
+
+  if (writeEmailMode) {
+    return (
+      <React.Fragment>
+        <WriteMessage setWriteEmailMode={setWriteEmailMode} />
+        <AssistBar thread={hoveredThread} />
+      </React.Fragment>
+    );
+  }
+
   if (selectedThread) {
     return (
       <React.Fragment>
@@ -57,14 +80,6 @@ export default function Home() {
     );
   }
 
-  const setSelectedEmail = async (email: IEmail) => {
-    await db.selectedEmail.put({
-      id: 1,
-      email: email.email,
-      provider: email.provider,
-    });
-  };
-
   return (
     <React.Fragment>
       <Sidebar />
@@ -73,10 +88,19 @@ export default function Home() {
           <h2 className="text-xl pl-8 font-light tracking-wide my-4 text-black dark:text-white">
             Important
           </h2>
-          <div className="relative">
+          <div className="flex">
+            <button
+              className="mr-3"
+              onClick={() => {
+                setWriteEmailMode(true);
+              }}
+            >
+              <PencilSquareIcon className="h-5 w-5 shrink-0 text-black dark:text-white" />
+            </button>
+
             <Menu>
               <Menu.Button>
-                <UserCircleIcon className="h-6 w-6 mr-3 shrink-0 text-black dark:text-white" />
+                <UserCircleIcon className="h-5 w-5 mr-3 shrink-0 text-black dark:text-white" />
               </Menu.Button>
               <Menu.Items className="absolute right-0 top-8">
                 {signedInEmails?.map((email) => (

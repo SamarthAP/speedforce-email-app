@@ -60,7 +60,6 @@ export default function Message({ message }: MessageProps) {
 
       if (error || !data) {
         console.log(error);
-        return;
       } else {
         await partialSync(selectedEmail.email, selectedEmail.provider);
         setShowReply(false);

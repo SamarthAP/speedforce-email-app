@@ -199,3 +199,50 @@ export const sendReply = async (
 
   return { data, error };
 };
+
+export const sendEmail = async (
+  accessToken: string,
+  from: string,
+  to: string,
+  subject: string,
+  messageContent: string
+) => {
+  let data: any | null = null; // TODO: define type
+  let error: string | null = null;
+
+  try {
+    const encodedReply = btoa(
+      'Content-Type: text/html; charset="UTF-8"\n' +
+        "MIME-Version: 1.0\n" +
+        "Content-Transfer-Encoding: 7bit\n" +
+        `Subject: ${subject}\n` +
+        `From: ${from}\n` +
+        `To: ${to}\n\n` +
+        messageContent
+    )
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    const response = await fetch(`${GMAIL_API_URL}/messages/send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        raw: encodedReply,
+      }),
+    });
+    if (!response.ok) {
+      error = "Error sending email";
+    } else {
+      data = await response.json();
+    }
+  } catch (e) {
+    console.log(e);
+    error = "Error sending email";
+  }
+
+  return { data, error };
+};
