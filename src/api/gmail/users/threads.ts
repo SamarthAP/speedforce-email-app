@@ -12,6 +12,7 @@ export const list = async (accessToken: string) => {
   let error: string | null = null;
 
   try {
+    // &q=from:hello@digest.producthunt.com for testing
     const res: Response = await fetch(
       `${GMAIL_API_URL}/threads?maxResults=20`,
       {

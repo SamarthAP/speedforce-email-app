@@ -12,6 +12,7 @@ export default function AssistBar({ thread }: IAssistBarProps) {
       <p className="text-sm text-slate-500 dark:text-zinc-400">
         {he.decode(thread?.snippet || "")}
       </p>
+      {/* <Calendar /> */}
     </div>
   );
 }

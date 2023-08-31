@@ -5,7 +5,7 @@ export function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-export function cleanHtmlString(htmlString: string, encoded: boolean = false) {
+export function cleanHtmlString(htmlString: string, encoded = false) {
   let decodedHTML = "";
   if (encoded) {
     decodedHTML = decodeGoogleMessageData(htmlString);

@@ -21,6 +21,17 @@ export default function ShadowDom({ htmlString }: ShadowDomProps) {
       doc.body.style.margin = "0";
       doc.body.style.padding = "0";
 
+      const links = doc.querySelectorAll("a");
+      links.forEach((link) => {
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          window.electron.ipcRenderer.sendMessage(
+            "open-link-in-browser",
+            link.href
+          );
+        });
+      });
+
       addQuoteToggleButton(doc);
 
       emailContainer.appendChild(doc.body);

@@ -17,6 +17,7 @@ import { getAccessToken } from "../api/accessToken";
 import { IEmailThread, IMessage, db } from "./db";
 import { getGoogleMessageHeader as getHeader } from "./util";
 import _ from "lodash";
+import { dLog } from "./noProd";
 
 async function handleNewThreadsGoogle(
   accessToken: string,
@@ -313,6 +314,7 @@ async function loadNextPageGoogle(email: string) {
   const metadata = await db.googleMetadata.get(email);
 
   if (!metadata) {
+    dLog("no metadata");
     return;
   }
 
@@ -322,6 +324,7 @@ async function loadNextPageGoogle(email: string) {
   );
 
   if (tList.error || !tList.data) {
+    dLog("error loading next page:", tList.error);
     return;
   }
 
