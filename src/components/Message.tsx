@@ -7,10 +7,8 @@ import { ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
 import EmailEditor, { EditorComponentRef } from "./EmailEditor";
 import { Editor } from "draft-js";
 import { stateToHTML } from "draft-js-export-html";
-import { getAccessToken } from "../api/accessToken";
-import { sendReply } from "../api/gmail/users/threads";
+import { partialSync, sendReply } from "../lib/sync";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
-import { partialSync } from "../lib/sync";
 
 interface MessageProps {
   message: IMessage;
@@ -34,29 +32,7 @@ export default function Message({ message }: MessageProps) {
       const context = editorState.getCurrentContent();
       const html = stateToHTML(context);
 
-      const accessToken = await getAccessToken(selectedEmail.email);
-
-      const from = selectedEmail.email;
-      const to =
-        getGoogleMessageHeader(message.headers, "From").match(
-          /<([^>]+)>/
-        )?.[1] || "";
-      const subject = getGoogleMessageHeader(message.headers, "Subject");
-      const headerMessageId = getGoogleMessageHeader(
-        message.headers,
-        "Message-ID"
-      );
-      const threadId = message.threadId;
-
-      const { data, error } = await sendReply(
-        accessToken,
-        from,
-        to,
-        subject,
-        headerMessageId,
-        threadId,
-        html
-      );
+      const { data, error } = await sendReply(selectedEmail.email, selectedEmail.provider, message, html);
 
       if (error || !data) {
         console.log(error);

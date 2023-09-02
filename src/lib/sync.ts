@@ -3,6 +3,7 @@ import {
   list as gThreadList,
   listNextPage as gThreadListNextPage,
   removeLabelIds,
+  sendReply as gSendReply,
 } from "../api/gmail/users/threads";
 import { list as gHistoryList } from "../api/gmail/users/history";
 
@@ -15,9 +16,11 @@ import {
 
 import { getAccessToken } from "../api/accessToken";
 import { IEmailThread, IMessage, db } from "./db";
-import { getGoogleMessageHeader as getHeader } from "./util";
+import { getGoogleMessageHeader } from "./util";
 import _ from "lodash";
 import { dLog } from "./noProd";
+import { IThreadFilter } from "../api/model/users.thread";
+import { ID_INBOX } from "../api/constants";
 
 async function handleNewThreadsGoogle(
   accessToken: string,
@@ -47,11 +50,12 @@ async function handleNewThreadsGoogle(
         id: thread.id,
         historyId: thread.historyId,
         email: email,
-        from: getHeader(thread.messages[0].payload.headers, "From"),
-        subject: getHeader(thread.messages[0].payload.headers, "Subject"),
+        from: getGoogleMessageHeader(thread.messages[0].payload.headers, "From"),
+        subject: getGoogleMessageHeader(thread.messages[0].payload.headers, "Subject"),
         snippet: thread.messages[lastMessageIndex].snippet || "", // this should be the latest message's snippet
         date: parseInt(thread.messages[lastMessageIndex].internalDate),
         unread: thread.messages[lastMessageIndex].labelIds.includes("UNREAD"),
+        folderId: "folderId",
       });
 
       thread.messages.forEach((message) => {
@@ -94,8 +98,8 @@ async function handleNewThreadsGoogle(
           id: message.id,
           threadId: message.threadId,
           labelIds: message.labelIds,
-          from: getHeader(message.payload.headers, "From"),
-          to: getHeader(message.payload.headers, "To"),
+          from: getGoogleMessageHeader(message.payload.headers, "From"),
+          to: getGoogleMessageHeader(message.payload.headers, "To"),
           snippet: message.snippet || "",
           headers: message.payload.headers,
           textData,
@@ -139,8 +143,13 @@ async function batchGetThreads(
       promises.push(mThreadGet(accessToken, threadId));
     }
 
-    const batchThreads = await Promise.all(promises);
-    threads.push(...batchThreads);
+    try {
+      const batchThreads = await Promise.all(promises);
+      threads.push(...batchThreads);
+    } catch(e) {
+      console.log("Error getting batch threads");
+      continue;
+    }
   }
 
   return threads;
@@ -149,12 +158,13 @@ async function batchGetThreads(
 async function handleNewThreadsOutlook(
   accessToken: string,
   email: string,
-  threadsIds: string[]
+  threadsIds: string[],
+  filter: IThreadFilter | null = null
 ) {
   // const promises = threadsIds.map((threadId) =>
 
   try {
-    // const threads = await Promise.all(promises);
+    // Outlook throttle limit is 4 concurrent requests
     const threads = await batchGetThreads(accessToken, threadsIds, 5);
 
     const parsedThreads: IEmailThread[] = [];
@@ -184,6 +194,7 @@ async function handleNewThreadsOutlook(
           thread.value[lastMessageIndex].receivedDateTime
         ).getTime(),
         unread: unread,
+        folderId: filter?.folderId || ID_INBOX,
       });
 
       thread.value.forEach((message) => {
@@ -248,11 +259,11 @@ async function fullSyncGoogle(email: string) {
   }
 }
 
-async function fullSyncOutlook(email: string) {
+async function fullSyncOutlook(email: string, filter: IThreadFilter | null = null) {
   const accessToken = await getAccessToken(email);
 
   // get a list of thread ids
-  const tList = await mThreadList(accessToken);
+  const tList = await mThreadList(accessToken, filter);
 
   if (tList.error || !tList.data) {
     // TODO: send error syncing mailbox
@@ -269,7 +280,7 @@ async function fullSyncOutlook(email: string) {
   );
 
   if (threadIds.length > 0) {
-    await handleNewThreadsOutlook(accessToken, email, threadIds);
+    await handleNewThreadsOutlook(accessToken, email, threadIds, filter);
   }
 }
 
@@ -343,33 +354,33 @@ async function loadNextPageGoogle(email: string) {
 // TODO: Investigate why next page token is sometimes malformed...
 // e.g. https://graph.microsoft.com/v1.0/me/messages?++++++++%24select=id%2cconversationId&++++++++%24top=20&%24top=20&%24skip=20
 async function loadNextPageOutlook(email: string) {
-  // const accessToken = await getAccessToken(email);
-  // const metadata = await db.outlookMetadata.get(email);
-  // if (!metadata || !metadata.threadsListNextPageToken) {
-  //   return;
-  // }
-  // const tList = await mThreadListNextPage(
-  //   accessToken,
-  //   metadata.threadsListNextPageToken
-  // );
-  // if (tList.error || !tList.data) {
-  //   return;
-  // }
-  // const nextPageToken = tList.data.nextPageToken;
-  // await db.outlookMetadata.update(email, {
-  //   threadsListNextPageToken: nextPageToken,
-  // });
-  // const threadIds = _.uniq(tList.data.value.map((thread) => thread.conversationId));
-  // if (threadIds.length > 0) {
-  //   await handleNewThreadsOutlook(accessToken, email, threadIds);
-  // }
+  const accessToken = await getAccessToken(email);
+  const metadata = await db.outlookMetadata.get(email);
+  if (!metadata || !metadata.threadsListNextPageToken) {
+    return;
+  }
+  const tList = await mThreadListNextPage(
+    accessToken,
+    metadata.threadsListNextPageToken
+  );
+  if (tList.error || !tList.data) {
+    return;
+  }
+  const nextPageToken = tList.data.nextPageToken;
+  await db.outlookMetadata.update(email, {
+    threadsListNextPageToken: nextPageToken,
+  });
+  const threadIds = _.uniq(tList.data.value.map((thread) => thread.conversationId));
+  if (threadIds.length > 0) {
+    await handleNewThreadsOutlook(accessToken, email, threadIds);
+  }
 }
 
-export async function fullSync(email: string, provider: "google" | "outlook") {
+export async function fullSync(email: string, provider: "google" | "outlook", filter: IThreadFilter | null = null) {
   if (provider === "google") {
     await fullSyncGoogle(email);
   } else if (provider === "outlook") {
-    await fullSyncOutlook(email);
+    await fullSyncOutlook(email, filter);
   }
 }
 
@@ -433,4 +444,41 @@ export async function markRead(
     await Promise.all(apiPromises);
     await db.emailThreads.update(threadId, { unread: false });
   }
+}
+
+export async function sendReply(
+  email: string,
+  provider: "google" | "outlook",
+  message: IMessage,
+  html: string
+) {
+  const accessToken = await getAccessToken(email);
+  if (provider === "google") {
+    const from = email;
+    const to =
+      getGoogleMessageHeader(message.headers, "From").match(
+        /<([^>]+)>/
+      )?.[1] || "";
+    const subject = getGoogleMessageHeader(message.headers, "Subject");
+    const headerMessageId = getGoogleMessageHeader(
+      message.headers,
+      "Message-ID"
+    );
+    const threadId = message.threadId;
+
+    return await gSendReply(
+      accessToken,
+      from,
+      to,
+      subject,
+      headerMessageId,
+      threadId,
+      html
+    );
+  } else if (provider === "outlook") {
+    return { data: null, error: "Not implemented" }
+  }
+
+  
+  return { data: null, error: "Not implemented" }
 }

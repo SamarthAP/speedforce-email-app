@@ -3,7 +3,11 @@ import { fullSync, partialSync } from "./sync";
 import { db } from "./db";
 import { useEffect, useRef, useState } from "react";
 
-const TestSyncButtons = () => {
+interface TestSyncButtonsProps {
+  folderId: string;
+}
+
+const TestSyncButtons = (props: TestSyncButtonsProps) => {
   const selectedEmail = useLiveQuery(() => {
     return db.selectedEmail.get(1);
   });
@@ -78,7 +82,7 @@ const TestSyncButtons = () => {
       <button
         type="button"
         className="bg-slate-400 dark:bg-zinc-700 rounded-md py-1 px-2 mr-2 text-white shadow-lg text-xs"
-        onClick={() => void fullSync(selectedEmail.email, selectedEmail.provider)}
+        onClick={() => void fullSync(selectedEmail.email, selectedEmail.provider, { folderId: props.folderId })}
       >
         Full Sync
       </button>

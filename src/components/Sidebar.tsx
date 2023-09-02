@@ -6,15 +6,17 @@ import {
   PaperAirplaneIcon,
   PlusIcon,
   ViewColumnsIcon,
+  TrashIcon
 } from "@heroicons/react/24/outline";
 
 import { useNavigate } from "react-router-dom";
 
 const navigation = [
-  { name: "Inbox", href: "#", icon: InboxIcon, current: true },
-  { name: "Drafts", href: "#", icon: ClipboardDocumentIcon, current: false },
-  { name: "Sent", href: "#", icon: PaperAirplaneIcon, current: false },
-  { name: "Spam", href: "#", icon: FireIcon, current: false },
+  { name: "Inbox", href: "/", icon: InboxIcon, current: false },
+  { name: "Drafts", href: "/drafts", icon: ClipboardDocumentIcon, current: false },
+  { name: "Sent", href: "/sent", icon: PaperAirplaneIcon, current: false },
+  { name: "Spam", href: "/spam", icon: FireIcon, current: false },
+  { name: "Deleted Items", href: "/deleted", icon: TrashIcon, current: false },
   { name: "Scheduled", href: "#", icon: ClockIcon, current: false },
   {
     name: "Add Account",

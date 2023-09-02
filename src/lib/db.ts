@@ -22,6 +22,7 @@ export interface IEmailThread {
   snippet: string;
   date: number;
   unread: boolean;
+  folderId: string;
 }
 
 export interface IMessage {

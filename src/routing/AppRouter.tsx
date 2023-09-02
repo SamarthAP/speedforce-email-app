@@ -1,5 +1,9 @@
 import { MemoryRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "../pages/Home";
+import SentItems from "../pages/SentItems";
+import Drafts from "../pages/Drafts";
+import Spam from "../pages/Spam";
+import DeletedItems from "../pages/DeletedItems";
 import AddAccount from "../pages/AddAccount";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../lib/db";
@@ -31,6 +35,30 @@ export default function AppRouter() {
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
               <Route index element={<Home />} />
+            </Route>
+            <Route
+              path="/sent"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<SentItems />} />
+            </Route>
+            <Route
+              path="/drafts"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<Drafts />} />
+            </Route>
+            <Route
+              path="/spam"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<Spam />} />
+            </Route>
+            <Route
+              path="/deleted"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<DeletedItems />} />
             </Route>
             <Route path="/page/addAccount" element={<AddAccount />} />
           </>

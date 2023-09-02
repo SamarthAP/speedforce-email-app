@@ -1,16 +1,19 @@
-import { OUTLOOK_API_URL } from "../constants";
-import { OutlookThreadsListDataType, GoogleThreadsGetDataType } from "../../model/users.thread";
+import { OUTLOOK_API_URL, getInboxName } from "../constants";
+import { OutlookThreadsListDataType, IThreadFilter } from "../../model/users.thread";
 
 // in endpoints that will not be called often, we can use the async/await syntax
-export const list = async (accessToken: string) => {
+export const list = async (accessToken: string, filter: IThreadFilter | null = null) => {
   let data: OutlookThreadsListDataType | null = null;
   let error: string | null = null;
 
   try {
+    let folderId = "";
+    if(filter && filter.folderId) {
+      folderId = `mailfolders/${getInboxName(filter.folderId)}`;
+    }
+
     const res: Response = await fetch(
-      `${OUTLOOK_API_URL}/messages?
-        $select=id,conversationId&
-        $top=20`,
+      `${OUTLOOK_API_URL}/${folderId}/messages?$select=id,conversationId&$top=20`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -69,9 +72,7 @@ export const listNextPage = async (
 // calling function can Promise.all() them or handle them in whatever way it wants
 export const get = async (accessToken: string, threadId: string) => {
   const response = await fetch(
-    `${OUTLOOK_API_URL}/messages?
-      $select=id,subject,bodyPreview,body,sender,toRecipients,from,receivedDateTime,isRead,conversationId&
-      $filter=conversationId eq '${threadId}'`,
+    `${OUTLOOK_API_URL}/messages?$select=id,subject,bodyPreview,body,sender,toRecipients,from,receivedDateTime,isRead,conversationId&$filter=conversationId eq '${threadId}'`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

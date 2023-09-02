@@ -105,3 +105,8 @@ export interface OutlookThreadsListDataType {
     }[];
   }[];
 }
+
+export interface IThreadFilter {
+  folderId: string;
+  // TODO: Add more email filters as needed
+}
