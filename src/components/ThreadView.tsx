@@ -7,8 +7,7 @@ import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { ThreadFeed } from "../components/ThreadFeed";
 import AssistBar from "../components/AssistBar";
 import { TestSyncButtons } from "../lib/experiments";
-import { UserCircleIcon, CheckIcon } from "@heroicons/react/24/outline";
-import { Menu } from "@headlessui/react";
+import AccountActionsMenu from "./AccountActionsMenu";
 import { fullSync } from "../lib/sync";
 
 interface ThreadViewProps {
@@ -22,6 +21,10 @@ export default function ThreadView(props: ThreadViewProps) {
   const [selectedThread, setSelectedThread] = useState<string>("");
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const renderCounter = useRef(0);
+  const MAX_RENDER_COUNT = 5;
+  renderCounter.current = renderCounter.current + 1;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -46,13 +49,20 @@ export default function ThreadView(props: ThreadViewProps) {
       .sortBy("date");
 
     return emailThreads;
-  }, [selectedEmail]);
+  }, [selectedEmail], []);
 
-  // useEffect(() => {
-  //   if(!threads){
-  //     fullSync(selectedEmail.email, selectedEmail.provider, { folderId: props.folderId })
-  //   }
-  // }, [selectedEmail, props.folderId]);
+  useEffect(() => {
+    // Do not fetch on first render in any scenario. Cap the number of renders to prevent infinite loops on empty folders
+    if(renderCounter.current > 1 && renderCounter.current < MAX_RENDER_COUNT) {
+
+      // If there are no threads in the db, do a full sync
+      // TODO: Do a partial sync periodically to check for new threads (when not empty)
+      if(threads?.length === 0) {
+        void fullSync(selectedEmail.email, selectedEmail.provider, { folderId: props.folderId });
+      }
+    }
+
+  }, [threads]);
 
 
   const signedInEmails = useLiveQuery(() => {
@@ -87,31 +97,11 @@ export default function ThreadView(props: ThreadViewProps) {
           <h2 className="text-xl pl-8 font-light tracking-wide my-4 text-black dark:text-white">
             {props.title}
           </h2>
-          <div className="relative">
-            <Menu>
-              <Menu.Button>
-                <UserCircleIcon className="h-6 w-6 mr-3 shrink-0 text-black dark:text-white" />
-              </Menu.Button>
-              <Menu.Items className="absolute right-0 top-8">
-                {signedInEmails?.map((email) => (
-                  <Menu.Item key={email.email}>
-                    {({ active }) => (
-                      <div
-                        className="px-3 py-2 bg-gray-300 hover:bg-gray-400 flex flex-row justify-between items-center"
-                        key={email.email}
-                        onClick={() => void setSelectedEmail(email)}
-                      >
-                        <div className="text-md">{email.email}</div>
-                        {email.email === selectedEmail.email && (
-                          <CheckIcon className="h-4 w-4 shrink-0 text-black" />
-                        )}
-                      </div>
-                    )}
-                  </Menu.Item>
-                ))}
-              </Menu.Items>
-            </Menu>
-          </div>
+          <AccountActionsMenu 
+            signedInEmails={signedInEmails} 
+            selectedEmail={selectedEmail} 
+            setSelectedEmail={setSelectedEmail} 
+          />
         </div>
         <TestSyncButtons folderId={props.folderId}/>
         <ThreadList
