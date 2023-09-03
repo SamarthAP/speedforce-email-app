@@ -40,30 +40,37 @@ export default function ThreadView(props: ThreadViewProps) {
     }
   }, [selectedThread, scrollPosition]);
 
-  const threads = useLiveQuery(() => {
-    const emailThreads = db.emailThreads
-      .where("email")
-      .equals(selectedEmail.email)
-      .and((thread) => thread.folderId === props.folderId || selectedEmail.provider === "google")
-      .reverse()
-      .sortBy("date");
+  const threads = useLiveQuery(
+    () => {
+      const emailThreads = db.emailThreads
+        .where("email")
+        .equals(selectedEmail.email)
+        .and(
+          (thread) =>
+            thread.folderId === props.folderId ||
+            selectedEmail.provider === "google"
+        )
+        .reverse()
+        .sortBy("date");
 
-    return emailThreads;
-  }, [selectedEmail], []);
+      return emailThreads;
+    },
+    [selectedEmail],
+    []
+  );
 
   useEffect(() => {
     // Do not fetch on first render in any scenario. Cap the number of renders to prevent infinite loops on empty folders
-    if(renderCounter.current > 1 && renderCounter.current < MAX_RENDER_COUNT) {
-
+    if (renderCounter.current > 1 && renderCounter.current < MAX_RENDER_COUNT) {
       // If there are no threads in the db, do a full sync
       // TODO: Do a partial sync periodically to check for new threads (when not empty)
-      if(threads?.length === 0) {
-        void fullSync(selectedEmail.email, selectedEmail.provider, { folderId: props.folderId });
+      if (threads?.length === 0) {
+        void fullSync(selectedEmail.email, selectedEmail.provider, {
+          folderId: props.folderId,
+        });
       }
     }
-
-  }, [threads]);
-
+  }, [props.folderId, selectedEmail.email, selectedEmail.provider, threads]);
 
   const signedInEmails = useLiveQuery(() => {
     return db.emails.orderBy("email").toArray();
@@ -76,7 +83,10 @@ export default function ThreadView(props: ThreadViewProps) {
           selectedThread={selectedThread}
           setSelectedThread={setSelectedThread}
         />
-        <AssistBar thread={hoveredThread} />
+        <AssistBar
+          thread={hoveredThread} // NOTE: since this is hovered thread, when you switch current thread from AssistBar, it won't update the past emails list
+          setSelectedThread={setSelectedThread}
+        />
       </React.Fragment>
     );
   }
@@ -97,13 +107,13 @@ export default function ThreadView(props: ThreadViewProps) {
           <h2 className="text-xl pl-8 font-light tracking-wide my-4 text-black dark:text-white">
             {props.title}
           </h2>
-          <AccountActionsMenu 
-            signedInEmails={signedInEmails} 
-            selectedEmail={selectedEmail} 
-            setSelectedEmail={setSelectedEmail} 
+          <AccountActionsMenu
+            signedInEmails={signedInEmails}
+            selectedEmail={selectedEmail}
+            setSelectedEmail={setSelectedEmail}
           />
         </div>
-        <TestSyncButtons folderId={props.folderId}/>
+        <TestSyncButtons folderId={props.folderId} />
         <ThreadList
           selectedEmail={selectedEmail}
           threads={threads}
@@ -113,7 +123,7 @@ export default function ThreadView(props: ThreadViewProps) {
           scrollRef={scrollRef}
         />
       </div>
-      <AssistBar thread={hoveredThread} />
+      <AssistBar thread={hoveredThread} setSelectedThread={setSelectedThread} />
     </React.Fragment>
   );
 }
