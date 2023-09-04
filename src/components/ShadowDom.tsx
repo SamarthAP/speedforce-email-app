@@ -30,6 +30,10 @@ export default function ShadowDom({ htmlString }: ShadowDomProps) {
             link.href
           );
         });
+        // if no style color is set, set it to blue
+        if (!link.style.color) {
+          link.style.color = "#2563eb"; // text-blue-500
+        }
       });
 
       addQuoteToggleButton(doc);

@@ -151,7 +151,7 @@ export default function ThreadList({
                 </div>
                 <div className="col-span-8 grid grid-cols-10">
                   <div className="text-sm truncate pr-4 col-span-2 text-black dark:text-zinc-100">
-                    {thread.subject}
+                    {thread.subject || "(no subject)"}
                   </div>
                   <div className="col-span-8 flex">
                     <div className="text-sm truncate text-slate-400 dark:text-zinc-500 w-full">

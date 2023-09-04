@@ -9,6 +9,7 @@ import { Editor } from "draft-js";
 import { stateToHTML } from "draft-js-export-html";
 import { partialSync, sendReply } from "../lib/sync";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
+import SimpleButton from "./SimpleButton";
 
 interface MessageProps {
   message: IMessage;
@@ -33,7 +34,12 @@ export default function Message({ message, folderId }: MessageProps) {
       const context = editorState.getCurrentContent();
       const html = stateToHTML(context);
 
-      const { data, error } = await sendReply(selectedEmail.email, selectedEmail.provider, message, html);
+      const { data, error } = await sendReply(
+        selectedEmail.email,
+        selectedEmail.provider,
+        message,
+        html
+      );
 
       if (error || !data) {
         console.log(error);
@@ -103,13 +109,12 @@ export default function Message({ message, folderId }: MessageProps) {
             Write a reply
           </div>
           <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
-          <button
+          <SimpleButton
             onClick={() => void handleSendReply()}
-            disabled={sendingReply}
-            className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
-          >
-            Send
-          </button>
+            loading={sendingReply}
+            text="Send"
+            width="w-16"
+          />
         </div>
       )}
     </div>

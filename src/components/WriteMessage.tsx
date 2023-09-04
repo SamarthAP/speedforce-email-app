@@ -5,6 +5,7 @@ import { stateToHTML } from "draft-js-export-html";
 import { getAccessToken } from "../api/accessToken";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { sendEmail } from "../api/gmail/users/threads";
+import SimpleButton from "./SimpleButton";
 
 interface WriteMessageProps {
   setWriteEmailMode: (writeEmailMode: boolean) => void;
@@ -22,7 +23,6 @@ export function WriteMessage({ setWriteEmailMode }: WriteMessageProps) {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setWriteEmailMode(false);
-        console.log("Escape key pressed");
       }
     };
 
@@ -103,13 +103,12 @@ export function WriteMessage({ setWriteEmailMode }: WriteMessageProps) {
           </div>
         </div>
         <div className="text-right">
-          <button
+          <SimpleButton
             onClick={() => void handleSendEmail()}
-            disabled={sendingEmail}
-            className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
-          >
-            Send
-          </button>
+            loading={sendingEmail}
+            text="Send"
+            width="w-16"
+          />
         </div>
       </div>
     </div>

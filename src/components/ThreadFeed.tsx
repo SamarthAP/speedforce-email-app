@@ -8,7 +8,11 @@ interface ThreadFeedProps {
   setSelectedThread: (threadId: string) => void;
   folderId: string;
 }
-
+// TODO: this component is intentionally called ThreadFeed,
+// because in the future, when threads are marked as "done",
+// the next thread will show up in place of the current thread,
+// acting as a feed. Users will also be able to move up and down
+// between threads to switch between them, like a feed.
 export function ThreadFeed({
   selectedThread,
   setSelectedThread,
@@ -16,11 +20,11 @@ export function ThreadFeed({
 }: ThreadFeedProps) {
   const messages = useLiveQuery(() => {
     return db.messages.where("threadId").equals(selectedThread).sortBy("date");
-  });
+  }, [selectedThread]);
 
   const thread = useLiveQuery(() => {
     return db.emailThreads.get(selectedThread);
-  });
+  }, [selectedThread]);
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
