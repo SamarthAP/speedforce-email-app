@@ -40,6 +40,7 @@ interface ThreadListProps {
   setHoveredThread: (thread: IEmailThread | null) => void;
   setScrollPosition: (position: number) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
+  folderId: string;
 }
 
 export default function ThreadList({
@@ -49,6 +50,7 @@ export default function ThreadList({
   setHoveredThread,
   setScrollPosition,
   scrollRef,
+  folderId,
 }: ThreadListProps) {
   const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -59,7 +61,7 @@ export default function ThreadList({
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          void loadNextPage(selectedEmail.email, selectedEmail.provider);
+          void loadNextPage(selectedEmail.email, selectedEmail.provider, { folderId: folderId });
         }
       },
       { root: null, rootMargin: "0px", threshold: 1 }

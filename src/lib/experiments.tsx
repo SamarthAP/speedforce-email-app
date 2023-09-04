@@ -75,7 +75,7 @@ const TestSyncButtons = (props: TestSyncButtonsProps) => {
       <button
         type="button"
         className="bg-slate-400 dark:bg-zinc-700 rounded-md py-1 px-2 mr-2 text-white shadow-lg text-xs"
-        onClick={() => void partialSync(selectedEmail.email, selectedEmail.provider)}
+        onClick={() => void partialSync(selectedEmail.email, selectedEmail.provider, { folderId: props.folderId })}
       >
         Partial Sync (Gmail only)
       </button>

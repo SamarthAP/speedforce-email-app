@@ -2,7 +2,6 @@ import { ID_INBOX, ID_SENT, ID_DRAFTS, ID_TRASH, ID_SPAM, ID_STARRED } from "../
 
 export const OUTLOOK_API_URL = "https://graph.microsoft.com/v1.0/me";
 
-// Inbox Names
 export const getInboxName = (folderId: string) => {
   switch (folderId) {
     case ID_INBOX:

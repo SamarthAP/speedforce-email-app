@@ -16,16 +16,17 @@ import {
 
 import { getAccessToken } from "../api/accessToken";
 import { IEmailThread, IMessage, db } from "./db";
+import { getGoogleMetaData, getOutlookMetaData, setPageToken, setHistoryId } from "./dexieHelpers";
 import { getGoogleMessageHeader } from "./util";
 import _ from "lodash";
 import { dLog } from "./noProd";
 import { IThreadFilter } from "../api/model/users.thread";
-import { ID_INBOX } from "../api/constants";
 
 async function handleNewThreadsGoogle(
   accessToken: string,
   email: string,
-  threadIds: string[]
+  threadIds: string[],
+  filter: IThreadFilter
 ) {
   let maxHistoryId = 0;
 
@@ -55,7 +56,7 @@ async function handleNewThreadsGoogle(
         snippet: thread.messages[lastMessageIndex].snippet || "", // this should be the latest message's snippet
         date: parseInt(thread.messages[lastMessageIndex].internalDate),
         unread: thread.messages[lastMessageIndex].labelIds.includes("UNREAD"),
-        folderId: "folderId",
+        folderId: filter.folderId,
       });
 
       thread.messages.forEach((message) => {
@@ -109,14 +110,7 @@ async function handleNewThreadsGoogle(
       });
     });
 
-    await db.googleMetadata
-      .where("email")
-      .equals(email)
-      .modify((row) => {
-        if (parseInt(row.historyId) < maxHistoryId) {
-          row.historyId = maxHistoryId.toString();
-        }
-      });
+    setHistoryId(email, "google", filter.folderId, maxHistoryId);
 
     // save threads
     await db.emailThreads.bulkPut(parsedThreads);
@@ -159,13 +153,13 @@ async function handleNewThreadsOutlook(
   accessToken: string,
   email: string,
   threadsIds: string[],
-  filter: IThreadFilter | null = null
+  filter: IThreadFilter
 ) {
   // const promises = threadsIds.map((threadId) =>
 
   try {
     // Outlook throttle limit is 4 concurrent requests
-    const threads = await batchGetThreads(accessToken, threadsIds, 5);
+    const threads = await batchGetThreads(accessToken, threadsIds, 4);
 
     const parsedThreads: IEmailThread[] = [];
     const parsedMessages: IMessage[] = [];
@@ -194,7 +188,7 @@ async function handleNewThreadsOutlook(
           thread.value[lastMessageIndex].receivedDateTime
         ).getTime(),
         unread: unread,
-        folderId: filter?.folderId || ID_INBOX,
+        folderId: filter.folderId,
       });
 
       thread.value.forEach((message) => {
@@ -236,11 +230,11 @@ async function handleNewThreadsOutlook(
   }
 }
 
-async function fullSyncGoogle(email: string) {
+async function fullSyncGoogle(email: string, filter: IThreadFilter) {
   const accessToken = await getAccessToken(email);
 
   // get a list of thread ids
-  const tList = await gThreadList(accessToken);
+  const tList = await gThreadList(accessToken, filter);
 
   if (tList.error || !tList.data) {
     // TODO: send error syncing mailbox
@@ -248,18 +242,18 @@ async function fullSyncGoogle(email: string) {
   }
 
   const nextPageToken = tList.data.nextPageToken;
-  await db.googleMetadata.update(email, {
-    threadsListNextPageToken: nextPageToken,
-  });
+  setPageToken(email, "google", filter.folderId, nextPageToken);
 
-  const threadIds = tList.data.threads.map((thread) => thread.id);
+  const threadIds = tList.data.threads ? 
+    tList.data.threads.map((thread) => thread.id) :
+    [];
 
   if (threadIds.length > 0) {
-    await handleNewThreadsGoogle(accessToken, email, threadIds);
+    await handleNewThreadsGoogle(accessToken, email, threadIds, filter);
   }
 }
 
-async function fullSyncOutlook(email: string, filter: IThreadFilter | null = null) {
+async function fullSyncOutlook(email: string, filter: IThreadFilter) {
   const accessToken = await getAccessToken(email);
 
   // get a list of thread ids
@@ -270,10 +264,8 @@ async function fullSyncOutlook(email: string, filter: IThreadFilter | null = nul
     return;
   }
 
-  const nextPageToken = tList.data.nextPageToken;
-  await db.outlookMetadata.update(email, {
-    threadsListNextPageToken: nextPageToken,
-  });
+  const nextPageToken = tList.data.nextPageToken;  
+  setPageToken(email, "outlook", filter.folderId, nextPageToken);
 
   const threadIds = _.uniq(
     tList.data.value.map((thread) => thread.conversationId)
@@ -284,9 +276,9 @@ async function fullSyncOutlook(email: string, filter: IThreadFilter | null = nul
   }
 }
 
-async function partialSyncGoogle(email: string) {
+async function partialSyncGoogle(email: string, filter: IThreadFilter) {
   const accessToken = await getAccessToken(email);
-  const metadata = await db.googleMetadata.get(email);
+  const metadata = await getGoogleMetaData(email, filter.folderId);
 
   if (!metadata) {
     console.log("no metadata");
@@ -311,18 +303,18 @@ async function partialSyncGoogle(email: string) {
   });
 
   if (newThreadIds.size > 0) {
-    await handleNewThreadsGoogle(accessToken, email, Array.from(newThreadIds));
+    await handleNewThreadsGoogle(accessToken, email, Array.from(newThreadIds), filter);
   }
 }
 
-async function partialSyncOutlook(_email: string) {
+async function partialSyncOutlook(_email: string, _filter: IThreadFilter) {
   // TODO: research and implement partial sync for outlook
   // Delta tokens not applicable for mail, only calendar
 }
 
-async function loadNextPageGoogle(email: string) {
+async function loadNextPageGoogle(email: string, filter: IThreadFilter) {
   const accessToken = await getAccessToken(email);
-  const metadata = await db.googleMetadata.get(email);
+  const metadata = await getGoogleMetaData(email, filter.folderId);
 
   if (!metadata) {
     dLog("no metadata");
@@ -331,7 +323,7 @@ async function loadNextPageGoogle(email: string) {
 
   const tList = await gThreadListNextPage(
     accessToken,
-    metadata.threadsListNextPageToken
+    metadata.token
   );
 
   if (tList.error || !tList.data) {
@@ -340,45 +332,51 @@ async function loadNextPageGoogle(email: string) {
   }
 
   const nextPageToken = tList.data.nextPageToken;
-  await db.googleMetadata.update(email, {
-    threadsListNextPageToken: nextPageToken,
-  });
+  setPageToken(email, "google", filter.folderId, nextPageToken);
 
   const threadIds = tList.data.threads.map((thread) => thread.id);
 
   if (threadIds.length > 0) {
-    await handleNewThreadsGoogle(accessToken, email, threadIds);
+    await handleNewThreadsGoogle(accessToken, email, threadIds, filter);
   }
 }
 
-// TODO: Investigate why next page token is sometimes malformed...
-// e.g. https://graph.microsoft.com/v1.0/me/messages?++++++++%24select=id%2cconversationId&++++++++%24top=20&%24top=20&%24skip=20
-async function loadNextPageOutlook(email: string) {
+async function loadNextPageOutlook(email: string, filter: IThreadFilter) {
   const accessToken = await getAccessToken(email);
-  const metadata = await db.outlookMetadata.get(email);
-  if (!metadata || !metadata.threadsListNextPageToken) {
+
+  const metadata = await getOutlookMetaData(email, filter.folderId);
+  const nextPageToken = metadata?.token;
+  if(!nextPageToken) {
+    dLog("no page token");
     return;
   }
+
   const tList = await mThreadListNextPage(
     accessToken,
-    metadata.threadsListNextPageToken
+    nextPageToken
   );
+  
   if (tList.error || !tList.data) {
+    dLog("error loading next page:", tList.error);
     return;
   }
-  const nextPageToken = tList.data.nextPageToken;
-  await db.outlookMetadata.update(email, {
-    threadsListNextPageToken: nextPageToken,
-  });
+  
+  const newNextPageToken = tList.data.nextPageToken;
+  await setPageToken(email, "outlook", filter.folderId, newNextPageToken);
+
   const threadIds = _.uniq(tList.data.value.map((thread) => thread.conversationId));
   if (threadIds.length > 0) {
-    await handleNewThreadsOutlook(accessToken, email, threadIds);
+    await handleNewThreadsOutlook(accessToken, email, threadIds, filter);
   }
 }
 
-export async function fullSync(email: string, provider: "google" | "outlook", filter: IThreadFilter | null = null) {
+export async function fullSync(
+  email: string, 
+  provider: "google" | "outlook", 
+  filter: IThreadFilter
+) {
   if (provider === "google") {
-    await fullSyncGoogle(email);
+    await fullSyncGoogle(email, filter);
   } else if (provider === "outlook") {
     await fullSyncOutlook(email, filter);
   }
@@ -386,23 +384,25 @@ export async function fullSync(email: string, provider: "google" | "outlook", fi
 
 export async function partialSync(
   email: string,
-  provider: "google" | "outlook"
+  provider: "google" | "outlook",
+  filter: IThreadFilter
 ) {
   if (provider === "google") {
-    await partialSyncGoogle(email);
+    await partialSyncGoogle(email, filter);
   } else if (provider === "outlook") {
-    await partialSyncOutlook(email);
+    await partialSyncOutlook(email, filter);
   }
 }
 
 export async function loadNextPage(
   email: string,
-  provider: "google" | "outlook"
+  provider: "google" | "outlook",
+  filter: IThreadFilter
 ) {
   if (provider === "google") {
-    await loadNextPageGoogle(email);
+    await loadNextPageGoogle(email, filter);
   } else if (provider === "outlook") {
-    await loadNextPageOutlook(email);
+    await loadNextPageOutlook(email, filter);
   }
 }
 

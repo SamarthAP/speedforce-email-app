@@ -1,20 +1,34 @@
-import { GMAIL_API_URL } from "../constants";
+import { GMAIL_API_URL, getInboxName } from "../constants";
+import { ID_SPAM, ID_TRASH } from "../../constants";
 import {
   GoogleThreadsListDataType,
   GoogleThreadsGetDataType,
   GoogleThreadsModifyDataType,
+  IThreadFilter,
 } from "../../model/users.thread";
 import { Base64 } from "js-base64";
 
 // in endpoints that will not be called often, we can use the async/await syntax
-export const list = async (accessToken: string) => {
+export const list = async (
+  accessToken: string, 
+  filter: IThreadFilter | null = null
+) => {
   let data: GoogleThreadsListDataType | null = null;
   let error: string | null = null;
 
   try {
+    let folderQuery = "";
+    if(filter && filter.folderId) {
+      folderQuery = `&labelIds=${getInboxName(filter.folderId)}`;
+
+      if([ID_SPAM, ID_TRASH].includes(filter.folderId)) {
+        folderQuery += `&includeSpamTrash=true`;
+      }
+    }
+
     // &q=from:hello@digest.producthunt.com for testing
     const res: Response = await fetch(
-      `${GMAIL_API_URL}/threads?maxResults=20`,
+      `${GMAIL_API_URL}/threads?maxResults=20${folderQuery}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -37,7 +51,8 @@ export const list = async (accessToken: string) => {
 
 export const listNextPage = async (
   accessToken: string,
-  nextPageToken: string
+  nextPageToken: string,
+  filter: IThreadFilter | null = null
 ) => {
   let data: GoogleThreadsListDataType | null = null;
   let error: string | null = null;

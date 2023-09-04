@@ -44,13 +44,19 @@ export interface IMessage {
 
 export interface IGoogleMetadata {
   email: string;
-  historyId: string;
-  threadsListNextPageToken: string;
+  threadsListNextPageTokens: {
+    folderId: string;
+    historyId: string;
+    token: string;
+  }[];
 }
 
 export interface IOutlookMetadata {
   email: string;
-  threadsListNextPageToken: string;
+  threadsListNextPageTokens: {
+    folderId: string;
+    token: string;
+  }[];
 }
 
 export class SubClassedDexie extends Dexie {
@@ -68,8 +74,8 @@ export class SubClassedDexie extends Dexie {
       selectedEmail: "id, email, provider",
       emailThreads:
         "id, historyId, email, from, subject, snippet, date, unread",
-      googleMetadata: "email, historyId, threadsListNextPageToken",
-      outlookMetadata: "email, threadsListNextPageToken",
+      googleMetadata: "email, threadsListNextPageTokens",
+      outlookMetadata: "email, threadsListNextPageTokens",
       messages:
         "id, threadId, labelIds, from, to, snippet, headers, textData, htmlData, date",
     });

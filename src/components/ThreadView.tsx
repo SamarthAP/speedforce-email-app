@@ -44,7 +44,7 @@ export default function ThreadView(props: ThreadViewProps) {
     const emailThreads = db.emailThreads
       .where("email")
       .equals(selectedEmail.email)
-      .and((thread) => thread.folderId === props.folderId || selectedEmail.provider === "google")
+      .and((thread) => thread.folderId === props.folderId)
       .reverse()
       .sortBy("date");
 
@@ -75,6 +75,7 @@ export default function ThreadView(props: ThreadViewProps) {
         <ThreadFeed
           selectedThread={selectedThread}
           setSelectedThread={setSelectedThread}
+          folderId={props.folderId}
         />
         <AssistBar thread={hoveredThread} />
       </React.Fragment>
@@ -111,6 +112,7 @@ export default function ThreadView(props: ThreadViewProps) {
           setHoveredThread={setHoveredThread}
           setScrollPosition={setScrollPosition}
           scrollRef={scrollRef}
+          folderId={props.folderId}
         />
       </div>
       <AssistBar thread={hoveredThread} />

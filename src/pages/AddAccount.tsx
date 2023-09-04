@@ -36,8 +36,7 @@ const manualInsertEmail = async () => {
 
   await db.googleMetadata.put({
     email: "samarth@sigilinnovation.com",
-    historyId: "0",
-    threadsListNextPageToken: "",
+    threadsListNextPageTokens: [],
   });
 };
 
@@ -103,13 +102,12 @@ export default function AddAccount() {
             if (data.provider === "google") {
               await db.googleMetadata.put({
                 email: data.email,
-                historyId: "0",
-                threadsListNextPageToken: "",
+                threadsListNextPageTokens: [],
               });
             } else {
               await db.outlookMetadata.put({
                 email: data.email,
-                threadsListNextPageToken: "",
+                threadsListNextPageTokens: [],
               });
             }
           }

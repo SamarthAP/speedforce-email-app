@@ -13,9 +13,10 @@ import { useEmailPageOutletContext } from "../pages/_emailPage";
 interface MessageProps {
   message: IMessage;
   key: string;
+  folderId: string;
 }
 
-export default function Message({ message }: MessageProps) {
+export default function Message({ message, folderId }: MessageProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   const [showBody, setShowBody] = useState(true);
   const [showReply, setShowReply] = useState(false);
@@ -37,7 +38,7 @@ export default function Message({ message }: MessageProps) {
       if (error || !data) {
         console.log(error);
       } else {
-        await partialSync(selectedEmail.email, selectedEmail.provider);
+        await partialSync(selectedEmail.email, selectedEmail.provider, { folderId: folderId });
         setShowReply(false);
       }
     }

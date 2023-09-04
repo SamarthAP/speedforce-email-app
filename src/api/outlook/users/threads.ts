@@ -2,7 +2,10 @@ import { OUTLOOK_API_URL, getInboxName } from "../constants";
 import { OutlookThreadsListDataType, IThreadFilter } from "../../model/users.thread";
 
 // in endpoints that will not be called often, we can use the async/await syntax
-export const list = async (accessToken: string, filter: IThreadFilter | null = null) => {
+export const list = async (
+  accessToken: string, 
+  filter: IThreadFilter | null = null,
+) => {
   let data: OutlookThreadsListDataType | null = null;
   let error: string | null = null;
 
@@ -40,10 +43,15 @@ export const list = async (accessToken: string, filter: IThreadFilter | null = n
 
 export const listNextPage = async (
   accessToken: string,
-  nextPageToken: string
+  nextPageToken: string,
 ) => {
   let data: OutlookThreadsListDataType | null = null;
   let error: string | null = null;
+
+  if(!nextPageToken){
+    error = "Page token not provided";
+    return { data, error };
+  }
 
   try {
     const res: Response = await fetch(
@@ -58,7 +66,11 @@ export const listNextPage = async (
     if (!res.ok) {
       error = "Error fetching threads";
     } else {
-      data = await res.json();
+      let resData = await res.json();
+      data = {
+        nextPageToken: resData["@odata.nextLink"],
+        value: resData.value
+      }
     }
   } catch (e) {
     console.log(e);
