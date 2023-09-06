@@ -9,6 +9,10 @@ import AssistBar from "../components/AssistBar";
 import { TestSyncButtons } from "../lib/experiments";
 import AccountActionsMenu from "./AccountActionsMenu";
 import { fullSync } from "../lib/sync";
+import {
+  PencilSquareIcon,
+} from "@heroicons/react/24/outline";
+import { WriteMessage } from "../components/WriteMessage";
 
 interface ThreadViewProps {
   folderId: string;
@@ -20,6 +24,7 @@ export default function ThreadView(props: ThreadViewProps) {
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
   const [selectedThread, setSelectedThread] = useState<string>("");
   const [scrollPosition, setScrollPosition] = useState<number>(0);
+  const [writeEmailMode, setWriteEmailMode] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const renderCounter = useRef(0);
@@ -72,6 +77,15 @@ export default function ThreadView(props: ThreadViewProps) {
     return db.emails.orderBy("email").toArray();
   });
 
+  if (writeEmailMode) {
+    return (
+      <React.Fragment>
+        <WriteMessage setWriteEmailMode={setWriteEmailMode} />
+        <AssistBar thread={hoveredThread} setSelectedThread={setSelectedThread}/>
+      </React.Fragment>
+    );
+  }
+
   if (selectedThread) {
     return (
       <React.Fragment>
@@ -104,11 +118,21 @@ export default function ThreadView(props: ThreadViewProps) {
           <h2 className="text-xl pl-8 font-light tracking-wide my-4 text-black dark:text-white">
             {props.title}
           </h2>
-          <AccountActionsMenu
-            signedInEmails={signedInEmails}
-            selectedEmail={selectedEmail}
-            setSelectedEmail={setSelectedEmail}
-          />
+          <div className="flex items-center">
+            <button
+              className="mr-3"
+              onClick={() => {
+                setWriteEmailMode(true);
+              }}
+            >
+              <PencilSquareIcon className="h-5 w-5 mb-2 shrink-0 text-black dark:text-white" />
+            </button>
+            <AccountActionsMenu
+              signedInEmails={signedInEmails}
+              selectedEmail={selectedEmail}
+              setSelectedEmail={setSelectedEmail}
+            />
+          </div>
         </div>
         <TestSyncButtons folderId={props.folderId} />
         <ThreadList
