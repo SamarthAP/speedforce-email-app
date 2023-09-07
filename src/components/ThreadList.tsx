@@ -2,7 +2,9 @@ import UnreadDot from "./UnreadDot";
 import { IEmailThread, ISelectedEmail } from "../lib/db";
 import he from "he";
 import { useEffect, useRef } from "react";
-import { loadNextPage, markRead } from "../lib/sync";
+import { loadNextPage, markRead, starThread, unstarThread } from "../lib/sync";
+import { StarIcon as StarIconSolid } from "@heroicons/react/20/solid";
+import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -61,7 +63,9 @@ export default function ThreadList({
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          void loadNextPage(selectedEmail.email, selectedEmail.provider, { folderId: folderId });
+          void loadNextPage(selectedEmail.email, selectedEmail.provider, {
+            folderId: folderId,
+          });
         }
       },
       { root: null, rootMargin: "0px", threshold: 1 }
@@ -78,7 +82,25 @@ export default function ThreadList({
         observer.unobserve(target);
       }
     };
-  }, [observerTarget, threads, selectedEmail.email, selectedEmail.provider]);
+  }, [
+    observerTarget,
+    threads,
+    selectedEmail.email,
+    selectedEmail.provider,
+    folderId,
+  ]);
+
+  async function handleStarClick(thread: IEmailThread) {
+    if (thread.starred) {
+      await unstarThread(
+        selectedEmail.email,
+        selectedEmail.provider,
+        thread.id
+      );
+    } else {
+      await starThread(selectedEmail.email, selectedEmail.provider, thread.id);
+    }
+  }
 
   return (
     <div ref={scrollRef} className="h-full overflow-y-scroll">
@@ -86,18 +108,18 @@ export default function ThreadList({
         {threads?.map((thread, index) => {
           return (
             <div
-              onClick={() => {
-                setScrollPosition(scrollRef.current?.scrollTop || 0);
-                setSelectedThread(thread.id);
-                if (thread.unread) {
-                  void markRead(
-                    selectedEmail.email,
-                    selectedEmail.provider,
-                    thread.id
-                  );
-                }
-              }}
-              onMouseOver={() => setHoveredThread(thread)}
+              // onClick={() => {
+              //   setScrollPosition(scrollRef.current?.scrollTop || 0);
+              //   setSelectedThread(thread.id);
+              //   if (thread.unread) {
+              //     void markRead(
+              //       selectedEmail.email,
+              //       selectedEmail.provider,
+              //       thread.id
+              //     );
+              //   }
+              // }}
+              // onMouseOver={() => setHoveredThread(thread)}
               key={index}
             >
               {index === 0 && isToday(new Date(thread.date)) ? (
@@ -135,8 +157,47 @@ export default function ThreadList({
                 </div>
               ) : null}
 
-              <div className="grid grid-cols-10 py-1 pl-8 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-default">
-                <div className="text-sm flex items-center font-medium pr-4 col-span-2">
+              <div
+                onClick={() => {
+                  setScrollPosition(scrollRef.current?.scrollTop || 0);
+                  setSelectedThread(thread.id);
+                  if (thread.unread) {
+                    void markRead(
+                      selectedEmail.email,
+                      selectedEmail.provider,
+                      thread.id
+                    );
+                  }
+                }}
+                onMouseOver={() => setHoveredThread(thread)}
+                className="grid grid-cols-10 py-1 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-default group"
+              >
+                <div className="text-sm flex items-center font-medium pr-4 col-span-2 group">
+                  <div className="group flex flex-col items-center justify-center px-2">
+                    {thread.starred ? (
+                      <button
+                        onClick={(
+                          event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+                        ) => {
+                          event.stopPropagation();
+                          void handleStarClick(thread);
+                        }}
+                      >
+                        <StarIconSolid className="w-4 h-4 text-yellow-400" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(
+                          event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+                        ) => {
+                          event.stopPropagation();
+                          void handleStarClick(thread);
+                        }}
+                      >
+                        <StarIconOutline className="w-4 h-4 text-slate-400 dark:text-zinc-500 opacity-0 group-hover:opacity-100" />
+                      </button>
+                    )}
+                  </div>
                   <div className="pr-2">
                     {thread.unread ? (
                       <UnreadDot />

@@ -1,5 +1,7 @@
 import { db } from "../lib/db";
+import { runNotProd } from "../lib/noProd";
 import { refreshAccessToken } from "./auth";
+import toast from "react-hot-toast";
 
 export const getAccessToken = async (email: string) => {
   const emailInfo = await db.emails.get({ email });
@@ -22,6 +24,12 @@ export const getAccessToken = async (email: string) => {
     );
 
     if (error || !data) {
+      runNotProd(() => {
+        toast("Error refreshing access token", {
+          icon: "🐞",
+        });
+      });
+
       return "";
     }
 

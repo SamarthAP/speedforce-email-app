@@ -6,6 +6,7 @@ import supabase from "./lib/supabase";
 import Login from "./pages/Login";
 import { SessionContext } from "./contexts/SessionContext";
 import { Session } from "@supabase/supabase-js";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -51,6 +52,7 @@ function App() {
       <div className={`${theme}`}>
         <ThemeContext.Provider value={themeValue}>
           {session ? <AppRouter /> : <Login />}
+          <Toaster position="bottom-center" reverseOrder={false} />
         </ThemeContext.Provider>
       </div>
     </SessionContext.Provider>

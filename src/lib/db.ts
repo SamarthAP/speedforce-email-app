@@ -22,7 +22,8 @@ export interface IEmailThread {
   snippet: string;
   date: number;
   unread: boolean;
-  folderId: string;
+  folderId: string; // TODO: reflect changes in SubClassedDexie
+  starred: boolean;
 }
 
 export interface IMessage {
@@ -45,7 +46,7 @@ export interface IMessage {
 export interface IGoogleMetadata {
   email: string;
   threadsListNextPageTokens: {
-    folderId: string;
+    folderId: string; // TODO: reflect changes in SubClassedDexie
     historyId: string;
     token: string;
   }[];
@@ -54,7 +55,7 @@ export interface IGoogleMetadata {
 export interface IOutlookMetadata {
   email: string;
   threadsListNextPageTokens: {
-    folderId: string;
+    folderId: string; // TODO: reflect changes in SubClassedDexie
     token: string;
   }[];
 }
@@ -73,7 +74,7 @@ export class SubClassedDexie extends Dexie {
       emails: "email, provider, accessToken, expiresAt",
       selectedEmail: "id, email, provider",
       emailThreads:
-        "id, historyId, email, from, subject, snippet, date, unread",
+        "id, historyId, email, from, subject, snippet, date, unread, starred",
       googleMetadata: "email, threadsListNextPageTokens",
       outlookMetadata: "email, threadsListNextPageTokens",
       messages:

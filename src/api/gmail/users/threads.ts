@@ -124,13 +124,48 @@ export const removeLabelIds = async (
     );
 
     if (!response.ok) {
-      error = "Error removing labels";
+      error = "Error removing labels " + labelIds.join(", ");
     } else {
       data = await response.json();
     }
   } catch (e) {
     console.log(e);
-    error = "Error removing labels";
+    error = "Error removing labels " + labelIds.join(", ");
+  }
+
+  return { data, error };
+};
+
+export const addLabelIds = async (
+  accessToken: string,
+  threadId: string,
+  labelIds: string[]
+) => {
+  let data: GoogleThreadsModifyDataType | null = null;
+  let error: string | null = null;
+
+  try {
+    const response = await fetch(
+      `${GMAIL_API_URL}/threads/${threadId}/modify`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          addLabelIds: labelIds,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      error = "Error adding labels " + labelIds.join(", ");
+    } else {
+      data = await response.json();
+    }
+  } catch (e) {
+    console.log(e);
+    error = "Error adding labels " + labelIds.join(", ");
   }
 
   return { data, error };
@@ -230,6 +265,43 @@ export const sendEmail = async (
   } catch (e) {
     console.log(e);
     error = "Error sending email";
+  }
+
+  return { data, error };
+};
+
+export const modify = async (
+  accessToken: string,
+  threadId: string,
+  addLabelIds: string[],
+  removeLabelIds: string[]
+) => {
+  let data: GoogleThreadsModifyDataType | null = null;
+  let error: string | null = null;
+
+  try {
+    const response = await fetch(
+      `${GMAIL_API_URL}/threads/${threadId}/modify`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          addLabelIds,
+          removeLabelIds,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      error = `Error modifying thread. Attempted to add ${addLabelIds} and remove ${removeLabelIds}`;
+    } else {
+      data = await response.json();
+    }
+  } catch (e) {
+    console.log(e);
+    error = `Error modifying thread. Attempted to add ${addLabelIds} and remove ${removeLabelIds}`;
   }
 
   return { data, error };

@@ -5,17 +5,21 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { Menu, Transition } from "@headlessui/react";
-import { IEmail, ISelectedEmail } from "../lib/db";
+import { IEmail, ISelectedEmail, db } from "../lib/db";
 import { useNavigate } from "react-router-dom";
+import { useLiveQuery } from "dexie-react-hooks";
 
 interface AccountActionsProps {
-  signedInEmails: IEmail[] | undefined;
   selectedEmail: ISelectedEmail;
   setSelectedEmail: (email: IEmail) => void;
 }
 
 export default function AccountActions(props: AccountActionsProps) {
   const navigate = useNavigate();
+
+  const signedInEmails = useLiveQuery(() => {
+    return db.emails.orderBy("email").toArray();
+  }, []);
 
   return (
     <div className="relative">
@@ -43,7 +47,7 @@ export default function AccountActions(props: AccountActionsProps) {
             </div>
             <hr className="mb-2" />
 
-            {props.signedInEmails?.map((email) => (
+            {signedInEmails?.map((email) => (
               <Menu.Item key={email.email}>
                 {({ active }) => (
                   <div

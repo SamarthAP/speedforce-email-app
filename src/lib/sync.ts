@@ -4,6 +4,7 @@ import {
   listNextPage as gThreadListNextPage,
   removeLabelIds,
   sendReply as gSendReply,
+  addLabelIds,
 } from "../api/gmail/users/threads";
 import { list as gHistoryList } from "../api/gmail/users/history";
 
@@ -67,6 +68,13 @@ async function handleNewThreadsGoogle(
         date: parseInt(thread.messages[lastMessageIndex].internalDate),
         unread: thread.messages[lastMessageIndex].labelIds.includes("UNREAD"),
         folderId: filter.folderId,
+        starred: thread.messages.reduce((acc, message) => {
+          if (message.labelIds.includes("STARRED")) {
+            return true;
+          } else {
+            return acc;
+          }
+        }, false),
       });
 
       thread.messages.forEach((message) => {
@@ -177,6 +185,7 @@ async function handleNewThreadsOutlook(
       const lastMessageIndex = thread.value.length - 1;
 
       let unread = false;
+      const starred = false; // TODO: change to 'let' and implement starred
       for (const message of thread.value) {
         if (!message.isRead) {
           unread = true;
@@ -199,6 +208,7 @@ async function handleNewThreadsOutlook(
         ).getTime(),
         unread: unread,
         folderId: filter.folderId,
+        starred: starred,
       });
 
       thread.value.forEach((message) => {
@@ -454,6 +464,64 @@ export async function markRead(
     // TODO: error handling
     await Promise.all(apiPromises);
     await db.emailThreads.update(threadId, { unread: false });
+  }
+}
+
+export async function starThread(
+  email: string,
+  provider: "google" | "outlook",
+  threadId: string
+) {
+  const accessToken = await getAccessToken(email);
+  if (provider === "google") {
+    const { data, error } = await addLabelIds(accessToken, threadId, [
+      "STARRED",
+    ]);
+
+    if (error || !data) {
+      console.log("Error starring thread");
+      return;
+    } else {
+      const promises = data.messages.map((message) => {
+        return db.messages.update(message.id, {
+          labelIds: message.labelIds,
+        });
+      });
+
+      await Promise.all(promises);
+      await db.emailThreads.update(threadId, { starred: true });
+    }
+  } else {
+    console.log("Error starring thread");
+  }
+}
+
+export async function unstarThread(
+  email: string,
+  provider: "google" | "outlook",
+  threadId: string
+) {
+  const accessToken = await getAccessToken(email);
+  if (provider === "google") {
+    const { data, error } = await removeLabelIds(accessToken, threadId, [
+      "STARRED",
+    ]);
+
+    if (error || !data) {
+      console.log("Error unstarring thread");
+      return;
+    } else {
+      const promises = data.messages.map((message) => {
+        return db.messages.update(message.id, {
+          labelIds: message.labelIds,
+        });
+      });
+
+      await Promise.all(promises);
+      await db.emailThreads.update(threadId, { starred: false });
+    }
+  } else {
+    console.log("Error unstarring thread");
   }
 }
 

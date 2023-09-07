@@ -9,9 +9,7 @@ import AssistBar from "../components/AssistBar";
 import { TestSyncButtons } from "../lib/experiments";
 import AccountActionsMenu from "./AccountActionsMenu";
 import { fullSync } from "../lib/sync";
-import {
-  PencilSquareIcon,
-} from "@heroicons/react/24/outline";
+import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { WriteMessage } from "../components/WriteMessage";
 
 interface ThreadViewProps {
@@ -50,7 +48,7 @@ export default function ThreadView(props: ThreadViewProps) {
       const emailThreads = db.emailThreads
         .where("email")
         .equals(selectedEmail.email)
-        .and(thread => thread.folderId === props.folderId)
+        .and((thread) => thread.folderId === props.folderId)
         .reverse()
         .sortBy("date");
 
@@ -73,15 +71,14 @@ export default function ThreadView(props: ThreadViewProps) {
     }
   }, [props.folderId, selectedEmail.email, selectedEmail.provider, threads]);
 
-  const signedInEmails = useLiveQuery(() => {
-    return db.emails.orderBy("email").toArray();
-  });
-
   if (writeEmailMode) {
     return (
       <React.Fragment>
         <WriteMessage setWriteEmailMode={setWriteEmailMode} />
-        <AssistBar thread={hoveredThread} setSelectedThread={setSelectedThread}/>
+        <AssistBar
+          thread={hoveredThread}
+          setSelectedThread={setSelectedThread}
+        />
       </React.Fragment>
     );
   }
@@ -128,9 +125,8 @@ export default function ThreadView(props: ThreadViewProps) {
               <PencilSquareIcon className="h-5 w-5 mb-2 shrink-0 text-black dark:text-white" />
             </button>
             <AccountActionsMenu
-              signedInEmails={signedInEmails}
               selectedEmail={selectedEmail}
-              setSelectedEmail={setSelectedEmail}
+              setSelectedEmail={(email) => void setSelectedEmail(email)}
             />
           </div>
         </div>
