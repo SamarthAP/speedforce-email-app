@@ -1,17 +1,21 @@
 import { OUTLOOK_API_URL, getInboxName } from "../constants";
-import { OutlookThreadsListDataType, IThreadFilter } from "../../model/users.thread";
+import {
+  OutlookThreadsListDataType,
+  IThreadFilter,
+  OutlookMessageDataType,
+} from "../../model/users.thread";
 
 // in endpoints that will not be called often, we can use the async/await syntax
 export const list = async (
-  accessToken: string, 
-  filter: IThreadFilter | null = null,
+  accessToken: string,
+  filter: IThreadFilter | null = null
 ) => {
   let data: OutlookThreadsListDataType | null = null;
   let error: string | null = null;
 
   try {
     let folderId = "";
-    if(filter && filter.folderId) {
+    if (filter && filter.folderId) {
       folderId = `mailfolders/${getInboxName(filter.folderId)}`;
     }
 
@@ -27,11 +31,11 @@ export const list = async (
     if (!res.ok) {
       error = "Error fetching threads";
     } else {
-      let resData = await res.json();
+      const resData = await res.json();
       data = {
         nextPageToken: resData["@odata.nextLink"],
-        value: resData.value
-      }
+        value: resData.value,
+      };
     }
   } catch (e) {
     console.log(e);
@@ -39,16 +43,16 @@ export const list = async (
   }
 
   return { data, error };
-}
+};
 
 export const listNextPage = async (
   accessToken: string,
-  nextPageToken: string,
+  nextPageToken: string
 ) => {
   let data: OutlookThreadsListDataType | null = null;
   let error: string | null = null;
 
-  if(!nextPageToken){
+  if (!nextPageToken) {
     error = "Page token not provided";
     return { data, error };
   }
@@ -57,7 +61,7 @@ export const listNextPage = async (
     const res: Response = await fetch(
       `${nextPageToken}`, // Outlook nextPageToken is the entire URL to fetch the next page
       {
-        headers: { 
+        headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       }
@@ -66,11 +70,11 @@ export const listNextPage = async (
     if (!res.ok) {
       error = "Error fetching threads";
     } else {
-      let resData = await res.json();
+      const resData = await res.json();
       data = {
         nextPageToken: resData["@odata.nextLink"],
-        value: resData.value
-      }
+        value: resData.value,
+      };
     }
   } catch (e) {
     console.log(e);
@@ -84,7 +88,7 @@ export const listNextPage = async (
 // calling function can Promise.all() them or handle them in whatever way it wants
 export const get = async (accessToken: string, threadId: string) => {
   const response = await fetch(
-    `${OUTLOOK_API_URL}/messages?$select=id,subject,bodyPreview,body,sender,toRecipients,from,receivedDateTime,isRead,conversationId&$filter=conversationId eq '${threadId}'`,
+    `${OUTLOOK_API_URL}/messages?$filter=conversationId eq '${threadId}'`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -100,18 +104,66 @@ export const get = async (accessToken: string, threadId: string) => {
   return data;
 };
 
-export const markRead = async (accessToken: string, threadId: string) => {
+export const sendReply = async (
+  accessToken: string,
+  subject: string,
+  messageId: string,
+  messageContent: string
+) => {
   const response = await fetch(
-    `${OUTLOOK_API_URL}/messages/${threadId}`,
+    `${OUTLOOK_API_URL}/messages/${messageId}/reply`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      method: "PATCH",
-      body: JSON.stringify({ isRead: true })
+      method: "POST",
+      body: JSON.stringify({
+        message: {
+          subject: `Re: ${subject}`,
+          body: {
+            contentType: "html",
+            content: messageContent,
+          },
+        },
+      }),
     }
   );
+
+  // Returns 202 Accepted with no response body if successful
+  if (!response.ok) {
+    throw Error("Error replying to thread");
+  }
+};
+
+// Build headers for outlook messages to be consistent with Gmail nomenclature
+export function buildMessageHeadersOutlook(message: OutlookMessageDataType) {
+  // TODO: Add the rest of the headers later as needed
+  return [
+    {
+      name: "From",
+      value: message.from?.emailAddress?.address || "",
+    },
+    {
+      name: "To",
+      value: message.toRecipients[0]?.emailAddress.address || "",
+    },
+    {
+      name: "Subject",
+      value: message.subject,
+    },
+  ];
+}
+
+export const markRead = async (accessToken: string, threadId: string) => {
+  const response = await fetch(`${OUTLOOK_API_URL}/messages/${threadId}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    method: "PATCH",
+    body: JSON.stringify({ isRead: true }),
+  });
 
   if (!response.ok) {
     throw Error("Error updating thread");
@@ -119,4 +171,4 @@ export const markRead = async (accessToken: string, threadId: string) => {
 
   const data = await response.json();
   return data;
-}
+};

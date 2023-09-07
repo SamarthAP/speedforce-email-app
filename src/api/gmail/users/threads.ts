@@ -10,7 +10,7 @@ import { Base64 } from "js-base64";
 
 // in endpoints that will not be called often, we can use the async/await syntax
 export const list = async (
-  accessToken: string, 
+  accessToken: string,
   filter: IThreadFilter | null = null
 ) => {
   let data: GoogleThreadsListDataType | null = null;
@@ -18,10 +18,10 @@ export const list = async (
 
   try {
     let folderQuery = "";
-    if(filter && filter.folderId) {
+    if (filter && filter.folderId) {
       folderQuery = `&labelIds=${getInboxName(filter.folderId)}`;
 
-      if([ID_SPAM, ID_TRASH].includes(filter.folderId)) {
+      if ([ID_SPAM, ID_TRASH].includes(filter.folderId)) {
         folderQuery += `&includeSpamTrash=true`;
       }
     }
@@ -149,34 +149,6 @@ export const sendReply = async (
   let error: string | null = null;
 
   try {
-    // const response = await fetch(`${GMAIL_API_URL}/messages/send`, {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //     Authorization: `Bearer ${accessToken}`,
-    //   },
-    //   body: JSON.stringify({
-    //     // The entire email message in an RFC 2822 formatted and base64url encoded string
-    //     raw: Base64.btoa(
-    //       `
-    //     Content-Type: text/html; charset=utf-8
-    //     MIME-Version: 1.0
-    //     Content-Transfer-Encoding: 7bit
-    //     References: ${headerMessageId}
-    //     In-Reply-To: ${headerMessageId}
-    //     Subject: ${subject}
-    //     From: ${from}
-    //     To: ${to}
-
-    //     ${messageContent}
-    //   `
-    //     )
-    //       .replace(/\+/g, "-")
-    //       .replace(/\//g, "_"),
-    //     threadId,
-    //   }),
-    // });
-
     const encodedReply = btoa(
       'Content-Type: text/html; charset="UTF-8"\n' +
         "MIME-Version: 1.0\n" +

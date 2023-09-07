@@ -1,33 +1,28 @@
 import { db } from "./db";
 
-export async function getGoogleMetaData(
-  email: string,
-  folderId: string
-) {
-  const metaData = await db.googleMetadata
-    .where("email")
-    .equals(email)
-    .first();
-  
-  return metaData?.threadsListNextPageTokens.find(obj => obj.folderId === folderId);
+export async function getGoogleMetaData(email: string, folderId: string) {
+  const metaData = await db.googleMetadata.where("email").equals(email).first();
+
+  return metaData?.threadsListNextPageTokens.find(
+    (obj) => obj.folderId === folderId
+  );
 }
 
-export async function getOutlookMetaData(
-  email: string,
-  folderId: string
-) {
+export async function getOutlookMetaData(email: string, folderId: string) {
   const metaData = await db.outlookMetadata
     .where("email")
     .equals(email)
     .first();
 
-  return metaData?.threadsListNextPageTokens.find(obj => obj.folderId === folderId);
+  return metaData?.threadsListNextPageTokens.find(
+    (obj) => obj.folderId === folderId
+  );
 }
 
 export async function setPageToken(
-  email: string, 
+  email: string,
   provider: "google" | "outlook",
-  folderId: string, 
+  folderId: string,
   nextPageToken: string,
   maxHistoryId = 0
 ) {
@@ -36,22 +31,32 @@ export async function setPageToken(
       .where("email")
       .equals(email)
       .modify((row) => {
-        const i = row.threadsListNextPageTokens.findIndex(obj => obj.folderId === folderId);
-        if(i == -1) {
-          row.threadsListNextPageTokens.push({ folderId, historyId: maxHistoryId.toString(), token: nextPageToken });
+        const i = row.threadsListNextPageTokens.findIndex(
+          (obj) => obj.folderId === folderId
+        );
+        if (i == -1) {
+          row.threadsListNextPageTokens.push({
+            folderId,
+            historyId: maxHistoryId.toString(),
+            token: nextPageToken,
+          });
         } else {
           row.threadsListNextPageTokens[i].token = nextPageToken;
         }
       });
-
   } else if (provider === "outlook") {
-    db.outlookMetadata
+    await db.outlookMetadata
       .where("email")
       .equals(email)
       .modify((row) => {
-        const i = row.threadsListNextPageTokens.findIndex(obj => obj.folderId === folderId);
-        if(i == -1) {
-          row.threadsListNextPageTokens.push({ folderId, token: nextPageToken });
+        const i = row.threadsListNextPageTokens.findIndex(
+          (obj) => obj.folderId === folderId
+        );
+        if (i == -1) {
+          row.threadsListNextPageTokens.push({
+            folderId,
+            token: nextPageToken,
+          });
         } else {
           row.threadsListNextPageTokens[i].token = nextPageToken;
         }
@@ -70,11 +75,14 @@ export async function setHistoryId(
       .where("email")
       .equals(email)
       .modify((row) => {
-        const i = row.threadsListNextPageTokens.findIndex(obj => obj.folderId === folderId);
-        if(i != -1) {
-          let historyId = row.threadsListNextPageTokens[i].historyId;
-          if(parseInt(historyId) < maxHistoryId) {
-            row.threadsListNextPageTokens[i].historyId = maxHistoryId.toString();
+        const i = row.threadsListNextPageTokens.findIndex(
+          (obj) => obj.folderId === folderId
+        );
+        if (i != -1) {
+          const historyId = row.threadsListNextPageTokens[i].historyId;
+          if (parseInt(historyId) < maxHistoryId) {
+            row.threadsListNextPageTokens[i].historyId =
+              maxHistoryId.toString();
           }
         }
       });

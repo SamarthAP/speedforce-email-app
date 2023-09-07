@@ -1,7 +1,7 @@
 import { createRef, useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { IMessage } from "../lib/db";
-import { cleanHtmlString, getGoogleMessageHeader } from "../lib/util";
+import { cleanHtmlString } from "../lib/util";
 import ShadowDom from "./ShadowDom";
 import { ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
 import EmailEditor, { EditorComponentRef } from "./EmailEditor";
@@ -34,17 +34,19 @@ export default function Message({ message, folderId }: MessageProps) {
       const context = editorState.getCurrentContent();
       const html = stateToHTML(context);
 
-      const { data, error } = await sendReply(
+      const { error } = await sendReply(
         selectedEmail.email,
         selectedEmail.provider,
         message,
         html
       );
 
-      if (error || !data) {
+      if (error) {
         console.log(error);
       } else {
-        await partialSync(selectedEmail.email, selectedEmail.provider, { folderId: folderId });
+        await partialSync(selectedEmail.email, selectedEmail.provider, {
+          folderId: folderId,
+        });
         setShowReply(false);
       }
     }

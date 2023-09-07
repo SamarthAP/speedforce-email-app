@@ -1,6 +1,11 @@
-import { UserCircleIcon, CheckIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  UserCircleIcon,
+  CheckIcon,
+  PlusIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { Menu, Transition } from "@headlessui/react";
-import { IEmail, ISelectedEmail, db } from "../lib/db";
+import { IEmail, ISelectedEmail } from "../lib/db";
 import { useNavigate } from "react-router-dom";
 
 interface AccountActionsProps {
@@ -27,18 +32,16 @@ export default function AccountActions(props: AccountActionsProps) {
           leaveTo="transform scale-95 opacity-0"
         >
           <Menu.Items className="absolute right-0 shadow-2xl p-2 bg-white">
-
             <div className="pl-1 pr-1 py-2 bg-white flex flex-row justify-between items-center">
               <div className="flex flex-row">
-                <UserCircleIcon className="h-6 w-6 shrink-0 text-black mr-3"/>
+                <UserCircleIcon className="h-6 w-6 shrink-0 text-black mr-3" />
                 <div className="text-md mr-3">My Accounts</div>
               </div>
               <Menu.Item>
-                <XMarkIcon className="h-7 w-7 shrink-0 text-black hover:bg-gray-200 rounded-full p-1"/>
+                <XMarkIcon className="h-7 w-7 shrink-0 text-black hover:bg-gray-200 rounded-full p-1" />
               </Menu.Item>
             </div>
-            <hr className="mb-2"/>
-
+            <hr className="mb-2" />
 
             {props.signedInEmails?.map((email) => (
               <Menu.Item key={email.email}>
@@ -72,10 +75,9 @@ export default function AccountActions(props: AccountActionsProps) {
                 </div>
               )}
             </Menu.Item>
-
           </Menu.Items>
         </Transition>
       </Menu>
     </div>
-  )
+  );
 }

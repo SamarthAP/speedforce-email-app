@@ -64,7 +64,7 @@ export function decodeGoogleMessageData(data: string) {
   return Base64.decode(data.replace(/-/g, "+").replace(/_/g, "/"));
 }
 
-export function getGoogleMessageHeader(
+export function getMessageHeader(
   headers: {
     name: string;
     value: string;
