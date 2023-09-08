@@ -4,6 +4,7 @@ import {
   listNextPage as gThreadListNextPage,
   removeLabelIds,
   sendReply as gSendReply,
+  sendEmail as gSendEmail,
   addLabelIds,
 } from "../api/gmail/users/threads";
 import { list as gHistoryList } from "../api/gmail/users/history";
@@ -14,6 +15,7 @@ import {
   listNextPage as mThreadListNextPage,
   markRead as mThreadMarkRead,
   sendReply as mSendReply,
+  sendEmail as mSendEmail,
   buildMessageHeadersOutlook,
 } from "../api/outlook/users/threads";
 
@@ -332,9 +334,11 @@ async function partialSyncGoogle(email: string, filter: IThreadFilter) {
   }
 }
 
-async function partialSyncOutlook(_email: string, _filter: IThreadFilter) {
+async function partialSyncOutlook(email: string, filter: IThreadFilter) {
   // TODO: research and implement partial sync for outlook
   // Delta tokens not applicable for mail, only calendar
+
+  await fullSyncOutlook(email, filter);
 }
 
 async function loadNextPageGoogle(email: string, filter: IThreadFilter) {
@@ -535,7 +539,9 @@ export async function sendReply(
   if (provider === "google") {
     const from = email;
     const to =
-      getMessageHeader(message.headers, "From").match(/<([^>]+)>/)?.[1] || "";
+      getMessageHeader(message.headers, "From").match(/<([^>]+)>/)?.[1] ||
+      getMessageHeader(message.headers, "To") || 
+      "";
     const subject = getMessageHeader(message.headers, "Subject");
     const headerMessageId = getMessageHeader(message.headers, "Message-ID");
     const threadId = message.threadId;
@@ -553,9 +559,48 @@ export async function sendReply(
     const subject = getMessageHeader(message.headers, "Subject");
     const messageId = message.id;
 
-    await mSendReply(accessToken, subject, messageId, html);
+    try {
+      await mSendReply(accessToken, subject, messageId, html);
+      return { data: null, error: null };
+    } catch (e) {
+      return { data: null, error: "Error sending reply" };
+    }
+  }
 
-    return { data: null, error: null };
+  return { data: null, error: "Not implemented" };
+}
+
+export async function sendEmail(
+  email: string,
+  provider: "google" | "outlook",
+  to: string,
+  subject: string,
+  html: string
+) {
+  const accessToken = await getAccessToken(email);
+
+  if (provider === "google") {
+    return await gSendEmail(
+      accessToken,
+      email,
+      to,
+      subject,
+      html
+    );
+  } else if (provider === "outlook") {
+
+    try {
+      await mSendEmail(
+        accessToken,
+        to,
+        subject,
+        html
+      );
+
+      return { data: null, error: null };
+    } catch (e) {
+      return { data: null, error: "Error sending reply" };
+    }
   }
 
   return { data: null, error: "Not implemented" };

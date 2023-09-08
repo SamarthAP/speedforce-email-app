@@ -71,5 +71,5 @@ export function getMessageHeader(
   }[],
   name: string
 ) {
-  return headers.filter((header) => header.name === name)[0].value || "";
+  return headers.filter((header) => header.name.toLowerCase() === name.toLowerCase())[0]?.value || "";
 }

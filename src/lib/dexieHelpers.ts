@@ -1,7 +1,10 @@
 import { db } from "./db";
 
 export async function getGoogleMetaData(email: string, folderId: string) {
-  const metaData = await db.googleMetadata.where("email").equals(email).first();
+  const metaData = await db.googleMetadata
+    .where("email")
+    .equals(email)
+    .first();
 
   return metaData?.threadsListNextPageTokens.find(
     (obj) => obj.folderId === folderId

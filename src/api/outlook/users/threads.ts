@@ -136,6 +136,42 @@ export const sendReply = async (
   }
 };
 
+export const sendEmail = async (
+  accessToken: string,
+  to: string,
+  subject: string,
+  messageContent: string
+) => {
+  const response = await fetch(`${OUTLOOK_API_URL}/sendmail`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+    body: JSON.stringify({
+      message: {
+        subject: subject,
+        body: {
+          contentType: "html",
+          content: messageContent,
+        },
+        toRecipients: [
+          {
+            emailAddress: {
+              address: to,
+            },
+          },
+        ],
+      },
+    }),
+  });
+
+  // Returns 202 Accepted with no response body if successful
+  if (!response.ok) {
+    throw Error("Error replying to thread");
+  }
+};
+
 // Build headers for outlook messages to be consistent with Gmail nomenclature
 export function buildMessageHeadersOutlook(message: OutlookMessageDataType) {
   // TODO: Add the rest of the headers later as needed

@@ -2,10 +2,10 @@ import { Editor } from "draft-js";
 import { createRef, useEffect, useState } from "react";
 import EmailEditor, { EditorComponentRef } from "./EmailEditor";
 import { stateToHTML } from "draft-js-export-html";
-import { getAccessToken } from "../api/accessToken";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
-import { sendEmail } from "../api/gmail/users/threads";
+import { sendEmail } from "../lib/sync";
 import SimpleButton from "./SimpleButton";
+import { dLog } from "../lib/noProd";
 
 interface WriteMessageProps {
   setWriteEmailMode: (writeEmailMode: boolean) => void;
@@ -41,18 +41,16 @@ export function WriteMessage({ setWriteEmailMode }: WriteMessageProps) {
       const context = editorState.getCurrentContent();
       const html = stateToHTML(context);
 
-      const accessToken = await getAccessToken(selectedEmail.email);
-
-      const { data, error } = await sendEmail(
-        accessToken,
+      const { error } = await sendEmail(
         selectedEmail.email,
+        selectedEmail.provider,
         to,
         subject,
-        html
+        html,
       );
 
-      if (error || !data) {
-        console.log(error);
+      if (error) {
+        dLog(error);
       } else {
         setWriteEmailMode(false);
       }
