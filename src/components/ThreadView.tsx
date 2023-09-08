@@ -55,7 +55,7 @@ export default function ThreadView(props: ThreadViewProps) {
       return emailThreads;
     },
     [selectedEmail],
-    []
+    [] // default value
   );
 
   useEffect(() => {

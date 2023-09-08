@@ -2,9 +2,19 @@ import UnreadDot from "./UnreadDot";
 import { IEmailThread, ISelectedEmail } from "../lib/db";
 import he from "he";
 import { useEffect, useRef } from "react";
-import { loadNextPage, markRead, starThread, unstarThread } from "../lib/sync";
-import { StarIcon as StarIconSolid } from "@heroicons/react/20/solid";
+import {
+  archiveThread,
+  loadNextPage,
+  markRead,
+  starThread,
+  unstarThread,
+} from "../lib/sync";
+import {
+  CheckCircleIcon,
+  StarIcon as StarIconSolid,
+} from "@heroicons/react/20/solid";
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
+import toast from "react-hot-toast";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -210,11 +220,11 @@ export default function ThreadList({
                     {thread.from.slice(0, thread.from.lastIndexOf("<"))}
                   </span>
                 </div>
-                <div className="col-span-8 grid grid-cols-10">
+                <div className="col-span-8 grid grid-cols-10 group">
                   <div className="text-sm truncate pr-4 col-span-2 text-black dark:text-zinc-100">
                     {thread.subject || "(no subject)"}
                   </div>
-                  <div className="col-span-8 flex">
+                  <div className="col-span-8 flex group">
                     <div className="text-sm truncate text-slate-400 dark:text-zinc-500 w-full">
                       {/* {he.decode(
                         thread.snippet.slice(0, thread.snippet.indexOf("\n"))
@@ -222,8 +232,26 @@ export default function ThreadList({
                       {he.decode(thread.snippet)}
                     </div>
                     {/* flex-shrink-0 is the class keeping the text from not expanding the height of the row */}
-                    <div className="text-sm pl-2 pr-4 flex-shrink-0 text-zinc-400 dark:text-zinc-500 font-medium">
-                      {new Date(thread.date).toDateString()}
+                    <div className="text-sm pl-2 pr-4 flex-shrink-0 text-slate-400 dark:text-zinc-500 font-medium group flex flex-col justify-center">
+                      <span className="group-hover:hidden block">
+                        {new Date(thread.date).toDateString()}
+                      </span>
+                      <button
+                        onClick={(
+                          event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+                        ) => {
+                          event.stopPropagation();
+                          void archiveThread(
+                            selectedEmail.email,
+                            selectedEmail.provider,
+                            thread.id
+                          );
+                          toast("Marked as done");
+                        }}
+                        className="group-hover:block hidden hover:[&>*]:!text-white"
+                      >
+                        <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+                      </button>
                     </div>
                   </div>
                 </div>

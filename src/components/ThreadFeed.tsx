@@ -46,7 +46,9 @@ export function ThreadFeed({
       <div className="dark:text-white p-4 w-full">{thread?.subject}</div>
       <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll">
         {messages?.map((message) => {
-          return <Message message={message} key={message.id} folderId={folderId} />;
+          return (
+            <Message message={message} key={message.id} folderId={folderId} />
+          );
         })}
       </div>
     </div>

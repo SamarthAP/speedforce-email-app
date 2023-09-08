@@ -529,6 +529,35 @@ export async function unstarThread(
   }
 }
 
+export async function archiveThread(
+  email: string,
+  provider: "google" | "outlook",
+  threadId: string
+) {
+  const accessToken = await getAccessToken(email);
+  if (provider === "google") {
+    const { data, error } = await removeLabelIds(accessToken, threadId, [
+      "INBOX",
+    ]);
+
+    if (error || !data) {
+      dLog("Error archiving thread");
+      return;
+    } else {
+      const promises = data.messages.map((message) => {
+        return db.messages.update(message.id, {
+          labelIds: message.labelIds,
+        });
+      });
+
+      await Promise.all(promises);
+      await db.emailThreads.update(threadId, { folderId: "ARCHIVE" }); // TODO: set up proper archive folder?
+    }
+  } else {
+    console.log("Error archiving thread");
+  }
+}
+
 export async function sendReply(
   email: string,
   provider: "google" | "outlook",
@@ -540,7 +569,7 @@ export async function sendReply(
     const from = email;
     const to =
       getMessageHeader(message.headers, "From").match(/<([^>]+)>/)?.[1] ||
-      getMessageHeader(message.headers, "To") || 
+      getMessageHeader(message.headers, "To") ||
       "";
     const subject = getMessageHeader(message.headers, "Subject");
     const headerMessageId = getMessageHeader(message.headers, "Message-ID");
@@ -580,22 +609,10 @@ export async function sendEmail(
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    return await gSendEmail(
-      accessToken,
-      email,
-      to,
-      subject,
-      html
-    );
+    return await gSendEmail(accessToken, email, to, subject, html);
   } else if (provider === "outlook") {
-
     try {
-      await mSendEmail(
-        accessToken,
-        to,
-        subject,
-        html
-      );
+      await mSendEmail(accessToken, to, subject, html);
 
       return { data: null, error: null };
     } catch (e) {
