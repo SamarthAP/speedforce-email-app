@@ -8,7 +8,7 @@ import {
   markRead,
   starThread,
   unstarThread,
-  deleteThread,
+  trashThread,
 } from "../lib/sync";
 import {
   CheckCircleIcon,
@@ -259,19 +259,20 @@ export default function ThreadList({
                           <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
                         </button>
                         <button
-                          onClick={async (
+                          onClick={(
                             event: React.MouseEvent<
                               HTMLButtonElement,
                               MouseEvent
                             >
                           ) => {
                             event.stopPropagation();
-                            await deleteThread(
+                            void trashThread(
                               selectedEmail.email,
                               selectedEmail.provider,
                               thread.id
-                            );
-                            toast("Deleted thread");
+                            ).then(() => {
+                              toast("Trashed thread");
+                            });
                           }}
                           className="ml-1 group-hover:block hidden hover:[&>*]:!text-white"
                         >

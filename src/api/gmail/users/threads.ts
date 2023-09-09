@@ -7,6 +7,7 @@ import {
   IThreadFilter,
 } from "../../model/users.thread";
 import { Base64 } from "js-base64";
+import { dLog } from "../../../lib/noProd";
 
 // in endpoints that will not be called often, we can use the async/await syntax
 export const list = async (
@@ -42,7 +43,7 @@ export const list = async (
       data = await res.json();
     }
   } catch (e) {
-    console.log(e);
+    dLog(e);
     error = "Error fetching threads";
   }
 
@@ -73,7 +74,7 @@ export const listNextPage = async (
       data = await res.json();
     }
   } catch (e) {
-    console.log(e);
+    dLog(e);
     error = "Error fetching threads";
   }
 
@@ -129,7 +130,7 @@ export const removeLabelIds = async (
       data = await response.json();
     }
   } catch (e) {
-    console.log(e);
+    dLog(e);
     error = "Error removing labels " + labelIds.join(", ");
   }
 
@@ -164,7 +165,7 @@ export const addLabelIds = async (
       data = await response.json();
     }
   } catch (e) {
-    console.log(e);
+    dLog(e);
     error = "Error adding labels " + labelIds.join(", ");
   }
 
@@ -216,7 +217,7 @@ export const sendReply = async (
       data = await response.json();
     }
   } catch (e) {
-    console.log(e);
+    dLog(e);
     error = "Error sending reply";
   }
 
@@ -263,7 +264,7 @@ export const sendEmail = async (
       data = await response.json();
     }
   } catch (e) {
-    console.log(e);
+    dLog(e);
     error = "Error sending email";
   }
 
@@ -300,8 +301,64 @@ export const modify = async (
       data = await response.json();
     }
   } catch (e) {
-    console.log(e);
+    dLog(e);
     error = `Error modifying thread. Attempted to add ${addLabelIds} and remove ${removeLabelIds}`;
+  }
+
+  return { data, error };
+};
+
+export const deleteThread = async (accessToken: string, threadId: string) => {
+  // Request body
+  // The request body must be empty.
+
+  // Response body
+  // If successful, the response body is empty.
+
+  let data: any | null = null;
+  let error: string | null = null;
+
+  try {
+    const response = await fetch(`${GMAIL_API_URL}/threads/${threadId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      error = "Error deleting thread";
+    } else {
+      data = "ok";
+    }
+  } catch (e) {
+    dLog(e);
+    error = "Error deleting thread";
+  }
+
+  return { data, error };
+};
+
+export const trashThread = async (accessToken: string, threadId: string) => {
+  let data: GoogleThreadsModifyDataType | null = null;
+  let error: string | null = null;
+
+  try {
+    const response = await fetch(`${GMAIL_API_URL}/threads/${threadId}/trash`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      error = "Error trashing thread gmail";
+    } else {
+      data = await response.json();
+    }
+  } catch (e) {
+    dLog(e);
+    error = "Error trashing thread gmail";
   }
 
   return { data, error };

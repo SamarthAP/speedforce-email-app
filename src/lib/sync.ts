@@ -1,10 +1,12 @@
 import {
+  deleteThread as gDeleteThread,
   get as gThreadGet,
   list as gThreadList,
   listNextPage as gThreadListNextPage,
   removeLabelIds,
   sendReply as gSendReply,
   sendEmail as gSendEmail,
+  trashThread as gTrashThread,
   addLabelIds,
 } from "../api/gmail/users/threads";
 import { list as gHistoryList } from "../api/gmail/users/history";
@@ -632,7 +634,14 @@ export async function deleteThread(
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    // TODO: implement
+    const { error } = await gDeleteThread(accessToken, threadId);
+
+    if (error) {
+      return;
+    }
+
+    await db.messages.where("threadId").equals(threadId).delete();
+    await db.emailThreads.delete(threadId);
   } else if (provider === "outlook") {
     const messages = await db.messages
       .where("threadId")
@@ -652,5 +661,33 @@ export async function deleteThread(
     } catch (e) {
       console.log("Error deleting thread");
     }
+  }
+}
+
+export async function trashThread(
+  email: string,
+  provider: "google" | "outlook",
+  threadId: string
+) {
+  const accessToken = await getAccessToken(email);
+
+  if (provider === "google") {
+    const { data, error } = await gTrashThread(accessToken, threadId);
+
+    if (error || !data) {
+      console.log("Error trashing thread");
+      return;
+    } else {
+      const promises = data.messages.map((message) => {
+        return db.messages.update(message.id, {
+          labelIds: message.labelIds,
+        });
+      });
+
+      await Promise.all(promises);
+      await db.emailThreads.update(threadId, { folderId: "TRASH" }); // TODO: set up proper trash folder?
+    }
+  } else if (provider === "outlook") {
+    // TODO
   }
 }
