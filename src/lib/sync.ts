@@ -17,6 +17,7 @@ import {
   sendReply as mSendReply,
   sendEmail as mSendEmail,
   buildMessageHeadersOutlook,
+  deleteMessage as mDeleteMessage,
 } from "../api/outlook/users/threads";
 
 import { getAccessToken } from "../api/accessToken";
@@ -621,4 +622,35 @@ export async function sendEmail(
   }
 
   return { data: null, error: "Not implemented" };
+}
+
+export async function deleteThread(
+  email: string,
+  provider: "google" | "outlook",
+  threadId: string
+) {
+  const accessToken = await getAccessToken(email);
+
+  if (provider === "google") {
+    // TODO: implement
+  } else if (provider === "outlook") {
+    const messages = await db.messages
+      .where("threadId")
+      .equals(threadId)
+      .toArray();
+
+    const promises = messages.map((message) => {
+      return mDeleteMessage(accessToken, message.id);
+    });
+
+    try {
+      await Promise.all(promises);
+
+      // TODO: delete from db
+      await db.messages.where("threadId").equals(threadId).delete();
+      await db.emailThreads.delete(threadId);
+    } catch (e) {
+      console.log("Error deleting thread");
+    }
+  }
 }

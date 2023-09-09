@@ -208,3 +208,16 @@ export const markRead = async (accessToken: string, threadId: string) => {
   const data = await response.json();
   return data;
 };
+
+export const deleteMessage = async (accessToken: string, messageId: string) => {
+  const response = await fetch(`${OUTLOOK_API_URL}/messages/${messageId}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw Error("Error deleting message");
+  }
+};

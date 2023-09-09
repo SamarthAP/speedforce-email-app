@@ -8,10 +8,12 @@ import {
   markRead,
   starThread,
   unstarThread,
+  deleteThread,
 } from "../lib/sync";
 import {
   CheckCircleIcon,
   StarIcon as StarIconSolid,
+  TrashIcon,
 } from "@heroicons/react/20/solid";
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
@@ -236,22 +238,46 @@ export default function ThreadList({
                       <span className="group-hover:hidden block">
                         {new Date(thread.date).toDateString()}
                       </span>
-                      <button
-                        onClick={(
-                          event: React.MouseEvent<HTMLButtonElement, MouseEvent>
-                        ) => {
-                          event.stopPropagation();
-                          void archiveThread(
-                            selectedEmail.email,
-                            selectedEmail.provider,
-                            thread.id
-                          );
-                          toast("Marked as done");
-                        }}
-                        className="group-hover:block hidden hover:[&>*]:!text-white"
-                      >
-                        <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
-                      </button>
+                      <span className="flex flex-row">
+                        <button
+                          onClick={(
+                            event: React.MouseEvent<
+                              HTMLButtonElement,
+                              MouseEvent
+                            >
+                          ) => {
+                            event.stopPropagation();
+                            void archiveThread(
+                              selectedEmail.email,
+                              selectedEmail.provider,
+                              thread.id
+                            );
+                            toast("Marked as done");
+                          }}
+                          className="group-hover:block hidden hover:[&>*]:!text-white"
+                        >
+                          <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+                        </button>
+                        <button
+                          onClick={async (
+                            event: React.MouseEvent<
+                              HTMLButtonElement,
+                              MouseEvent
+                            >
+                          ) => {
+                            event.stopPropagation();
+                            await deleteThread(
+                              selectedEmail.email,
+                              selectedEmail.provider,
+                              thread.id
+                            );
+                            toast("Deleted thread");
+                          }}
+                          className="ml-1 group-hover:block hidden hover:[&>*]:!text-white"
+                        >
+                          <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+                        </button>
+                      </span>
                     </div>
                   </div>
                 </div>
