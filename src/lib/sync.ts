@@ -20,6 +20,7 @@ import {
   sendEmail as mSendEmail,
   buildMessageHeadersOutlook,
   deleteMessage as mDeleteMessage,
+  moveMessage as mMoveMessage,
 } from "../api/outlook/users/threads";
 
 import { getAccessToken } from "../api/accessToken";
@@ -34,6 +35,8 @@ import { getMessageHeader } from "./util";
 import _ from "lodash";
 import { dLog } from "./noProd";
 import { IThreadFilter } from "../api/model/users.thread";
+import { ID_DONE, ID_TRASH } from "../api/constants";
+import { getInboxName } from "../api/outlook/constants";
 
 async function handleNewThreadsGoogle(
   accessToken: string,
@@ -556,8 +559,22 @@ export async function archiveThread(
       await Promise.all(promises);
       await db.emailThreads.update(threadId, { folderId: "ARCHIVE" }); // TODO: set up proper archive folder?
     }
-  } else {
-    console.log("Error archiving thread");
+  } else if (provider === "outlook") {
+    const messages = await db.messages
+      .where("threadId")
+      .equals(threadId)
+      .toArray();
+
+    const promises = messages.map((message) => {
+      return mMoveMessage(accessToken, message.id, getInboxName(ID_DONE));
+    });
+
+    try {
+      await Promise.all(promises);
+      await db.emailThreads.update(threadId, { folderId: ID_DONE }); // TODO: set up proper trash folder?
+    } catch (e) {
+      console.log("Error archiving thread");
+    }
   }
 }
 
@@ -685,9 +702,23 @@ export async function trashThread(
       });
 
       await Promise.all(promises);
-      await db.emailThreads.update(threadId, { folderId: "TRASH" }); // TODO: set up proper trash folder?
+      await db.emailThreads.update(threadId, { folderId: ID_TRASH }); // TODO: set up proper trash folder?
     }
   } else if (provider === "outlook") {
-    // TODO
+    const messages = await db.messages
+      .where("threadId")
+      .equals(threadId)
+      .toArray();
+
+    const promises = messages.map((message) => {
+      return mMoveMessage(accessToken, message.id, getInboxName(ID_TRASH));
+    });
+
+    try {
+      await Promise.all(promises);
+      await db.emailThreads.update(threadId, { folderId: ID_TRASH }); // TODO: set up proper trash folder?
+    } catch (e) {
+      console.log("Error deleting thread");
+    }
   }
 }

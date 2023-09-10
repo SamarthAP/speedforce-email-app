@@ -4,6 +4,8 @@ import SentItems from "../pages/SentItems";
 import Drafts from "../pages/Drafts";
 import Spam from "../pages/Spam";
 import DeletedItems from "../pages/DeletedItems";
+import Starred from "../pages/Starred";
+import Done from "../pages/Done";
 import AddAccount from "../pages/AddAccount";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../lib/db";
@@ -59,6 +61,18 @@ export default function AppRouter() {
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
               <Route index element={<DeletedItems />} />
+            </Route>
+            <Route
+              path="/starred"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<Starred />} />
+            </Route>
+            <Route
+              path="/done"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<Done />} />
             </Route>
             <Route path="/page/addAccount" element={<AddAccount />} />
           </>

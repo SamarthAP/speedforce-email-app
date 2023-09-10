@@ -1,21 +1,25 @@
 import {
   ClipboardDocumentIcon,
   ClockIcon,
-  FireIcon,
+  ExclamationCircleIcon,
   InboxIcon,
   PaperAirplaneIcon,
   PlusIcon,
   ViewColumnsIcon,
-  TrashIcon
+  TrashIcon,
+  StarIcon,
+  ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 
 import { useNavigate } from "react-router-dom";
 
 const navigation = [
   { name: "Inbox", href: "/", icon: InboxIcon, current: false },
-  { name: "Drafts", href: "/drafts", icon: ClipboardDocumentIcon, current: false },
+  { name: "Starred", href: "/starred", icon: StarIcon, current: false },
   { name: "Sent", href: "/sent", icon: PaperAirplaneIcon, current: false },
-  { name: "Spam", href: "/spam", icon: FireIcon, current: false },
+  { name: "Drafts", href: "/drafts", icon: ClipboardDocumentIcon, current: false },
+  { name: "Done", href: "/done", icon: ArchiveBoxIcon, current: false },
+  { name: "Spam", href: "/spam", icon: ExclamationCircleIcon, current: false },
   { name: "Deleted Items", href: "/deleted", icon: TrashIcon, current: false },
   { name: "Scheduled", href: "#", icon: ClockIcon, current: false },
   {
@@ -36,7 +40,7 @@ export default function Sidebar() {
           <ViewColumnsIcon className="h-6 w-6 shrink-0" aria-hidden="true" />
         </div>
       </div>
-      <nav className="mt-8">
+      <nav className="mt-4">
         <ul role="list" className="flex flex-col items-center space-y-1">
           {navigation.map((item) => (
             <li className="cursor-pointer" key={item.name}>

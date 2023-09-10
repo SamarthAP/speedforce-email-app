@@ -1,4 +1,4 @@
-import { ID_INBOX, ID_SENT, ID_DRAFTS, ID_TRASH, ID_SPAM, ID_STARRED } from "../../api/constants";
+import { ID_INBOX, ID_SENT, ID_DRAFTS, ID_TRASH, ID_SPAM, ID_STARRED, ID_DONE } from "../../api/constants";
 
 export const OUTLOOK_API_URL = "https://graph.microsoft.com/v1.0/me";
 
@@ -14,6 +14,8 @@ export const getInboxName = (folderId: string) => {
       return "DeletedItems";
     case ID_SPAM:
       return "JunkEmail";
+    case ID_DONE:
+      return "Archive";
     // case ID_STARRED:
     //   return "Starred";
     default:

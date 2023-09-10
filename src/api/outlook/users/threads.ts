@@ -221,3 +221,25 @@ export const deleteMessage = async (accessToken: string, messageId: string) => {
     throw Error("Error deleting message");
   }
 };
+
+export const moveMessage = async (
+  accessToken: string,
+  messageId: string,
+  destinationFolder: string
+) => {
+  const response = await fetch(
+    `${OUTLOOK_API_URL}/messages/${messageId}/move`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+      body: JSON.stringify({ destinationId: destinationFolder }),
+    }
+  );
+
+  if (!response.ok) {
+    throw Error("Error moving message to trash");
+  }
+};

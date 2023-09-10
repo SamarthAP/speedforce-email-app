@@ -9,3 +9,4 @@ export const ID_DRAFTS = "ID_DRAFTS";
 export const ID_TRASH = "ID_TRASH";
 export const ID_SPAM = "ID_SPAM";
 export const ID_STARRED = "ID_STARRED";
+export const ID_DONE = "ID_DONE";
