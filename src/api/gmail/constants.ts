@@ -14,8 +14,8 @@ export const getInboxName = (folderId: string) => {
       return "TRASH";
     case ID_SPAM:
       return "SPAM";
-    // case ID_STARRED:
-    //   return "Starred";
+    case ID_STARRED:
+      return "STARRED";
     default:
       return "INBOX";
   }
