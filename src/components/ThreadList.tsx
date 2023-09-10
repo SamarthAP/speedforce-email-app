@@ -254,7 +254,7 @@ export default function ThreadList({
                             );
                             toast("Marked as done");
                           }}
-                          className="group-hover:block hidden hover:[&>*]:!text-white"
+                          className="group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
                         >
                           <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
                         </button>
@@ -274,7 +274,7 @@ export default function ThreadList({
                               toast("Trashed thread");
                             });
                           }}
-                          className="ml-1 group-hover:block hidden hover:[&>*]:!text-white"
+                          className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
                         >
                           <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
                         </button>

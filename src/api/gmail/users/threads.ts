@@ -58,15 +58,17 @@ export const listNextPage = async (
   let data: GoogleThreadsListDataType | null = null;
   let error: string | null = null;
 
+  const label = getInboxName(filter?.folderId || "INBOX");
+  const fetchURL = filter
+    ? `${GMAIL_API_URL}/threads?maxResults=20&labelIds=${label}&pageToken=${nextPageToken}`
+    : `${GMAIL_API_URL}/threads?maxResults=20&pageToken=${nextPageToken}`;
+
   try {
-    const res: Response = await fetch(
-      `${GMAIL_API_URL}/threads?maxResults=20&pageToken=${nextPageToken}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+    const res: Response = await fetch(fetchURL, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
 
     if (!res.ok) {
       error = "Error fetching threads";
