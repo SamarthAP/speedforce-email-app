@@ -356,7 +356,7 @@ async function loadNextPageGoogle(email: string, filter: IThreadFilter) {
     return;
   }
 
-  const tList = await gThreadListNextPage(accessToken, metadata.token);
+  const tList = await gThreadListNextPage(accessToken, metadata.token, filter);
 
   if (tList.error || !tList.data) {
     dLog("error loading next page:", tList.error);
