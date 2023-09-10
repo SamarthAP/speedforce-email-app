@@ -243,3 +243,22 @@ export const moveMessage = async (
     throw Error("Error moving message to trash");
   }
 };
+
+export const starMessage = async (
+  accessToken: string,
+  messageId: string,
+  isStarred: boolean
+) => {
+  const response = await fetch(`${OUTLOOK_API_URL}/messages/${messageId}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    method: "PATCH",
+    body: JSON.stringify({
+      flag: {
+        flagStatus: isStarred ? "flagged" : "notFlagged",
+      },
+    }),
+  });
+};

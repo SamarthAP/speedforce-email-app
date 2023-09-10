@@ -96,6 +96,9 @@ export interface OutlookMessageDataType {
     contentType: string;
     content: string;
   };
+  flag: {
+    flagStatus: string;
+  };
   sender: {
     emailAddress: {
       name: string;

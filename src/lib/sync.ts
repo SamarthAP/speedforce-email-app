@@ -21,6 +21,7 @@ import {
   buildMessageHeadersOutlook,
   deleteMessage as mDeleteMessage,
   moveMessage as mMoveMessage,
+  starMessage as mStarMessage,
 } from "../api/outlook/users/threads";
 
 import { getAccessToken } from "../api/accessToken";
@@ -193,11 +194,13 @@ async function handleNewThreadsOutlook(
       const lastMessageIndex = thread.value.length - 1;
 
       let unread = false;
-      const starred = false; // TODO: change to 'let' and implement starred
+      let starred = false;
       for (const message of thread.value) {
         if (!message.isRead) {
           unread = true;
-          break;
+        }
+        if (message.flag && message.flag.flagStatus === "flagged") {
+          starred = true;
         }
       }
 
@@ -466,6 +469,7 @@ export async function markRead(
       .where("threadId")
       .equals(threadId)
       .toArray();
+
     const apiPromises = messages.map((message) => {
       return mThreadMarkRead(accessToken, message.id);
     });
@@ -501,8 +505,29 @@ export async function starThread(
       await Promise.all(promises);
       await db.emailThreads.update(threadId, { starred: true });
     }
-  } else {
-    console.log("Error starring thread");
+  } else if (provider === "outlook") {
+    // In outlook, starring = flagging the most recent message not sent by active user
+    const message = await db.messages
+      .where("threadId")
+      .equals(threadId)
+      .filter((message) => message.from !== email)
+      .reverse()
+      .sortBy("date")
+      .then((messages) => {
+        return messages[0];
+      });
+
+    if (!message) {
+      console.log("Error starring thread");
+      return;
+    }
+
+    try {
+      await mStarMessage(accessToken, message.id, true);
+      await db.emailThreads.update(threadId, { starred: true });
+    } catch (e) {
+      console.log("Error starring thread");
+    }
   }
 }
 
@@ -531,7 +556,21 @@ export async function unstarThread(
       await db.emailThreads.update(threadId, { starred: false });
     }
   } else {
-    console.log("Error unstarring thread");
+    const messages = await db.messages
+      .where("threadId")
+      .equals(threadId)
+      .toArray();
+
+    const promises = messages.map((message) => {
+      return mStarMessage(accessToken, message.id, false);
+    });
+
+    try {
+      await Promise.all(promises);
+      await db.emailThreads.update(threadId, { starred: false });
+    } catch (e) {
+      console.log("Error starring thread");
+    }
   }
 }
 
