@@ -1,5 +1,5 @@
 import { GMAIL_API_URL, getInboxName } from "../constants";
-import { ID_SPAM, ID_TRASH } from "../../constants";
+import { ID_DONE, ID_SPAM, ID_TRASH } from "../../constants";
 import {
   GoogleThreadsListDataType,
   GoogleThreadsGetDataType,
@@ -20,7 +20,9 @@ export const list = async (
   try {
     let folderQuery = "";
     if (filter && filter.folderId) {
-      folderQuery = `&labelIds=${getInboxName(filter.folderId)}`;
+      if (filter.folderId !== ID_DONE) {
+        folderQuery = `&labelIds=${getInboxName(filter.folderId)}`;
+      }
 
       if ([ID_SPAM, ID_TRASH].includes(filter.folderId)) {
         folderQuery += `&includeSpamTrash=true`;
@@ -58,10 +60,15 @@ export const listNextPage = async (
   let data: GoogleThreadsListDataType | null = null;
   let error: string | null = null;
 
-  const label = getInboxName(filter?.folderId || "INBOX");
-  const fetchURL = filter
-    ? `${GMAIL_API_URL}/threads?maxResults=20&labelIds=${label}&pageToken=${nextPageToken}`
-    : `${GMAIL_API_URL}/threads?maxResults=20&pageToken=${nextPageToken}`;
+  let label = "";
+  if (filter?.folderId !== ID_DONE) {
+    label = getInboxName(filter?.folderId || "INBOX");
+  }
+
+  const fetchURL =
+    filter && label
+      ? `${GMAIL_API_URL}/threads?maxResults=20&labelIds=${label}&pageToken=${nextPageToken}`
+      : `${GMAIL_API_URL}/threads?maxResults=20&pageToken=${nextPageToken}`;
 
   try {
     const res: Response = await fetch(fetchURL, {

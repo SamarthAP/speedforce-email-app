@@ -57,6 +57,18 @@ async function handleNewThreadsGoogle(
     const parsedMessages: IMessage[] = [];
 
     threads.forEach((thread) => {
+      // if folderId is DONE and thread includes INBOX labelId, skip
+      const hasInboxLabel = thread.messages.reduce((acc, message) => {
+        if (message.labelIds.includes("INBOX")) {
+          return true;
+        } else {
+          return acc;
+        }
+      }, false);
+
+      if (filter.folderId === ID_DONE && hasInboxLabel) {
+        return;
+      }
       // thread history id i think will be max of all messages' history ids
       if (parseInt(thread.historyId) > maxHistoryId) {
         maxHistoryId = parseInt(thread.historyId);
