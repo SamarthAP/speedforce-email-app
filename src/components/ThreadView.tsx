@@ -130,7 +130,9 @@ export default function ThreadView(props: ThreadViewProps) {
             />
           </div>
         </div>
-        <TestSyncButtons folderId={props.folderId} />
+        {process.env.NODE_ENV !== "production" ? (
+          <TestSyncButtons folderId={props.folderId} />
+        ) : null}
         <ThreadList
           selectedEmail={selectedEmail}
           threads={threads}

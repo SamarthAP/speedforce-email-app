@@ -2,6 +2,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { fullSync, partialSync } from "./sync";
 import { db } from "./db";
 import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 
 interface TestSyncButtonsProps {
   folderId: string;
@@ -75,16 +76,42 @@ const TestSyncButtons = (props: TestSyncButtonsProps) => {
       <button
         type="button"
         className="bg-slate-400 dark:bg-zinc-700 rounded-md py-1 px-2 mr-2 text-white shadow-lg text-xs"
-        onClick={() => void partialSync(selectedEmail.email, selectedEmail.provider, { folderId: props.folderId })}
+        onClick={() =>
+          void partialSync(selectedEmail.email, selectedEmail.provider, {
+            folderId: props.folderId,
+          })
+        }
       >
         Partial Sync (Gmail only)
       </button>
       <button
         type="button"
         className="bg-slate-400 dark:bg-zinc-700 rounded-md py-1 px-2 mr-2 text-white shadow-lg text-xs"
-        onClick={() => void fullSync(selectedEmail.email, selectedEmail.provider, { folderId: props.folderId })}
+        onClick={() =>
+          void fullSync(selectedEmail.email, selectedEmail.provider, {
+            folderId: props.folderId,
+          })
+        }
       >
         Full Sync
+      </button>
+      <button
+        type="button"
+        className="bg-slate-400 dark:bg-zinc-700 rounded-md py-1 px-2 mr-2 text-white shadow-lg text-xs"
+        onClick={() => {
+          async function save() {
+            const messages = await db.messages.toArray();
+
+            window.electron.ipcRenderer.sendMessage("save-messages", messages);
+          }
+
+          void save().then(
+            () => toast.success("Saved messages to file"),
+            () => toast.error("Failed to save messages to file")
+          );
+        }}
+      >
+        Save Messages
       </button>
     </div>
   );

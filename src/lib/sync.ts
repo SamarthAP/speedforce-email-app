@@ -57,15 +57,17 @@ async function handleNewThreadsGoogle(
     const parsedMessages: IMessage[] = [];
 
     threads.forEach((thread) => {
-      // if folderId is DONE and thread includes INBOX labelId, skip
-      const hasInboxLabel = thread.messages.reduce((acc, message) => {
+      let hasInboxLabel = false;
+      let isStarred = false;
+      for (const message of thread.messages) {
         if (message.labelIds.includes("INBOX")) {
-          return true;
-        } else {
-          return acc;
+          hasInboxLabel = true;
         }
-      }, false);
-
+        if (message.labelIds.includes("STARRED")) {
+          isStarred = true;
+        }
+      }
+      // if folderId is DONE and thread includes INBOX labelId, skip
       if (filter.folderId === ID_DONE && hasInboxLabel) {
         return;
       }
@@ -89,13 +91,7 @@ async function handleNewThreadsGoogle(
         date: parseInt(thread.messages[lastMessageIndex].internalDate),
         unread: thread.messages[lastMessageIndex].labelIds.includes("UNREAD"),
         folderId: filter.folderId,
-        starred: thread.messages.reduce((acc, message) => {
-          if (message.labelIds.includes("STARRED")) {
-            return true;
-          } else {
-            return acc;
-          }
-        }, false),
+        starred: isStarred,
       });
 
       thread.messages.forEach((message) => {

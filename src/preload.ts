@@ -9,7 +9,13 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron";
 // Make sure to limit the renderer's access to Electron APIs as much as possible.
 // In this case, we explicitly state which channels renderer is allowed to use.
 
-export type Channels = "open-url" | "open-link-in-browser" | "store-get";
+export type Channels =
+  | "open-url"
+  | "open-link-in-browser"
+  | "store-get"
+  | "store-set"
+  | "save-messages"
+  | "sync-emails";
 // Example use: window.electron.ipcRenderer.sendMessage("open-link-in-browser", url);
 
 const electronHandler = {
@@ -32,6 +38,14 @@ const electronHandler = {
 
       return () => {
         ipcRenderer.removeListener("open-url", subscription);
+      };
+    },
+    onSyncEmails(func: () => unknown) {
+      const subscription = () => func();
+      ipcRenderer.on("sync-emails", subscription);
+
+      return () => {
+        ipcRenderer.removeListener("sync-emails", subscription);
       };
     },
     once(channel: Channels, func: (...args: unknown[]) => void) {
