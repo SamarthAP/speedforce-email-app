@@ -17,6 +17,7 @@ import {
 } from "@heroicons/react/20/solid";
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { HorizontalAttachments } from "./HorizontalAttachments";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -282,6 +283,8 @@ export default function ThreadList({
                     </div>
                   </div>
                 </div>
+                {/* could make HA component return null if no attachments (*current*), could also add a flag in Thread to set if there are attachmetns */}
+                <HorizontalAttachments threadId={thread.id} />
               </div>
             </div>
           );

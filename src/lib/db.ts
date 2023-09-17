@@ -1,5 +1,13 @@
 import Dexie, { Table } from "dexie";
 
+export interface IAttachment {
+  // TODO: this is only for gmail, check what the microsoft equivalent is
+  mimeType: string;
+  filename: string;
+  attachmentId: string;
+  size: number;
+}
+
 export interface IEmail {
   email: string;
   provider: "google" | "outlook";
@@ -40,6 +48,7 @@ export interface IMessage {
   textData: string;
   htmlData: string;
   date: number;
+  attachments: IAttachment[];
   // TODO: add more fields like cc, bcc, attachments, etc.
 }
 
@@ -78,7 +87,7 @@ export class SubClassedDexie extends Dexie {
       googleMetadata: "email, threadsListNextPageTokens",
       outlookMetadata: "email, threadsListNextPageTokens",
       messages:
-        "id, threadId, labelIds, from, to, snippet, headers, textData, htmlData, date",
+        "id, threadId, labelIds, from, to, snippet, headers, textData, htmlData, date, attachments",
     });
   }
 }

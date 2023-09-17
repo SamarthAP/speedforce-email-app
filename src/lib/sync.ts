@@ -25,7 +25,7 @@ import {
 } from "../api/outlook/users/threads";
 
 import { getAccessToken } from "../api/accessToken";
-import { IEmailThread, IMessage, db } from "./db";
+import { IAttachment, IEmailThread, IMessage, db } from "./db";
 import {
   getGoogleMetaData,
   getOutlookMetaData,
@@ -107,6 +107,7 @@ async function handleNewThreadsGoogle(
 
         let textData = "";
         let htmlData = "";
+        const attachments: IAttachment[] = [];
 
         message.payload.parts?.forEach((part) => {
           if (part.mimeType === "text/plain") {
@@ -122,6 +123,15 @@ async function handleNewThreadsGoogle(
               } else if (nestedPart.mimeType === "text/html") {
                 htmlData = nestedPart.body.data || "";
               }
+            });
+          }
+
+          if (part.filename && part.filename !== "") {
+            attachments.push({
+              filename: part.filename,
+              mimeType: part.mimeType,
+              attachmentId: part.body.attachmentId || "",
+              size: part.body.size || 0,
             });
           }
         });
@@ -141,6 +151,7 @@ async function handleNewThreadsGoogle(
           textData,
           htmlData,
           date: parseInt(message.internalDate),
+          attachments,
         });
       });
     });
@@ -153,8 +164,8 @@ async function handleNewThreadsGoogle(
 
     return;
   } catch (e) {
-    console.log("Could not sync mailbox");
-    console.log(e);
+    dLog("Could not sync mailbox");
+    dLog(e);
     return;
   }
 }
@@ -256,6 +267,7 @@ async function handleNewThreadsOutlook(
           textData,
           htmlData,
           date: new Date(message.receivedDateTime).getTime(),
+          attachments: [], // TODO: implement for outlook
         });
       });
     });
@@ -320,7 +332,7 @@ async function partialSyncGoogle(email: string, filter: IThreadFilter) {
   const metadata = await getGoogleMetaData(email, filter.folderId);
 
   if (!metadata) {
-    console.log("no metadata");
+    dLog("no metadata");
     return;
   }
 
@@ -332,7 +344,7 @@ async function partialSyncGoogle(email: string, filter: IThreadFilter) {
 
   const newThreadIds = new Set<string>();
 
-  hList.data.history.forEach((historyItem) => {
+  hList.data.history?.forEach((historyItem) => {
     if (historyItem.messagesAdded) {
       historyItem.messagesAdded.forEach((addedMessage) => {
         // TODO: could take other message info from here but probably not necessary

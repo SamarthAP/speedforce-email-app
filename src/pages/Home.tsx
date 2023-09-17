@@ -2,7 +2,7 @@ import ThreadView from "../components/ThreadView";
 import { ID_INBOX } from "../api/constants";
 import { useEffect } from "react";
 import { useEmailPageOutletContext } from "./_emailPage";
-import { fullSync } from "../lib/sync";
+import { partialSync } from "../lib/sync";
 import { dLog } from "../lib/noProd";
 
 export default function Home() {
@@ -12,7 +12,7 @@ export default function Home() {
   useEffect(() => {
     async function handler() {
       dLog("periodic sync");
-      await fullSync(selectedEmail.email, selectedEmail.provider, {
+      await partialSync(selectedEmail.email, selectedEmail.provider, {
         folderId: ID_INBOX,
       });
     }
@@ -31,7 +31,7 @@ export default function Home() {
         const mins = diff / (1000 * 60 * 10);
         if (mins > 10) {
           dLog("on render sync");
-          await fullSync(selectedEmail.email, selectedEmail.provider, {
+          await partialSync(selectedEmail.email, selectedEmail.provider, {
             folderId: ID_INBOX,
           });
           await window.electron.ipcRenderer.invoke("store-set", {
