@@ -169,5 +169,23 @@ setInterval(() => {
   }
 }, 1000 * 60 * 10);
 
+function saveFileToDownloadsFolder(filename: string, data: string) {
+  const downloadsPath = app.getPath("downloads");
+  const filePath = path.join(downloadsPath, filename);
+
+  const bufferData = Buffer.from(data, "base64");
+  fs.writeFileSync(filePath, bufferData);
+}
+
+ipcMain.handle("save-file", (_event, filename, data) => {
+  try {
+    saveFileToDownloadsFolder(filename, data);
+    return true;
+  } catch (e) {
+    console.log(e);
+    return false;
+  }
+});
+
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.

@@ -17,12 +17,15 @@ export function HorizontalAttachments({
     []
   ) as IMessage[];
 
-  const attachments = messages.reduce(
-    (acc: IAttachment[], message: IMessage) => {
-      return acc.concat(message.attachments);
-    },
-    [] as IAttachment[]
-  );
+  let attachments: IAttachment[] = [];
+  let messageId = "";
+  for (let i = 0; i < messages.length; i++) {
+    if (messages[i].attachments.length > 0) {
+      attachments = messages[i].attachments;
+      messageId = messages[i].id;
+      break;
+    }
+  }
 
   if (attachments.length === 0) {
     return null;
@@ -31,7 +34,13 @@ export function HorizontalAttachments({
   return (
     <div className="px-10 my-1 col-span-full w-full flex gap-x-1 overflow-x-scroll">
       {attachments.map((attachment: IAttachment, idx: number) => {
-        return <AttachmentButton key={idx} attachment={attachment} />;
+        return (
+          <AttachmentButton
+            key={idx}
+            attachment={attachment}
+            messageId={messageId}
+          />
+        );
       })}
     </div>
   );

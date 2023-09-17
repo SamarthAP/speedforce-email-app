@@ -2,7 +2,10 @@ import { PaperClipIcon } from "@heroicons/react/20/solid";
 import { IAttachment } from "../lib/db";
 import { classNames } from "../lib/util";
 import toast from "react-hot-toast";
-import { runNotProd } from "../lib/noProd";
+import { downloadAttachment } from "../lib/sync";
+import { useEmailPageOutletContext } from "../pages/_emailPage";
+import { useState } from "react";
+import Spinner from "./Spinner";
 
 // TODO: can also add programming languages and stuff, also change to using file extensions
 function mapMimeTypeToColor(mimeType: string) {
@@ -26,27 +29,55 @@ function mapMimeTypeToColor(mimeType: string) {
 
 interface AttachmentButtonProps {
   attachment: IAttachment;
+  messageId: string;
 }
 
-export function AttachmentButton({ attachment }: AttachmentButtonProps) {
+export function AttachmentButton({
+  attachment,
+  messageId,
+}: AttachmentButtonProps) {
+  const { selectedEmail } = useEmailPageOutletContext();
+  const [loading, setLoading] = useState(false);
+
   return (
     <button
       onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         event.stopPropagation();
-        runNotProd(() => toast(JSON.stringify(attachment)));
+        setLoading(true);
+        void downloadAttachment(
+          selectedEmail.email,
+          selectedEmail.provider,
+          messageId,
+          attachment.attachmentId,
+          attachment.filename
+        ).then((success) => {
+          if (success) {
+            toast.success(
+              `${attachment.filename} available in downloads folder`,
+              { duration: 4000 }
+            );
+          } else {
+            toast.error(`Failed to download ${attachment.filename}`);
+          }
+          setLoading(false);
+        });
       }}
       className={classNames(
         "inline-flex items-center",
         "rounded-md px-2 py-2 text-xs font-semibold shadow-sm focus:outline-none",
-        "bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-gray-300 dark:hover:bg-zinc-600"
+        "bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-300 dark:hover:bg-zinc-600"
       )}
     >
-      <PaperClipIcon
-        className={classNames(
-          "w-4 h-4 mr-1",
-          mapMimeTypeToColor(attachment.mimeType)
-        )}
-      />
+      {!loading ? (
+        <PaperClipIcon
+          className={classNames(
+            "w-4 h-4 mr-1",
+            mapMimeTypeToColor(attachment.mimeType)
+          )}
+        />
+      ) : (
+        <Spinner className="w-4 h-4 mr-1 !text-slate-600 dark:!text-zinc-300" />
+      )}
       <span>{attachment.filename}</span>
     </button>
   );

@@ -15,7 +15,8 @@ export type Channels =
   | "store-get"
   | "store-set"
   | "save-messages"
-  | "sync-emails";
+  | "sync-emails"
+  | "save-file";
 // Example use: window.electron.ipcRenderer.sendMessage("open-link-in-browser", url);
 
 const electronHandler = {

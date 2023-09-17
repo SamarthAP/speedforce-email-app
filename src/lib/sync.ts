@@ -32,12 +32,13 @@ import {
   setPageToken,
   setHistoryId,
 } from "./dexieHelpers";
-import { getMessageHeader } from "./util";
+import { decodeGoogleMessageData, getMessageHeader } from "./util";
 import _ from "lodash";
 import { dLog } from "./noProd";
 import { IThreadFilter } from "../api/model/users.thread";
 import { ID_DONE, ID_TRASH } from "../api/constants";
 import { getInboxName } from "../api/outlook/constants";
+import { getAttachment } from "../api/gmail/users/messages";
 
 async function handleNewThreadsGoogle(
   accessToken: string,
@@ -780,4 +781,41 @@ export async function trashThread(
       console.log("Error deleting thread");
     }
   }
+}
+
+export async function downloadAttachment(
+  email: string,
+  provider: "google" | "outlook",
+  messageId: string,
+  attachmentId: string,
+  filename: string
+): Promise<boolean> {
+  const accessToken = await getAccessToken(email);
+
+  if (provider === "google") {
+    const { data, error } = await getAttachment(
+      accessToken,
+      messageId,
+      attachmentId
+    );
+
+    if (error || !data) {
+      dLog("Error downloading attachment");
+      return false;
+    } else {
+      // true if file was saved successfully, false otherwise
+      const success = await window.electron.ipcRenderer.invoke(
+        "save-file",
+        filename,
+        data.data
+      );
+
+      dLog("saving file:", success);
+      return success;
+    }
+  } else if (provider === "outlook") {
+    // TODO
+  }
+
+  return false;
 }

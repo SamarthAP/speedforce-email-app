@@ -185,8 +185,8 @@ export default function ThreadList({
                 onMouseOver={() => setHoveredThread(thread)}
                 className="grid grid-cols-10 py-1 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-default group"
               >
-                <div className="text-sm flex items-center font-medium pr-4 col-span-2 group">
-                  <div className="group flex flex-col items-center justify-center px-2">
+                <div className="text-sm flex items-center font-medium pr-4 col-span-2">
+                  <div className="flex flex-col items-center justify-center px-2">
                     {thread.starred ? (
                       <button
                         onClick={(
@@ -223,11 +223,11 @@ export default function ThreadList({
                     {thread.from.slice(0, thread.from.lastIndexOf("<"))}
                   </span>
                 </div>
-                <div className="col-span-8 grid grid-cols-10 group">
+                <div className="col-span-8 grid grid-cols-10">
                   <div className="text-sm truncate pr-4 col-span-2 text-black dark:text-zinc-100">
                     {thread.subject || "(no subject)"}
                   </div>
-                  <div className="col-span-8 flex group">
+                  <div className="col-span-8 flex">
                     <div className="text-sm truncate text-slate-400 dark:text-zinc-500 w-full">
                       {/* {he.decode(
                         thread.snippet.slice(0, thread.snippet.indexOf("\n"))
@@ -235,7 +235,7 @@ export default function ThreadList({
                       {he.decode(thread.snippet)}
                     </div>
                     {/* flex-shrink-0 is the class keeping the text from not expanding the height of the row */}
-                    <div className="text-sm pl-2 pr-4 flex-shrink-0 text-slate-400 dark:text-zinc-500 font-medium group flex flex-col justify-center">
+                    <div className="text-sm pl-2 pr-4 flex-shrink-0 text-slate-400 dark:text-zinc-500 font-medium flex flex-col justify-center">
                       <span className="group-hover:hidden block">
                         {new Date(thread.date).toDateString()}
                       </span>
