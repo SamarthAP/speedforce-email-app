@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { IAttachment, db } from "../lib/db";
+import { IAttachment, IMessage, db } from "../lib/db";
 import { AttachmentButton } from "./AttachmentButton";
 
 interface HorizontalAttachmentsProps {
@@ -15,11 +15,14 @@ export function HorizontalAttachments({
     },
     [threadId],
     []
-  );
+  ) as IMessage[];
 
-  const attachments = messages.reduce((acc, message) => {
-    return acc.concat(message.attachments);
-  }, [] as IAttachment[]);
+  const attachments = messages.reduce(
+    (acc: IAttachment[], message: IMessage) => {
+      return acc.concat(message.attachments);
+    },
+    [] as IAttachment[]
+  );
 
   if (attachments.length === 0) {
     return null;
@@ -27,7 +30,7 @@ export function HorizontalAttachments({
 
   return (
     <div className="px-10 my-1 col-span-full w-full flex gap-x-1 overflow-x-scroll">
-      {attachments.map((attachment, idx) => {
+      {attachments.map((attachment: IAttachment, idx: number) => {
         return <AttachmentButton key={idx} attachment={attachment} />;
       })}
     </div>
