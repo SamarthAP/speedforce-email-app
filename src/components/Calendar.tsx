@@ -23,7 +23,7 @@ export default function Calendar() {
 
   return (
     <div className="text-center col-start-8 col-end-13 row-start-1">
-      <div className="flex items-center text-gray-900">
+      {/* <div className="flex items-center text-gray-900">
         <button
           onClick={() => offsetMonth(-1)}
           type="button"
@@ -88,7 +88,7 @@ export default function Calendar() {
             </time>
           </button>
         ))}
-      </div>
+      </div> */}
     </div>
   );
 }
