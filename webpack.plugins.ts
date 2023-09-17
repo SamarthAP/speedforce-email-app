@@ -15,4 +15,7 @@ export const plugins = [
       path: path.resolve(__dirname, ".env"),
     }).parsed,
   }),
+  new webpack.DefinePlugin({
+    'process.type': '"renderer"'
+  }),
 ];
