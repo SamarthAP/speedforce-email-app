@@ -4,8 +4,6 @@ import {
   ExclamationCircleIcon,
   InboxIcon,
   PaperAirplaneIcon,
-  PlusIcon,
-  ViewColumnsIcon,
   TrashIcon,
   StarIcon,
   ArchiveBoxIcon,
@@ -17,30 +15,35 @@ const navigation = [
   { name: "Inbox", href: "/", icon: InboxIcon, current: false },
   { name: "Starred", href: "/starred", icon: StarIcon, current: false },
   { name: "Sent", href: "/sent", icon: PaperAirplaneIcon, current: false },
-  { name: "Drafts", href: "/drafts", icon: ClipboardDocumentIcon, current: false },
+  {
+    name: "Drafts",
+    href: "/drafts",
+    icon: ClipboardDocumentIcon,
+    current: false,
+  },
   { name: "Done", href: "/done", icon: ArchiveBoxIcon, current: false },
   { name: "Spam", href: "/spam", icon: ExclamationCircleIcon, current: false },
   { name: "Deleted Items", href: "/deleted", icon: TrashIcon, current: false },
   { name: "Scheduled", href: "#", icon: ClockIcon, current: false },
-  {
-    name: "Add Account",
-    href: "/page/addAccount",
-    icon: PlusIcon,
-    current: false,
-  },
+  // {
+  //   name: "Add Account",
+  //   href: "/page/addAccount",
+  //   icon: PlusIcon,
+  //   current: false,
+  // },
 ];
 
 export default function Sidebar() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex-shrink-0 w-20 overflow-y-auto pb-4">
-      <div className="flex h-16 shrink-0 items-center justify-center cursor-pointer">
+    <div className="flex-shrink-0 w-20 overflow-y-auto pb-4 h-full overflow-hidden">
+      {/* <div className="flex h-16 shrink-0 items-center justify-center cursor-pointer">
         <div className="text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 flex gap-x-3 rounded-md p-3 text-sm leading-6 font-semibold">
           <ViewColumnsIcon className="h-6 w-6 shrink-0" aria-hidden="true" />
         </div>
-      </div>
-      <nav className="mt-4">
+      </div> */}
+      <nav className="mt-4 overflow-scroll">
         <ul role="list" className="flex flex-col items-center space-y-1">
           {navigation.map((item) => (
             <li className="cursor-pointer" key={item.name}>
