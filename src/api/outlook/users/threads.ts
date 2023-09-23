@@ -2,7 +2,6 @@ import { OUTLOOK_API_URL, getInboxName } from "../constants";
 import {
   OutlookThreadsListDataType,
   IThreadFilter,
-  OutlookMessageDataType,
 } from "../../model/users.thread";
 
 // in endpoints that will not be called often, we can use the async/await syntax
@@ -171,25 +170,6 @@ export const sendEmail = async (
     throw Error("Error replying to thread");
   }
 };
-
-// Build headers for outlook messages to be consistent with Gmail nomenclature
-export function buildMessageHeadersOutlook(message: OutlookMessageDataType) {
-  // TODO: Add the rest of the headers later as needed
-  return [
-    {
-      name: "From",
-      value: message.from?.emailAddress?.address || "",
-    },
-    {
-      name: "To",
-      value: message.toRecipients[0]?.emailAddress.address || "",
-    },
-    {
-      name: "Subject",
-      value: message.subject,
-    },
-  ];
-}
 
 export const markRead = async (accessToken: string, threadId: string) => {
   const response = await fetch(`${OUTLOOK_API_URL}/messages/${threadId}`, {

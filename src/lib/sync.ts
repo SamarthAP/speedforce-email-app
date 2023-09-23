@@ -18,11 +18,17 @@ import {
   markRead as mThreadMarkRead,
   sendReply as mSendReply,
   sendEmail as mSendEmail,
-  buildMessageHeadersOutlook,
   deleteMessage as mDeleteMessage,
   moveMessage as mMoveMessage,
   starMessage as mStarMessage,
 } from "../api/outlook/users/threads";
+import {
+  buildMessageHeadersOutlook,
+  buildMessageLabelIdsOutlook,
+  getLabelIdsForMoveMessageOutlook,
+  addLabelIdsOutlook,
+  removeLabelIdsOutlook,
+} from "../api/outlook/helpers";
 
 import { getAccessToken } from "../api/accessToken";
 import { IAttachment, IEmailThread, IMessage, db } from "./db";
@@ -256,8 +262,7 @@ async function handleNewThreadsOutlook(
         parsedMessages.push({
           id: message.id,
           threadId: message.conversationId,
-          // labelIds: message.labelIds,
-          labelIds: [],
+          labelIds: buildMessageLabelIdsOutlook(message, filter.folderId),
           from:
             message.from?.emailAddress?.address ||
             message.sender?.emailAddress?.address ||
@@ -495,9 +500,16 @@ export async function markRead(
       return mThreadMarkRead(accessToken, message.id);
     });
 
+    const updateDexiePromises = messages.map((message) => {
+      return db.messages.update(message.id, {
+        labelIds: removeLabelIdsOutlook(message.labelIds, "UNREAD"),
+      });
+    });
+
     // mark all messages in conversation as read since isRead is tied to the message, not the thread
     // TODO: error handling
     await Promise.all(apiPromises);
+    await Promise.all(updateDexiePromises);
     await db.emailThreads.update(threadId, { unread: false });
   }
 }
@@ -539,15 +551,18 @@ export async function starThread(
       });
 
     if (!message) {
-      console.log("Error starring thread");
+      dLog("Error starring thread");
       return;
     }
 
     try {
       await mStarMessage(accessToken, message.id, true);
+      await db.messages.update(message.id, {
+        labelIds: addLabelIdsOutlook(message.labelIds, "STARRED"),
+      });
       await db.emailThreads.update(threadId, { starred: true });
     } catch (e) {
-      console.log("Error starring thread");
+      dLog("Error starring thread");
     }
   }
 }
@@ -582,15 +597,22 @@ export async function unstarThread(
       .equals(threadId)
       .toArray();
 
-    const promises = messages.map((message) => {
+    const apiPromises = messages.map((message) => {
       return mStarMessage(accessToken, message.id, false);
     });
 
+    const updateDexiePromises = messages.map((message) => {
+      return db.messages.update(message.id, {
+        labelIds: removeLabelIdsOutlook(message.labelIds, "STARRED"),
+      });
+    });
+
     try {
-      await Promise.all(promises);
+      await Promise.all(apiPromises);
+      await Promise.all(updateDexiePromises);
       await db.emailThreads.update(threadId, { starred: false });
     } catch (e) {
-      console.log("Error starring thread");
+      dLog("Error starring thread");
     }
   }
 }
@@ -625,15 +647,25 @@ export async function archiveThread(
       .equals(threadId)
       .toArray();
 
-    const promises = messages.map((message) => {
+    const apiPromises = messages.map((message) => {
       return mMoveMessage(accessToken, message.id, getInboxName(ID_DONE));
     });
 
+    const updateDexiePromises = messages.map((message) => {
+      return db.messages.update(message.id, {
+        labelIds: getLabelIdsForMoveMessageOutlook(message.labelIds, ID_DONE, [
+          "UNREAD",
+          "STARRED",
+        ]),
+      });
+    });
+
     try {
-      await Promise.all(promises);
+      await Promise.all(apiPromises);
+      await Promise.all(updateDexiePromises);
       await db.emailThreads.update(threadId, { folderId: ID_DONE }); // TODO: set up proper trash folder?
     } catch (e) {
-      console.log("Error archiving thread");
+      dLog("Error archiving thread");
     }
   }
 }
@@ -770,15 +802,26 @@ export async function trashThread(
       .equals(threadId)
       .toArray();
 
-    const promises = messages.map((message) => {
+    const apiPromises = messages.map((message) => {
       return mMoveMessage(accessToken, message.id, getInboxName(ID_TRASH));
     });
 
+    // Update labelIds in dexie
+    const updateDexiePromises = messages.map((message) => {
+      return db.messages.update(message.id, {
+        labelIds: getLabelIdsForMoveMessageOutlook(message.labelIds, ID_TRASH, [
+          "UNREAD",
+          "STARRED",
+        ]),
+      });
+    });
+
     try {
-      await Promise.all(promises);
+      await Promise.all(apiPromises);
+      await Promise.all(updateDexiePromises);
       await db.emailThreads.update(threadId, { folderId: ID_TRASH }); // TODO: set up proper trash folder?
     } catch (e) {
-      console.log("Error deleting thread");
+      dLog("Error deleting thread");
     }
   }
 }
