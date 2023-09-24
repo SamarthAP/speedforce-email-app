@@ -15,6 +15,7 @@ import { WriteMessage } from "../components/WriteMessage";
 interface ThreadViewProps {
   folderId: string;
   title: string;
+  queryFnc?: (email: string) => Promise<IEmailThread[]>;
 }
 
 export default function ThreadView(props: ThreadViewProps) {
@@ -45,6 +46,8 @@ export default function ThreadView(props: ThreadViewProps) {
 
   const threads = useLiveQuery(
     () => {
+      if (props.queryFnc) return props.queryFnc(selectedEmail.email);
+
       const emailThreads = db.emailThreads
         .where("email")
         .equals(selectedEmail.email)
