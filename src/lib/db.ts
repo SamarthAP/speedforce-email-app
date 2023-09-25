@@ -30,8 +30,7 @@ export interface IEmailThread {
   snippet: string;
   date: number;
   unread: boolean;
-  folderId: string; // TODO: reflect changes in SubClassedDexie
-  starred: boolean;
+  labelIds: string[];
 }
 
 export interface IMessage {
@@ -69,6 +68,12 @@ export interface IOutlookMetadata {
   }[];
 }
 
+// Outlook messages do not contain folder names in response. Store names when fetching to avoid refetching unecessarily
+export interface IOutlookFolder {
+  id: string;
+  displayName: string;
+}
+
 export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
@@ -76,6 +81,7 @@ export class SubClassedDexie extends Dexie {
   googleMetadata!: Table<IGoogleMetadata, string>;
   outlookMetadata!: Table<IOutlookMetadata, string>;
   messages!: Table<IMessage, string>;
+  outlookFolders!: Table<IOutlookFolder, string>;
 
   constructor() {
     super("SpeedforceDB");
@@ -83,11 +89,12 @@ export class SubClassedDexie extends Dexie {
       emails: "email, provider, accessToken, expiresAt",
       selectedEmail: "id, email, provider",
       emailThreads:
-        "id, historyId, email, from, subject, snippet, date, unread, starred",
+        "id, historyId, email, from, subject, snippet, date, unread, labelIds",
       googleMetadata: "email, threadsListNextPageTokens",
       outlookMetadata: "email, threadsListNextPageTokens",
       messages:
         "id, threadId, labelIds, from, to, snippet, headers, textData, htmlData, date, attachments",
+      outlookFolders: "id, displayName",
     });
   }
 }

@@ -1,4 +1,4 @@
-import { GMAIL_API_URL, getInboxName } from "../constants";
+import { GMAIL_API_URL, GMAIL_FOLDER_IDS_MAP } from "../constants";
 import { ID_DONE, ID_SPAM, ID_TRASH } from "../../constants";
 import {
   GoogleThreadsListDataType,
@@ -10,18 +10,16 @@ import { Base64 } from "js-base64";
 import { dLog } from "../../../lib/noProd";
 
 // in endpoints that will not be called often, we can use the async/await syntax
-export const list = async (
-  accessToken: string,
-  filter: IThreadFilter | null = null
-) => {
+export const list = async (accessToken: string, filter: IThreadFilter) => {
   let data: GoogleThreadsListDataType | null = null;
   let error: string | null = null;
 
   try {
     let folderQuery = "";
-    if (filter && filter.folderId) {
+    const inboxName = GMAIL_FOLDER_IDS_MAP.getValue(filter.folderId);
+    if (filter && filter.folderId && inboxName) {
       if (filter.folderId !== ID_DONE) {
-        folderQuery = `&labelIds=${getInboxName(filter.folderId)}`;
+        folderQuery = `&labelIds=${inboxName}`;
       }
 
       if ([ID_SPAM, ID_TRASH].includes(filter.folderId)) {
@@ -55,14 +53,14 @@ export const list = async (
 export const listNextPage = async (
   accessToken: string,
   nextPageToken: string,
-  filter: IThreadFilter | null = null
+  filter: IThreadFilter
 ) => {
   let data: GoogleThreadsListDataType | null = null;
   let error: string | null = null;
 
   let label = "";
   if (filter?.folderId !== ID_DONE) {
-    label = getInboxName(filter?.folderId || "INBOX");
+    label = GMAIL_FOLDER_IDS_MAP.getValue(filter.folderId) || "";
   }
 
   const fetchURL =

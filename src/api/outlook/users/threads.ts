@@ -1,21 +1,19 @@
-import { OUTLOOK_API_URL, getInboxName } from "../constants";
+import { OUTLOOK_API_URL, OUTLOOK_FOLDER_IDS_MAP } from "../constants";
 import {
   OutlookThreadsListDataType,
   IThreadFilter,
 } from "../../model/users.thread";
 
 // in endpoints that will not be called often, we can use the async/await syntax
-export const list = async (
-  accessToken: string,
-  filter: IThreadFilter | null = null
-) => {
+export const list = async (accessToken: string, filter: IThreadFilter) => {
   let data: OutlookThreadsListDataType | null = null;
   let error: string | null = null;
 
   try {
     let folderId = "";
-    if (filter && filter.folderId) {
-      folderId = `mailfolders/${getInboxName(filter.folderId)}`;
+    const inboxName = OUTLOOK_FOLDER_IDS_MAP.getValue(filter.folderId);
+    if (filter && filter.folderId && inboxName) {
+      folderId = `mailfolders/${inboxName}`;
     }
 
     const res: Response = await fetch(
@@ -241,4 +239,9 @@ export const starMessage = async (
       },
     }),
   });
+
+  if (!response.ok) {
+    throw Error("Error starring message");
+  }
 };
+ 

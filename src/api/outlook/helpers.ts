@@ -1,5 +1,8 @@
 // Helper functions for Outlook to follow Gmail nomenclature
 import { OutlookMessageDataType } from "../model/users.thread";
+import { db } from "../../lib/db";
+import { get } from "./users/folder";
+import { getAccessToken } from "../accessToken";
 
 // Build headers for outlook messages for send functionality
 export function buildMessageHeadersOutlook(message: OutlookMessageDataType) {
@@ -61,4 +64,32 @@ export function addLabelIdsOutlook(labelIds: string[], label: string) {
 
 export function removeLabelIdsOutlook(labelIds: string[], label: string) {
   return labelIds.filter((labelId) => labelId !== label);
+}
+
+export function formatFolderDisplayNameOutlook(folderName: string) {
+  return folderName.replace(/\s+/g, "");
+}
+
+export async function getFolderNameFromIdOutlook(
+  email: string,
+  folderId: string
+) {
+  const folderName = await db.outlookFolders.get(folderId);
+  if (folderName) return folderName.displayName;
+
+  const accessToken = await getAccessToken(email);
+  const { data, error } = await get(accessToken, folderId);
+
+  if (!data || error) {
+    console.log("Error fetching folder name");
+    return "";
+  }
+
+  const formattedDisplayName = formatFolderDisplayNameOutlook(data.displayName);
+  await db.outlookFolders.put({
+    id: folderId,
+    displayName: formattedDisplayName,
+  });
+
+  return formattedDisplayName;
 }
