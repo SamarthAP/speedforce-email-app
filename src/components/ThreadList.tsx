@@ -104,7 +104,7 @@ export default function ThreadList({
   ]);
 
   async function handleStarClick(thread: IEmailThread) {
-    if (thread.starred) {
+    if (thread.labelIds.includes("STARRED")) {
       await unstarThread(
         selectedEmail.email,
         selectedEmail.provider,
@@ -187,7 +187,7 @@ export default function ThreadList({
               >
                 <div className="text-sm flex items-center font-medium pr-4 col-span-2">
                   <div className="flex flex-col items-center justify-center px-2">
-                    {thread.starred ? (
+                    {thread.labelIds.includes("STARRED") ? (
                       <button
                         onClick={(
                           event: React.MouseEvent<HTMLButtonElement, MouseEvent>

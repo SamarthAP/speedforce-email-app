@@ -9,7 +9,7 @@ export default function Starred() {
   const queryFnc = (selectedEmail: string) => db.emailThreads
     .where("email")
     .equals(selectedEmail)
-    .and((thread) => thread.starred)
+    .and((thread) => thread.labelIds.includes("STARRED"))
     .reverse()
     .sortBy("date");
 

@@ -577,7 +577,7 @@ export async function starThread(
       });
 
       await Promise.all(promises);
-      await db.emailThreads.update(threadId, { starred: true });
+      await updateLabelIdsForEmailThread(threadId, ["STARRED"], []);
     }
   } else if (provider === "outlook") {
     // In outlook, starring = flagging the most recent message not sent by active user
@@ -601,7 +601,7 @@ export async function starThread(
       await db.messages.update(message.id, {
         labelIds: addLabelIdsOutlook(message.labelIds, "STARRED"),
       });
-      await db.emailThreads.update(threadId, { starred: true });
+      await updateLabelIdsForEmailThread(threadId, ["STARRED"], []);
     } catch (e) {
       dLog("Error starring thread");
     }
@@ -630,7 +630,7 @@ export async function unstarThread(
       });
 
       await Promise.all(promises);
-      await db.emailThreads.update(threadId, { starred: false });
+      await updateLabelIdsForEmailThread(threadId, [], ["STARRED"]);
     }
   } else {
     const messages = await db.messages
@@ -651,7 +651,7 @@ export async function unstarThread(
     try {
       await Promise.all(apiPromises);
       await Promise.all(updateDexiePromises);
-      await db.emailThreads.update(threadId, { starred: false });
+      await updateLabelIdsForEmailThread(threadId, [], ["STARRED"]);
     } catch (e) {
       dLog("Error starring thread");
     }
