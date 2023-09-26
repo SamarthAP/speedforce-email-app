@@ -49,7 +49,7 @@ export function getLabelIdsForMoveMessageOutlook(
 ) {
   console.log("Before:", labelIds);
   const filteredLabelIds = labelIds.filter((labelId) => {
-    return allowList.includes(labelId);
+    return allowList?.includes(labelId);
   });
 
   filteredLabelIds.push(folderId);

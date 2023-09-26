@@ -5,6 +5,8 @@ import MicrosoftLogo from "../assets/microsoftLogo.svg";
 import { db } from "../lib/db";
 import { useNavigate } from "react-router-dom";
 import Titlebar from "../components/Titlebar";
+import { cleanIndexedDb } from "../lib/experiments";
+import { runNotProd } from "../lib/noProd";
 
 async function insertEmail(
   email: string,
@@ -161,14 +163,22 @@ export default function AddAccount() {
             Sign in with Microsoft
           </button>
         </div>
-        {process.env.NODE_ENV === "development" && (
-          <button
-            onClick={() => void manualInsertEmail()}
-            className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
-          >
-            Manually Add Email to DB
-          </button>
-        )}
+        {runNotProd(() => (
+          <>
+            <button
+              onClick={() => void manualInsertEmail()}
+              className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+            >
+              Manually Add Email to DB
+            </button>
+            <button
+              onClick={() => void cleanIndexedDb()}
+              className="mt-2 inline-flex items-center gap-x-1.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+            >
+              Delete IndexedDB
+            </button>
+          </>
+        )) || null}
         <button
           type="button"
           onClick={() => navigate("/")}
@@ -176,8 +186,16 @@ export default function AddAccount() {
         >
           Go To Home
         </button>
-        <p className="dark:text-white">client id: {clientId}</p>
-        <p className="dark:text-white">render count: {renderCounter.current}</p>
+        {runNotProd(() => {
+          return (
+            <>
+              <p className="dark:text-white">client id: {clientId}</p>
+              <p className="dark:text-white">
+                render count: {renderCounter.current}
+              </p>
+            </>
+          );
+        }) || null}
       </div>
     </div>
   );

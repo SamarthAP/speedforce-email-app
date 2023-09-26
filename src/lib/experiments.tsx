@@ -3,6 +3,21 @@ import { fullSync, partialSync } from "./sync";
 import { db } from "./db";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { dLog } from "./noProd";
+
+function cleanIndexedDb() {
+  const request = window.indexedDB.deleteDatabase("SpeedforceDB");
+  request.onsuccess = () => {
+    dLog("Deleted database successfully");
+    window.location.reload();
+  };
+  request.onerror = () => {
+    dLog("Couldn't delete database");
+  };
+  request.onblocked = () => {
+    dLog("Couldn't delete database due to the operation being blocked");
+  };
+}
 
 interface TestSyncButtonsProps {
   folderId: string;
@@ -117,4 +132,4 @@ const TestSyncButtons = (props: TestSyncButtonsProps) => {
   );
 };
 
-export { TestSyncButtons };
+export { TestSyncButtons, cleanIndexedDb };

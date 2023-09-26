@@ -10,6 +10,7 @@ import { stateToHTML } from "draft-js-export-html";
 import { partialSync, sendReply } from "../lib/sync";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import SimpleButton from "./SimpleButton";
+import { AttachmentButton } from "./AttachmentButton";
 
 interface MessageProps {
   message: IMessage;
@@ -91,6 +92,7 @@ export default function Message({ message, folderId }: MessageProps) {
           </p>
         </div>
       </div>
+
       {showBody && (
         <div className="pb-4 px-4">
           {/* TODO: Verify that this is valid solution -> Assume google HTML is encoded and outlook is not */}
@@ -102,6 +104,19 @@ export default function Message({ message, folderId }: MessageProps) {
           />
         </div>
       )}
+
+      {
+        <div className="p-4 flex gap-x-1 overflow-scroll">
+          {message.attachments.map((attachment, idx) => (
+            <AttachmentButton
+              key={idx}
+              attachment={attachment}
+              messageId={message.id}
+            />
+          ))}
+        </div>
+      }
+
       {showReply && (
         <div
           className="p-4 border-t border-t-slate-200 dark:border-t-zinc-700"

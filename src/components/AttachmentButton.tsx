@@ -63,7 +63,7 @@ export function AttachmentButton({
         });
       }}
       className={classNames(
-        "inline-flex items-center",
+        "inline-flex items-center h-[32px]",
         "rounded-md px-2 py-2 text-xs font-semibold shadow-sm focus:outline-none",
         "bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-300 dark:hover:bg-zinc-600"
       )}
@@ -78,7 +78,7 @@ export function AttachmentButton({
       ) : (
         <Spinner className="w-4 h-4 mr-1 !text-slate-600 dark:!text-zinc-300" />
       )}
-      <span>{attachment.filename}</span>
+      <span className="max-w-[128px] truncate">{attachment.filename}</span>
     </button>
   );
 }

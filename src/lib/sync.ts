@@ -69,10 +69,10 @@ async function handleNewThreadsGoogle(
       let isStarred = false;
       let labelIds: string[] = [];
       for (const message of thread.messages) {
-        if (message.labelIds.includes("INBOX")) {
+        if (message.labelIds?.includes("INBOX")) {
           hasInboxLabel = true;
         }
-        if (message.labelIds.includes("STARRED")) {
+        if (message.labelIds?.includes("STARRED")) {
           isStarred = true;
         }
       }
@@ -166,9 +166,7 @@ async function handleNewThreadsGoogle(
         ),
         snippet: thread.messages[lastMessageIndex].snippet || "", // this should be the latest message's snippet
         date: parseInt(thread.messages[lastMessageIndex].internalDate),
-        unread: thread.messages[lastMessageIndex].labelIds.includes("UNREAD"),
-        folderId: filter.folderId,
-        starred: isStarred,
+        unread: thread.messages[lastMessageIndex].labelIds?.includes("UNREAD"),
         labelIds: labelIds,
       });
     });
@@ -204,7 +202,7 @@ async function batchGetThreads(
       const batchThreads = await Promise.all(promises);
       threads.push(...batchThreads);
     } catch (e) {
-      console.log("Error getting batch threads");
+      dLog("Error getting batch threads");
       continue;
     }
   }
@@ -270,7 +268,7 @@ async function handleNewThreadsOutlook(
           attachments: [], // TODO: implement for outlook
         });
 
-        // console.log(message)
+        // dLog(message)
         const folderName = await getFolderNameFromIdOutlook(
           email,
           message.parentFolderId
@@ -294,18 +292,15 @@ async function handleNewThreadsOutlook(
           thread.value[lastMessageIndex].receivedDateTime
         ).getTime(),
         unread: unread,
-        folderId: filter.folderId,
-        starred: isStarred,
         labelIds: labelIds,
       });
-      console.log(labelIds);
     }
 
     await db.emailThreads.bulkPut(parsedThreads);
     await db.messages.bulkPut(parsedMessages);
   } catch (e) {
-    console.log("Could not sync mailbox");
-    console.log(e);
+    dLog("Could not sync mailbox");
+    dLog(e);
     return;
   }
 }
@@ -465,7 +460,7 @@ async function updateLabelIdsForEmailThread(
   }
 
   const labelIds = thread.labelIds
-    .filter((labelId) => !removeLabelIds.includes(labelId))
+    .filter((labelId) => !removeLabelIds?.includes(labelId))
     .concat(addLabelIds);
 
   await db.emailThreads.update(threadId, { labelIds });
@@ -519,7 +514,7 @@ export async function markRead(
     ]);
 
     if (error || !data) {
-      console.log("Error marking thread as read");
+      dLog("Error marking thread as read");
       return;
     } else {
       const promises = data.messages.map((message) => {
@@ -567,7 +562,7 @@ export async function starThread(
     ]);
 
     if (error || !data) {
-      console.log("Error starring thread");
+      dLog("Error starring thread");
       return;
     } else {
       const promises = data.messages.map((message) => {
@@ -620,7 +615,7 @@ export async function unstarThread(
     ]);
 
     if (error || !data) {
-      console.log("Error unstarring thread");
+      dLog("Error unstarring thread");
       return;
     } else {
       const promises = data.messages.map((message) => {
@@ -680,7 +675,21 @@ export async function archiveThread(
       });
 
       await Promise.all(promises);
-      await updateLabelIdsForEmailThread(threadId, [ID_DONE], [ID_INBOX, ID_SENT]); // TODO: set up proper archive folder?
+      await updateLabelIdsForEmailThread(
+        threadId,
+        [ID_DONE],
+        [ID_INBOX, ID_SENT]
+      ); // TODO: set up proper archive folder?
+      const res = await addLabelIds(accessToken, threadId, ["ARCHIVE"]);
+
+      if (res.error || !res.data) {
+        dLog("Error adding DONE label to thread:");
+        dLog(res.error);
+        return;
+      } else {
+        dLog("Added DONE label to thread:");
+        dLog(res.data);
+      }
     }
   } else if (provider === "outlook") {
     const messages = await db.messages
@@ -697,13 +706,21 @@ export async function archiveThread(
     });
 
     const updateDexiePromises = messages.map(() => {
-      return updateLabelIdsForEmailThread(threadId, [ID_DONE], [ID_INBOX, ID_SENT]);
+      return updateLabelIdsForEmailThread(
+        threadId,
+        [ID_DONE],
+        [ID_INBOX, ID_SENT]
+      );
     });
 
     try {
       await Promise.all(apiPromises);
       await Promise.all(updateDexiePromises);
-      await updateLabelIdsForEmailThread(threadId, [ID_DONE], [ID_INBOX, ID_SENT])
+      await updateLabelIdsForEmailThread(
+        threadId,
+        [ID_DONE],
+        [ID_INBOX, ID_SENT]
+      );
     } catch (e) {
       dLog("Error archiving thread");
     }
@@ -808,7 +825,7 @@ export async function deleteThread(
       await db.messages.where("threadId").equals(threadId).delete();
       await db.emailThreads.delete(threadId);
     } catch (e) {
-      console.log("Error deleting thread");
+      dLog("Error deleting thread");
     }
   }
 }
@@ -824,7 +841,7 @@ export async function trashThread(
     const { data, error } = await gTrashThread(accessToken, threadId);
 
     if (error || !data) {
-      console.log("Error trashing thread");
+      dLog("Error trashing thread");
       return;
     } else {
       const promises = data.messages.map((message) => {
@@ -834,7 +851,11 @@ export async function trashThread(
       });
 
       await Promise.all(promises);
-      await updateLabelIdsForEmailThread(threadId, [ID_TRASH], [ID_INBOX, ID_SENT])
+      await updateLabelIdsForEmailThread(
+        threadId,
+        [ID_TRASH],
+        [ID_INBOX, ID_SENT]
+      );
     }
   } else if (provider === "outlook") {
     const messages = await db.messages
@@ -852,13 +873,21 @@ export async function trashThread(
 
     // Update labelIds in dexie
     const updateDexiePromises = messages.map(() => {
-      return updateLabelIdsForEmailThread(threadId, [ID_TRASH], [ID_INBOX, ID_SENT]);
+      return updateLabelIdsForEmailThread(
+        threadId,
+        [ID_TRASH],
+        [ID_INBOX, ID_SENT]
+      );
     });
 
     try {
       await Promise.all(apiPromises);
       await Promise.all(updateDexiePromises);
-      await updateLabelIdsForEmailThread(threadId, [ID_TRASH], [ID_INBOX, ID_SENT])
+      await updateLabelIdsForEmailThread(
+        threadId,
+        [ID_TRASH],
+        [ID_INBOX, ID_SENT]
+      );
     } catch (e) {
       dLog("Error deleting thread");
     }
