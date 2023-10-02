@@ -17,6 +17,7 @@ import {
   listNextPage as mThreadListNextPage,
   markRead as mThreadMarkRead,
   sendEmail as mSendEmail,
+  forward as mForward,
   deleteMessage as mDeleteMessage,
   moveMessage as mMoveMessage,
   starMessage as mStarMessage,
@@ -789,6 +790,27 @@ export async function sendReplyAll(
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error sending reply" };
+    }
+  }
+
+  return { data: null, error: "Not implemented" };
+}
+
+export async function forward(
+  email: string,
+  provider: "google" | "outlook",
+  messageId: string,
+  toRecipients: string[],
+) {
+  const accessToken = await getAccessToken(email);
+  if (provider === "google") {
+    // TODO: implement
+  } else if (provider === "outlook") {
+    try {
+      await mForward(accessToken, messageId, toRecipients);
+      return { data: null, error: null };
+    } catch (e) {
+      return { data: null, error: "Error forwarding message" };
     }
   }
 

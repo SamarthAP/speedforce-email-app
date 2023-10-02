@@ -7,7 +7,7 @@ import { ArrowUturnLeftIcon, ArrowUturnRightIcon } from "@heroicons/react/24/out
 import EmailEditor, { EditorComponentRef } from "./EmailEditor";
 import { Editor } from "draft-js";
 import { stateToHTML } from "draft-js-export-html";
-import { partialSync, sendReply, sendReplyAll } from "../lib/sync";
+import { partialSync, sendReply, sendReplyAll, forward } from "../lib/sync";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import SimpleButton from "./SimpleButton";
 import { AttachmentButton } from "./AttachmentButton";
@@ -25,6 +25,7 @@ export default function Message({ message, folderId }: MessageProps) {
   const [showReply, setShowReply] = useState(false);
   const [sendingReply, setSendingReply] = useState(false);
   const [editorMode, setEditorMode] = useState<"reply" | "replyAll" | "forward" | "none">("none");
+  const [forwardTo, setForwardTo] = useState("");
 
   const replyRef = createRef<HTMLDivElement>();
   const editorRef = createRef<Editor>();
@@ -40,14 +41,29 @@ export default function Message({ message, folderId }: MessageProps) {
     setEditorMode("replyAll");
   }
 
+  const handleClickForward = () => {
+    setShowReply(prev => !prev || editorMode !== "forward");
+    setEditorMode("forward");
+  }
+
   const handleSendReply = async () => {
+    let error: string | null = null;
+
     setSendingReply(true);
-    if (editorComponentRef.current) {
+    if (editorMode === "forward") {
+      const toRecipients = forwardTo.split(/[ ,]+/);
+
+      ({error} = await forward(
+        selectedEmail.email,
+        selectedEmail.provider,
+        message.id,
+        toRecipients
+      ));
+    } else if (editorComponentRef.current) {
       const editorState = editorComponentRef.current.getEditorState();
       const context = editorState.getCurrentContent();
       const html = stateToHTML(context);
 
-      let error: string | null = null;
       if (editorMode === "reply") {
         ({error} = await sendReply(
           selectedEmail.email,
@@ -64,14 +80,15 @@ export default function Message({ message, folderId }: MessageProps) {
         ));
       }
 
-      if (error) {
-        console.log(error);
-      } else {
-        await partialSync(selectedEmail.email, selectedEmail.provider, {
-          folderId: folderId,
-        });
-        setShowReply(false);
-      }
+    }
+
+    if (error) {
+      console.log(error);
+    } else {
+      await partialSync(selectedEmail.email, selectedEmail.provider, {
+        folderId: folderId,
+      });
+      setShowReply(false);
     }
     setSendingReply(false);
   };
@@ -124,6 +141,7 @@ export default function Message({ message, folderId }: MessageProps) {
                 <ArrowUturnRightIcon
                   onClick={(e) => {
                     e.stopPropagation();
+                    handleClickForward();
                   }}
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
@@ -163,16 +181,32 @@ export default function Message({ message, folderId }: MessageProps) {
       {showReply && (
         <div
           className="p-4 border-t border-t-slate-200 dark:border-t-zinc-700"
-          ref={replyRef}
+          ref={replyRef}  
         >
-          <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
-            {
-              editorMode === "reply" ? `Write reply to ${message.from}` :
-              editorMode === "replyAll" ? `Write reply to all` :
-              "Error"
-            }
-          </div>
-          <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
+          {
+            editorMode === "reply" ? <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">Write reply to {message.from}</div> :
+            editorMode === "replyAll" ? <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">Write reply to all</div> :
+            editorMode === "forward" ? (
+              <span className="w-full flex flex-row items-center">
+                <div className="text-sm dark:text-zinc-400 text-slate-500 mr-4 whitespace-nowrap">Forward to</div>
+                <input
+                  onChange={(event) => setForwardTo(event.target.value)}
+                  type="email"
+                  name="forwardTo"
+                  id="forwardTo"
+                  className="w-full block bg-transparent border-0 pr-20 dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6 border-bottom"
+                  placeholder="..."
+                />
+              </span>
+              ) : 
+            null
+          }
+
+          {
+            ["reply", "replyAll"].includes(editorMode) && <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
+          }
+          
+
           <SimpleButton
             onClick={() => void handleSendReply()}
             loading={sendingReply}

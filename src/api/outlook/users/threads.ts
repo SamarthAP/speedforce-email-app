@@ -103,9 +103,8 @@ export const get = async (accessToken: string, threadId: string) => {
 
 export const forward = async (
   accessToken: string,
-  subject: string,
   messageId: string,
-  messageContent: string
+  toRecipients: string[]
 ) => {
   const response = await fetch(
     `${OUTLOOK_API_URL}/messages/${messageId}/forward`,
@@ -116,13 +115,14 @@ export const forward = async (
       },
       method: "POST",
       body: JSON.stringify({
-        message: {
-          subject: `Re: ${subject}`,
-          body: {
-            contentType: "html",
-            content: messageContent,
-          },
-        },
+        comment: "Forwarded from Speedforce",
+        toRecipients: toRecipients.map((email) => {
+          return {
+            emailAddress: {
+              address: email,
+            },
+          };
+        }),
       }),
     }
   );
@@ -244,4 +244,3 @@ export const starMessage = async (
     throw Error("Error starring message");
   }
 };
- 
