@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { IMessage } from "../lib/db";
 import { cleanHtmlString } from "../lib/util";
 import ShadowDom from "./ShadowDom";
-import { ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
+import { ArrowUturnLeftIcon, ArrowUturnRightIcon } from "@heroicons/react/24/outline";
 import EmailEditor, { EditorComponentRef } from "./EmailEditor";
 import { Editor } from "draft-js";
 import { stateToHTML } from "draft-js-export-html";
@@ -79,13 +79,24 @@ export default function Message({ message, folderId }: MessageProps) {
         </p>
         <div className="flex items-center">
           {showBody && (
-            <ArrowUturnLeftIcon
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowReply((prev) => !prev);
-              }}
-              className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
-            />
+            <>
+              <ArrowUturnLeftIcon
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReply((prev) => !prev);
+                }}
+                className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
+              />
+              <ArrowUturnRightIcon
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Forward message
+                  // TODO: add tooltips
+                  // setShowReply((prev) => !prev);
+                }}
+                className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
+              />
+            </>
           )}
           <p className="dark:text-zinc-400 text-slate-500 text-sm">
             {dayjs(message.date).format("MMM D, YYYY h:mm A")}

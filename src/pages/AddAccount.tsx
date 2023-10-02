@@ -45,6 +45,7 @@ const manualInsertEmail = async () => {
 export default function AddAccount() {
   const navigate = useNavigate();
   const [clientId, setClientId] = useState("");
+  const [appVersion, setAppVersion] = useState("");
   const renderCounter = useRef(0);
   renderCounter.current = renderCounter.current + 1;
 
@@ -55,6 +56,14 @@ export default function AddAccount() {
         setClientId(id);
       });
   }, [clientId]);
+
+  useEffect(() => {
+    void window.electron.ipcRenderer
+      .invoke("get-app-version")
+      .then((version) => {
+        setAppVersion(version);
+      });
+  }, [appVersion]);
 
   useEffect(() => {
     async function handler(args: string) {
@@ -193,6 +202,8 @@ export default function AddAccount() {
               <p className="dark:text-white">
                 render count: {renderCounter.current}
               </p>
+              <p className="dark:text-white">app version: {appVersion}</p>
+              <p className="dark:text-white">schema version: {db.verno}</p>
             </>
           );
         }) || null}

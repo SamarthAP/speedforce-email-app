@@ -59,6 +59,10 @@ ipcMain.handle("store-set", (_event, key, value) => {
   return store.set(key, value);
 });
 
+ipcMain.handle("get-app-version", (_event) => {
+  return app.getVersion();
+})
+
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient("speedforce", process.execPath, [

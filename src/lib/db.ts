@@ -1,4 +1,5 @@
 import Dexie, { Table } from "dexie";
+import { dexieSchemas } from "./dexie/schemas";
 
 export interface IAttachment {
   // TODO: this is only for gmail, check what the microsoft equivalent is
@@ -38,7 +39,7 @@ export interface IMessage {
   threadId: string;
   labelIds: string[];
   from: string;
-  to: string; // TODO: what if more than one recipient?
+  toRecipients: string[];
   snippet: string;
   headers: {
     name: string;
@@ -85,17 +86,10 @@ export class SubClassedDexie extends Dexie {
 
   constructor() {
     super("SpeedforceDB");
-    this.version(1).stores({
-      emails: "email, provider, accessToken, expiresAt",
-      selectedEmail: "id, email, provider",
-      emailThreads:
-        "id, historyId, email, from, subject, snippet, date, unread, labelIds",
-      googleMetadata: "email, threadsListNextPageTokens",
-      outlookMetadata: "email, threadsListNextPageTokens",
-      messages:
-        "id, threadId, labelIds, from, to, snippet, headers, textData, htmlData, date, attachments",
-      outlookFolders: "id, displayName",
-    });
+
+    // Define schema versioning
+    this.version(1).stores(dexieSchemas[1].schema);
+    this.version(2).stores(dexieSchemas[2].schema).upgrade(dexieSchemas[2].upgradeFnc);
   }
 }
 

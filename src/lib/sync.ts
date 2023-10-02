@@ -37,7 +37,7 @@ import {
   getOutlookMetaData,
   setPageToken,
   setHistoryId,
-} from "./dexieHelpers";
+} from "./dexie/helpers";
 import { getMessageHeader, upsertLabelIds } from "./util";
 import _ from "lodash";
 import { dLog } from "./noProd";
@@ -139,7 +139,7 @@ async function handleNewThreadsGoogle(
           threadId: message.threadId,
           labelIds: message.labelIds,
           from: getMessageHeader(message.payload.headers, "From"),
-          to: getMessageHeader(message.payload.headers, "To"),
+          toRecipients: [getMessageHeader(message.payload.headers, "To")],
           snippet: message.snippet || "",
           headers: message.payload.headers,
           textData,
@@ -259,7 +259,7 @@ async function handleNewThreadsOutlook(
             message.from?.emailAddress?.address ||
             message.sender?.emailAddress?.address ||
             "No Sender",
-          to: message.toRecipients[0]?.emailAddress.address || "No Recipient", // TODO: add multiple recipients
+          toRecipients: message.toRecipients.map(m => m.emailAddress.address), // TODO: add multiple recipients
           snippet: message.bodyPreview || "",
           headers: buildMessageHeadersOutlook(message),
           textData,

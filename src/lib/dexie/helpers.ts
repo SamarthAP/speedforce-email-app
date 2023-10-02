@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db } from "../db";
 
 export async function getGoogleMetaData(email: string, folderId: string) {
   const metaData = await db.googleMetadata
