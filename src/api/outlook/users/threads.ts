@@ -101,14 +101,14 @@ export const get = async (accessToken: string, threadId: string) => {
   return data;
 };
 
-export const sendReply = async (
+export const forward = async (
   accessToken: string,
   subject: string,
   messageId: string,
   messageContent: string
 ) => {
   const response = await fetch(
-    `${OUTLOOK_API_URL}/messages/${messageId}/reply`,
+    `${OUTLOOK_API_URL}/messages/${messageId}/forward`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

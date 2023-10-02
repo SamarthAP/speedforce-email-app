@@ -51,7 +51,6 @@ export default function ThreadView(props: ThreadViewProps) {
       const emailThreads = db.emailThreads
         .where("email")
         .equals(selectedEmail.email)
-        // .and((thread) => thread.folderId === props.folderId)
         .and((thread) => thread.labelIds?.includes(props.folderId))
         .reverse()
         .sortBy("date");

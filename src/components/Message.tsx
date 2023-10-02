@@ -7,10 +7,11 @@ import { ArrowUturnLeftIcon, ArrowUturnRightIcon } from "@heroicons/react/24/out
 import EmailEditor, { EditorComponentRef } from "./EmailEditor";
 import { Editor } from "draft-js";
 import { stateToHTML } from "draft-js-export-html";
-import { partialSync, sendReply } from "../lib/sync";
+import { partialSync, sendReply, sendReplyAll } from "../lib/sync";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import SimpleButton from "./SimpleButton";
 import { AttachmentButton } from "./AttachmentButton";
+import Tooltip from "./Tooltip";
 
 interface MessageProps {
   message: IMessage;
@@ -23,10 +24,21 @@ export default function Message({ message, folderId }: MessageProps) {
   const [showBody, setShowBody] = useState(true);
   const [showReply, setShowReply] = useState(false);
   const [sendingReply, setSendingReply] = useState(false);
+  const [editorMode, setEditorMode] = useState<"reply" | "replyAll" | "forward" | "none">("none");
 
   const replyRef = createRef<HTMLDivElement>();
   const editorRef = createRef<Editor>();
   const editorComponentRef = createRef<EditorComponentRef>();
+
+  const handleClickReply = () => {
+    setShowReply(prev => !prev || editorMode !== "reply");
+    setEditorMode("reply");
+  }
+
+  const handleClickReplyAll = () => {
+    setShowReply(prev => !prev || editorMode !== "replyAll");
+    setEditorMode("replyAll");
+  }
 
   const handleSendReply = async () => {
     setSendingReply(true);
@@ -35,12 +47,22 @@ export default function Message({ message, folderId }: MessageProps) {
       const context = editorState.getCurrentContent();
       const html = stateToHTML(context);
 
-      const { error } = await sendReply(
-        selectedEmail.email,
-        selectedEmail.provider,
-        message,
-        html
-      );
+      let error: string | null = null;
+      if (editorMode === "reply") {
+        ({error} = await sendReply(
+          selectedEmail.email,
+          selectedEmail.provider,
+          message,
+          html
+        ));
+      } else if (editorMode === "replyAll") {
+        ({error} = await sendReplyAll(
+          selectedEmail.email,
+          selectedEmail.provider,
+          message,
+          html
+        ));
+      }
 
       if (error) {
         console.log(error);
@@ -80,22 +102,32 @@ export default function Message({ message, folderId }: MessageProps) {
         <div className="flex items-center">
           {showBody && (
             <>
-              <ArrowUturnLeftIcon
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowReply((prev) => !prev);
-                }}
-                className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
-              />
-              <ArrowUturnRightIcon
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Forward message
-                  // TODO: add tooltips
-                  // setShowReply((prev) => !prev);
-                }}
-                className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
-              />
+              <Tooltip text="Reply">
+                <ArrowUturnLeftIcon
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClickReply();
+                  }}
+                  className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
+                />
+              </Tooltip>
+              <Tooltip text="Reply All">
+                <ArrowUturnLeftIcon
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClickReplyAll();
+                  }}
+                  className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
+                />
+              </Tooltip>
+              <Tooltip text="Forward">
+                <ArrowUturnRightIcon
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
+                />
+              </Tooltip>
             </>
           )}
           <p className="dark:text-zinc-400 text-slate-500 text-sm">
@@ -134,7 +166,11 @@ export default function Message({ message, folderId }: MessageProps) {
           ref={replyRef}
         >
           <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
-            Write a reply
+            {
+              editorMode === "reply" ? `Write reply to ${message.from}` :
+              editorMode === "replyAll" ? `Write reply to all` :
+              "Error"
+            }
           </div>
           <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
           <SimpleButton

@@ -6,7 +6,7 @@ import {
   ID_SPAM,
   ID_STARRED,
   ID_DONE,
-} from "../../api/constants";
+} from "../constants";
 import { BidirectionalMap } from "../model/bidirectionalMap";
 
 export const OUTLOOK_API_URL = "https://graph.microsoft.com/v1.0/me";

@@ -60,6 +60,7 @@
     "@types/dompurify": "^3.0.2",
     "@types/draft-js": "^0.11.12",
     "@types/he": "^1.2.0",
+    "clsx": "^2.0.0",
     "dayjs": "^1.11.9",
     "dexie": "^3.2.4",
     "dexie-react-hooks": "^1.1.6",
@@ -75,6 +76,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",
-    "react-router-dom": "^6.12.1"
+    "react-router-dom": "^6.12.1",
+    "react-tooltip": "^5.21.5"
   }
 }

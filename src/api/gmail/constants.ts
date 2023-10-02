@@ -5,7 +5,7 @@ import {
   ID_TRASH,
   ID_SPAM,
   ID_STARRED,
-} from "../../api/constants";
+} from "../constants";
 import { BidirectionalMap } from "../model/bidirectionalMap";
 
 export const GMAIL_API_URL = "https://gmail.googleapis.com/gmail/v1/users/me";

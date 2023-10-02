@@ -16,12 +16,15 @@ import {
   list as mThreadList,
   listNextPage as mThreadListNextPage,
   markRead as mThreadMarkRead,
-  sendReply as mSendReply,
   sendEmail as mSendEmail,
   deleteMessage as mDeleteMessage,
   moveMessage as mMoveMessage,
   starMessage as mStarMessage,
 } from "../api/outlook/users/threads";
+import {
+  sendReply as mSendReply,
+  sendReplyAll as mSendReplyAll,
+} from "../api/outlook/users/message";
 import {
   buildMessageHeadersOutlook,
   buildMessageLabelIdsOutlook,
@@ -759,6 +762,30 @@ export async function sendReply(
 
     try {
       await mSendReply(accessToken, subject, messageId, html);
+      return { data: null, error: null };
+    } catch (e) {
+      return { data: null, error: "Error sending reply" };
+    }
+  }
+
+  return { data: null, error: "Not implemented" };
+}
+
+export async function sendReplyAll(
+  email: string,
+  provider: "google" | "outlook",
+  message: IMessage,
+  html: string
+) {
+  const accessToken = await getAccessToken(email);
+  if (provider === "google") {
+    // TODO: implement
+  } else if (provider === "outlook") {
+    const subject = getMessageHeader(message.headers, "Subject");
+    const messageId = message.id;
+
+    try {
+      await mSendReplyAll(accessToken, subject, messageId, html);
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error sending reply" };
