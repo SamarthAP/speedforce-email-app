@@ -115,7 +115,7 @@ export default function ThreadView(props: ThreadViewProps) {
       <Sidebar />
       <div className="w-full flex flex-col overflow-hidden">
         <div className="flex flex-row items-center justify-between">
-          <h2 className="text-xl pl-8 font-light tracking-wide my-4 text-black dark:text-white">
+          <h2 className="text-lg font-medium select-none pl-8 tracking-wide my-4 text-black dark:text-white">
             {props.title}
           </h2>
           <div className="flex items-center">

@@ -17,6 +17,13 @@ export type Channels =
   | "save-messages"
   | "sync-emails"
   | "save-file"
+  | "update-available"
+  | "update-not-available"
+  | "download-progress"
+  | "update-downloaded"
+  | "update-error"
+  | "download-update"
+  | "install-update"
   | "get-app-version";
 // Example use: window.electron.ipcRenderer.sendMessage("open-link-in-browser", url);
 
@@ -48,6 +55,48 @@ const electronHandler = {
 
       return () => {
         ipcRenderer.removeListener("sync-emails", subscription);
+      };
+    },
+    onUpdateAvailable(func: () => unknown) {
+      const subscription = () => func();
+      ipcRenderer.on("update-available", subscription);
+
+      return () => {
+        ipcRenderer.removeListener("update-available", subscription);
+      };
+    },
+    onUpdateNotAvailable(func: () => unknown) {
+      const subscription = () => func();
+      ipcRenderer.on("update-not-available", subscription);
+
+      return () => {
+        ipcRenderer.removeListener("update-not-available", subscription);
+      };
+    },
+    onUpdateDownloaded(func: () => unknown) {
+      const subscription = () => func();
+      ipcRenderer.on("update-downloaded", subscription);
+
+      return () => {
+        ipcRenderer.removeListener("update-downloaded", subscription);
+      };
+    },
+    onDownloadProgress(func: (progress: number) => unknown) {
+      const subscription = (_event: IpcRendererEvent, progress: number) =>
+        func(progress);
+      ipcRenderer.on("download-progress", subscription);
+
+      return () => {
+        ipcRenderer.removeListener("download-progress", subscription);
+      };
+    },
+    onUpdateError(func: (error: Error) => unknown) {
+      const subscription = (_event: IpcRendererEvent, error: Error) =>
+        func(error);
+      ipcRenderer.on("update-error", subscription);
+
+      return () => {
+        ipcRenderer.removeListener("update-error", subscription);
       };
     },
     once(channel: Channels, func: (...args: unknown[]) => void) {

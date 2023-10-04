@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { autoUpdater } from "electron-updater";
 import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
@@ -11,9 +12,61 @@ import "./lib/sentry/main";
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
+const isProd = process.env.NODE_ENV === "production";
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
   app.quit();
+}
+
+// // WARMING: only for testing update on development mode
+// Object.defineProperty(app, "isPackaged", {
+//   get() {
+//     return true;
+//   },
+// });
+
+if (isProd) {
+  // basic flags
+  autoUpdater.autoDownload = false;
+  autoUpdater.allowPrerelease = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.setFeedURL({
+    provider: "github",
+    private: true,
+    token: process.env.GH_TOKEN,
+    owner: process.env.GH_OWNER,
+    repo: process.env.GH_REPO,
+  });
+
+  autoUpdater.on("update-available", () => {
+    mainWindow?.webContents.send("update-available");
+  });
+
+  autoUpdater.on("update-not-available", () => {
+    mainWindow?.webContents.send("update-not-available");
+  });
+
+  autoUpdater.on("download-progress", (progress) => {
+    mainWindow?.webContents.send("download-progress", progress.percent);
+  });
+
+  autoUpdater.on("update-downloaded", () => {
+    mainWindow?.webContents.send("update-downloaded");
+  });
+
+  autoUpdater.on("error", (error) => {
+    mainWindow?.webContents.send("update-error", error);
+  });
+
+  ipcMain.on("download-update", () => {
+    void autoUpdater.downloadUpdate();
+  });
+
+  ipcMain.on("install-update", () => {
+    void autoUpdater.quitAndInstall();
+  });
 }
 
 let mainWindow: BrowserWindow | null = null;
@@ -59,9 +112,9 @@ ipcMain.handle("store-set", (_event, key, value) => {
   return store.set(key, value);
 });
 
-ipcMain.handle("get-app-version", (_event) => {
+ipcMain.handle("get-app-version", () => {
   return app.getVersion();
-})
+});
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
@@ -107,6 +160,9 @@ if (!gotTheLock) {
       });
 
       createClientId();
+      if (isProd) {
+        void autoUpdater.checkForUpdates();
+      }
     })
     .catch(console.log);
 
@@ -173,6 +229,13 @@ setInterval(() => {
     store.set("client.lastSyncTime", Date.now());
   }
 }, 1000 * 60 * 10);
+
+// check for updates every 30 mins
+setInterval(() => {
+  if (isProd) {
+    void autoUpdater.checkForUpdates();
+  }
+}, 1000 * 60 * 30);
 
 function saveFileToDownloadsFolder(filename: string, data: string) {
   const downloadsPath = app.getPath("downloads");

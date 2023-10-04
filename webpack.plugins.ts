@@ -11,9 +11,10 @@ export const plugins = [
   new ForkTsCheckerWebpackPlugin({
     logger: "webpack-infrastructure",
   }),
+  // this is only used in webpack.renderer.config.ts
   new webpack.EnvironmentPlugin({
     ...dotenv.config({
-      path: path.resolve(__dirname, ".env"),
+      path: path.resolve(__dirname, ".env.renderer"),
     }).parsed,
   }),
   new webpack.DefinePlugin({
