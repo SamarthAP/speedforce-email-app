@@ -6,10 +6,12 @@ import {
   removeLabelIds,
   sendReply as gSendReply,
   sendEmail as gSendEmail,
+  forward as gForward,
   trashThread as gTrashThread,
   addLabelIds,
 } from "../api/gmail/users/threads";
 import { list as gHistoryList } from "../api/gmail/users/history";
+import { getToRecipients } from "../api/gmail/helpers";
 
 import {
   get as mThreadGet,
@@ -26,6 +28,10 @@ import {
   sendReply as mSendReply,
   sendReplyAll as mSendReplyAll,
 } from "../api/outlook/users/message";
+import {
+  list as mAttachmentList,
+  get as mAttachmentGet,
+} from "../api/outlook/users/attachment";
 import {
   buildMessageHeadersOutlook,
   buildMessageLabelIdsOutlook,
@@ -48,7 +54,7 @@ import { dLog } from "./noProd";
 import { IThreadFilter } from "../api/model/users.thread";
 import { ID_DONE, ID_INBOX, ID_TRASH, ID_SENT } from "../api/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
-import { getAttachment } from "../api/gmail/users/messages";
+import { getAttachment as gAttachmentGet } from "../api/gmail/users/messages";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 
 async function handleNewThreadsGoogle(
@@ -254,6 +260,29 @@ async function handleNewThreadsOutlook(
           htmlData = message.body.content || "";
         }
 
+        let attachments: IAttachment[] = [];
+        // List attachments
+        if (message.hasAttachments) {
+          const { data, error } = await mAttachmentList(
+            accessToken,
+            message.id
+          );
+
+          if (data && !error) {
+            // attachments.data.value.forEach((attachment) => {
+            attachments = data.map((attachment) => {
+              return {
+                filename: attachment.name,
+                mimeType: attachment.contentType,
+                attachmentId: attachment.id,
+                size: attachment.size,
+              };
+            });
+          } else {
+            dLog("Error getting attachments");
+          }
+        }
+
         // TODO: Add CC, BCC, attachments, etc.
         parsedMessages.push({
           id: message.id,
@@ -263,13 +292,13 @@ async function handleNewThreadsOutlook(
             message.from?.emailAddress?.address ||
             message.sender?.emailAddress?.address ||
             "No Sender",
-          toRecipients: message.toRecipients.map(m => m.emailAddress.address), // TODO: add multiple recipients
+          toRecipients: message.toRecipients.map((m) => m.emailAddress.address), // TODO: add multiple recipients
           snippet: message.bodyPreview || "",
           headers: buildMessageHeadersOutlook(message),
           textData,
           htmlData,
           date: new Date(message.receivedDateTime).getTime(),
-          attachments: [], // TODO: implement for outlook
+          attachments: attachments, // TODO: implement for outlook
         });
 
         // dLog(message)
@@ -751,7 +780,7 @@ export async function sendReply(
     return await gSendReply(
       accessToken,
       from,
-      to,
+      [to],
       subject,
       headerMessageId,
       threadId,
@@ -780,7 +809,21 @@ export async function sendReplyAll(
 ) {
   const accessToken = await getAccessToken(email);
   if (provider === "google") {
-    // TODO: implement
+    const from = email;
+    const to = getToRecipients(message, email);
+    const subject = getMessageHeader(message.headers, "Subject");
+    const headerMessageId = getMessageHeader(message.headers, "Message-ID");
+    const threadId = message.threadId;
+
+    return await gSendReply(
+      accessToken,
+      from,
+      to,
+      subject,
+      headerMessageId,
+      threadId,
+      html
+    );
   } else if (provider === "outlook") {
     const subject = getMessageHeader(message.headers, "Subject");
     const messageId = message.id;
@@ -799,15 +842,30 @@ export async function sendReplyAll(
 export async function forward(
   email: string,
   provider: "google" | "outlook",
-  messageId: string,
+  message: IMessage,
   toRecipients: string[],
+  html: string
 ) {
   const accessToken = await getAccessToken(email);
   if (provider === "google") {
-    // TODO: implement
+    const from = email;
+    const to = getToRecipients(message, email);
+    const subject = getMessageHeader(message.headers, "Subject");
+    const headerMessageId = getMessageHeader(message.headers, "Message-ID");
+    const threadId = message.threadId;
+
+    return await gForward(
+      accessToken,
+      from,
+      to,
+      subject,
+      headerMessageId,
+      threadId,
+      html
+    );
   } else if (provider === "outlook") {
     try {
-      await mForward(accessToken, messageId, toRecipients);
+      await mForward(accessToken, message.id, toRecipients);
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error forwarding message" };
@@ -953,7 +1011,7 @@ export async function downloadAttachment(
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    const { data, error } = await getAttachment(
+    const { data, error } = await gAttachmentGet(
       accessToken,
       messageId,
       attachmentId
@@ -974,7 +1032,26 @@ export async function downloadAttachment(
       return success;
     }
   } else if (provider === "outlook") {
-    // TODO
+    const { data, error } = await mAttachmentGet(
+      accessToken,
+      messageId,
+      attachmentId
+    );
+
+    if (error || !data) {
+      dLog("Error downloading attachment");
+      return false;
+    } else {
+      // true if file was saved successfully, false otherwise
+      const success = await window.electron.ipcRenderer.invoke(
+        "save-file",
+        filename,
+        data.contentBytes
+      );
+
+      dLog("saving file:", success);
+      return success;
+    }
   }
 
   return false;

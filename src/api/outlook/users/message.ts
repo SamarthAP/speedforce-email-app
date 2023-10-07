@@ -1,8 +1,11 @@
 import { OUTLOOK_API_URL } from "../constants";
-import { OutlookMessageDataType } from "../../model/users.thread";
+import { OutlookMessageDataType } from "../../model/users.message";
 
-export const get = async (accessToken: string, messageId: string, fieldSet: string[]) => {
-
+export const get = async (
+  accessToken: string,
+  messageId: string,
+  fieldSet: string[]
+) => {
   const fields = fieldSet.join(",").trim();
   const response = await fetch(
     `${OUTLOOK_API_URL}/messages/${messageId}?$select=${fields}'`,
