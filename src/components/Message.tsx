@@ -63,7 +63,7 @@ export default function Message({ message, folderId }: MessageProps) {
         selectedEmail.provider,
         message,
         toRecipients,
-        ""
+        "<div>--- Forwarded message ---</div>"
       ));
     } else if (editorComponentRef.current) {
       const editorState = editorComponentRef.current.getEditorState();

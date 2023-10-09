@@ -6,7 +6,6 @@ import {
   GoogleThreadsModifyDataType,
   IThreadFilter,
 } from "../../model/users.thread";
-import { Base64 } from "js-base64";
 import { dLog } from "../../../lib/noProd";
 
 // in endpoints that will not be called often, we can use the async/await syntax
@@ -293,14 +292,14 @@ export const forward = async (
   try {
     const encodedReply = btoa(
       'Content-Type: text/html; charset="UTF-8"\n' +
-        "MIME-Version: 1.0\n" +
-        "Content-Transfer-Encoding: 7bit\n" +
-        `In-Reply-To: ${headerMessageId}\n` +
-        `References: ${headerMessageId}\n` +
-        `Subject: Fwd: ${subject}\n` +
-        `From: ${from}\n` +
-        `To: ${to.join(",")}\n\n` +
-        messageContent
+      "MIME-Version: 1.0\n" +
+      "Content-Transfer-Encoding: 7bit\n" +
+      `In-Reply-To: ${headerMessageId}\n` +
+      `References: ${headerMessageId}\n` +
+      `Subject: FW: ${subject}\n` +
+      `From: ${from}\n` +
+      `To: ${to.join(",")}\n\n` +
+      messageContent
     )
       .replace(/\+/g, "-")
       .replace(/\//g, "_")
