@@ -11,6 +11,7 @@ import AccountActionsMenu from "./AccountActionsMenu";
 import { fullSync } from "../lib/sync";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { WriteMessage } from "../components/WriteMessage";
+import Tooltip from "./Tooltip";
 
 interface ThreadViewProps {
   folderId: string;
@@ -125,7 +126,9 @@ export default function ThreadView(props: ThreadViewProps) {
                 setWriteEmailMode(true);
               }}
             >
-              <PencilSquareIcon className="h-5 w-5 mb-2 shrink-0 text-black dark:text-white" />
+              <Tooltip text="Compose">
+                <PencilSquareIcon className="h-5 w-5 mb-2 shrink-0 text-black dark:text-white" />
+              </Tooltip>
             </button>
             <AccountActionsMenu
               selectedEmail={selectedEmail}

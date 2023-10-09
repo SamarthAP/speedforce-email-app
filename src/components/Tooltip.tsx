@@ -11,16 +11,16 @@ export default function Tooltip({ text, children }: TooltipProps) {
 
   return (
     <div
-      className="relative inline-block"
+      className="relative"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
       {children}
       <div
         className={clsx(
-          "absolute bg-slate-600 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap",
+          "absolute bg-slate-600 text-white text-xs px-2 py-1 mt-1 rounded-md whitespace-nowrap",
           showTooltip ? "opacity-100" : "opacity-0",
-          "-translate-x-1/3 translate-y-2 transition-opacity duration-300 ease-in-out pointer-events-none"
+          "top-full left-1/2 transform -translate-x-1/2 transition-opacity duration-300 ease-in-out pointer-events-none z-50"
         )}
       >
         {text}

@@ -10,6 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 import { useNavigate } from "react-router-dom";
+import Tooltip from "./Tooltip";
 
 const navigation = [
   { name: "Inbox", href: "/", icon: InboxIcon, current: false },
@@ -43,7 +44,7 @@ export default function Sidebar() {
           <ViewColumnsIcon className="h-6 w-6 shrink-0" aria-hidden="true" />
         </div>
       </div> */}
-      <nav className="mt-4 overflow-scroll">
+      <nav className="mt-4 overflow-scroll pb-4">
         <ul role="list" className="flex flex-col items-center space-y-1">
           {navigation.map((item) => (
             <li className="cursor-pointer" key={item.name}>
@@ -57,7 +58,9 @@ export default function Sidebar() {
                 } 'group flex gap-x-3 rounded-md p-3 text-sm text-slate-600 dark:text-zinc-300 leading-6 font-semibold'
               `}
               >
-                <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
+                <Tooltip text={item.name == "Deleted Items" ? 'Deleted' : item.name}>
+                  <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
+                </Tooltip>
                 <span className="sr-only">{item.name}</span>
               </div>
             </li>
