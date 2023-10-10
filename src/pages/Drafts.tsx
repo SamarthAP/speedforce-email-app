@@ -5,6 +5,6 @@ import { ID_DRAFTS } from "../api/constants";
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now
 export default function Drafts() {
   return (
-    <ThreadView folderId={ID_DRAFTS} title="Drafts"/>
+    <ThreadView folderId={ID_DRAFTS} title="Drafts" canArchiveThread canTrashThread/>
   )
 }

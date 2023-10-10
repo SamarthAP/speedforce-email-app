@@ -5,6 +5,6 @@ import { ID_SPAM } from "../api/constants";
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now
 export default function Spam() {
   return (
-    <ThreadView folderId={ID_SPAM} title="Spam"/>
+    <ThreadView folderId={ID_SPAM} title="Spam" canArchiveThread canTrashThread/>
   )
 }

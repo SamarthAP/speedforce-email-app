@@ -56,6 +56,8 @@ interface ThreadListProps {
   setScrollPosition: (position: number) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
   folderId: string;
+  canArchiveThread?: boolean;
+  canTrashThread?: boolean;
 }
 
 export default function ThreadList({
@@ -66,6 +68,8 @@ export default function ThreadList({
   setScrollPosition,
   scrollRef,
   folderId,
+  canArchiveThread = false,
+  canTrashThread = false,
 }: ThreadListProps) {
   const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -239,46 +243,55 @@ export default function ThreadList({
                       <span className="group-hover:hidden block">
                         {new Date(thread.date).toDateString()}
                       </span>
+
                       <span className="flex flex-row">
-                        <button
-                          onClick={(
-                            event: React.MouseEvent<
-                              HTMLButtonElement,
-                              MouseEvent
-                            >
-                          ) => {
-                            event.stopPropagation();
-                            void archiveThread(
-                              selectedEmail.email,
-                              selectedEmail.provider,
-                              thread.id
-                            );
-                            toast("Marked as done");
-                          }}
-                          className="group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
-                        >
-                          <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
-                        </button>
-                        <button
-                          onClick={(
-                            event: React.MouseEvent<
-                              HTMLButtonElement,
-                              MouseEvent
-                            >
-                          ) => {
-                            event.stopPropagation();
-                            void trashThread(
-                              selectedEmail.email,
-                              selectedEmail.provider,
-                              thread.id
-                            ).then(() => {
-                              toast("Trashed thread");
-                            });
-                          }}
-                          className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
-                        >
-                          <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
-                        </button>
+                      {
+                        canArchiveThread && (
+                          <button
+                            onClick={(
+                              event: React.MouseEvent<
+                                HTMLButtonElement,
+                                MouseEvent
+                              >
+                            ) => {
+                              event.stopPropagation();
+                              void archiveThread(
+                                selectedEmail.email,
+                                selectedEmail.provider,
+                                thread.id
+                              );
+                              toast("Marked as done");
+                            }}
+                            className="group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
+                          >
+                            <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+                          </button>
+                        )
+                      }
+                      {
+                        canTrashThread && (
+                          <button
+                            onClick={(
+                              event: React.MouseEvent<
+                                HTMLButtonElement,
+                                MouseEvent
+                              >
+                            ) => {
+                              event.stopPropagation();
+                              void trashThread(
+                                selectedEmail.email,
+                                selectedEmail.provider,
+                                thread.id
+                              ).then(() => {
+                                toast("Trashed thread");
+                              });
+                            }}
+                            className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
+                          >
+                            <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+                          </button>
+                        )
+                      }
                       </span>
                     </div>
                   </div>

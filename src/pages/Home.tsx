@@ -42,5 +42,5 @@ export default function Home() {
       });
   }, [selectedEmail]);
 
-  return <ThreadView folderId={ID_INBOX} title="Important" />;
+  return <ThreadView folderId={ID_INBOX} title="Important" canArchiveThread canTrashThread/>;
 }
