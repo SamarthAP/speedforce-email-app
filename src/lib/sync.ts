@@ -849,14 +849,20 @@ export async function forward(
   const accessToken = await getAccessToken(email);
   if (provider === "google") {
     const from = email;
+    const fromOriginal = getMessageHeader(message.headers, "From");
+    const toOriginal = getMessageHeader(message.headers, "To");
     const subject = getMessageHeader(message.headers, "Subject");
     const headerMessageId = getMessageHeader(message.headers, "Message-ID");
+    const date = getMessageHeader(message.headers, "Date");
     const threadId = message.threadId;
-
+    console.log(message)
+ 
     return await gForward(
       accessToken,
       from,
+      fromOriginal,
       toRecipients,
+      toOriginal,
       subject,
       headerMessageId,
       threadId,

@@ -7,6 +7,8 @@ import {
   IThreadFilter,
 } from "../../model/users.thread";
 import { dLog } from "../../../lib/noProd";
+import { getRFC2822DateString } from "../helpers";
+import { unescape } from "lodash";
 
 // in endpoints that will not be called often, we can use the async/await syntax
 export const list = async (accessToken: string, filter: IThreadFilter) => {
@@ -280,26 +282,59 @@ export const sendEmail = async (
 export const forward = async (
   accessToken: string,
   from: string,
+  fromOriginal: string,
   to: string[],
+  toOriginal: string,
   subject: string,
   headerMessageId: string,
   threadId: string,
   messageContent: string
 ) => {
   let data: any | null = null; // TODO: define type
-  let error: string | null = null;
+  let error: string | null =   null;
 
   try {
+    // const encodedReply = btoa(
+    //   'Content-Type: text/html; charset="UTF-8"\n' +
+    //   "MIME-Version: 1.0\n" +
+    //   "Content-Transfer-Encoding: 7bit\n" +
+    //   `Message-ID: ${headerMessageId}\n` +
+    //   `Subject: ${subject}\n` +
+    //   `From: ${fromOriginal}\n` +
+    //   `To: ${toOriginal}\n` +
+    //   `Resent-From: ${from}\n` +
+    //   `Resent-To: ${to.join(",")}\n` +
+    //   `Resent-Date: ${getRFC2822DateString(new Date())}\n\n` +
+    //   messageContent
+    // )
+    //   .replace(/\+/g, "-")
+    //   .replace(/\//g, "_")
+    //   .replace(/=+$/, "");
+
+    // const encodedReply = btoa(
+    //   'Content-Type: text/html; charset="UTF-8"\n' +
+    //   "MIME-Version: 1.0\n" +
+    //   "Content-Transfer-Encoding: 7bit\n" +
+    //   `Resent-From: colin@payswift.ca\n` +
+    //   `Resent-To: colin.d.chung@gmail.com\n` +
+    //   `Resent-Date: ${getRFC2822DateString(new Date())}\n` +
+    //   `From: Medium Weekly Digest <noreply@medium.com>\n` +
+    //   `To: colin@payswift.ca\n` +
+    //   `Subject: FW: ${subject}\n` +
+    //   `Message-ID: <gFW3sbQSTKu9w_VvMeV28g@geopod-ismtpd-5>\n`
+    // )
+    //   .replace(/\+/g, "-")
+    //   .replace(/\//g, "_")
+    //   .replace(/=+$/, "");
+
     const encodedReply = btoa(
       'Content-Type: text/html; charset="UTF-8"\n' +
       "MIME-Version: 1.0\n" +
       "Content-Transfer-Encoding: 7bit\n" +
-      `In-Reply-To: ${headerMessageId}\n` +
-      `References: ${headerMessageId}\n` +
-      `Subject: FW: ${subject}\n` +
-      `From: ${from}\n` +
-      `To: ${to.join(",")}\n\n` +
-      messageContent
+      `From: colin@payswift.ca\n` +
+      `To: colin.d.chung@gmail.com\n` +
+      `Subject: ${subject}\n\n` +
+      'This is a test'
     )
       .replace(/\+/g, "-")
       .replace(/\//g, "_")
@@ -313,7 +348,6 @@ export const forward = async (
       },
       body: JSON.stringify({
         raw: encodedReply,
-        threadId,
       }),
     });
     if (!response.ok) {
