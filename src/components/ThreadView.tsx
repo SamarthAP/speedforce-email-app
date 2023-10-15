@@ -11,7 +11,8 @@ import AccountActionsMenu from "./AccountActionsMenu";
 import { fullSync } from "../lib/sync";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { WriteMessage } from "../components/WriteMessage";
-import Tooltip from "./Tooltip";
+import Portal from "./ReactPortal";
+import TooltipPopover from "./TooltipPopover";
 
 interface ThreadViewProps {
   folderId: string;
@@ -26,6 +27,11 @@ export default function ThreadView(props: ThreadViewProps) {
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const [writeEmailMode, setWriteEmailMode] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [tooltipData, setTooltipData] = useState<{ showTooltip: boolean; coords: React.CSSProperties | undefined; message: string }>({
+    showTooltip: false,
+    coords: undefined,
+    message: "",
+  });
 
   const renderCounter = useRef(0);
   const MAX_RENDER_COUNT = 5;
@@ -111,6 +117,25 @@ export default function ThreadView(props: ThreadViewProps) {
     });
   };
 
+  const handleMouseEnter = (event: React.MouseEvent<HTMLElement>, message: string) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipData({
+      showTooltip: true,
+      coords: {
+        left: `${rect.x + rect.width / 2}px`,
+        top: `${rect.y + 20}px`,
+      },
+      message: message,
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setTooltipData({
+      ...tooltipData,
+      showTooltip: false,
+    });
+  };
+
   return (
     <React.Fragment>
       <Sidebar />
@@ -122,18 +147,23 @@ export default function ThreadView(props: ThreadViewProps) {
           <div className="flex items-center">
             <button
               className="mr-3"
+              onMouseEnter={(event) => {handleMouseEnter(event, "Compose")}}
+              onMouseLeave={handleMouseLeave}
               onClick={() => {
                 setWriteEmailMode(true);
               }}
             >
-              <Tooltip text="Compose">
-                <PencilSquareIcon className="h-5 w-5 mb-2 shrink-0 text-black dark:text-white" />
-              </Tooltip>
+              <PencilSquareIcon className="h-5 w-5 mb-2 shrink-0 text-black dark:text-white" />
             </button>
             <AccountActionsMenu
               selectedEmail={selectedEmail}
               setSelectedEmail={(email) => void setSelectedEmail(email)}
+              handleMouseEnter={handleMouseEnter}
+              handleMouseLeave={handleMouseLeave}
             />
+            <Portal>
+                <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />              
+            </Portal>
           </div>
         </div>
         {process.env.NODE_ENV !== "production" ? (

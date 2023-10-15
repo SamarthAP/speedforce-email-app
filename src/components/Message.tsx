@@ -11,7 +11,8 @@ import { partialSync, sendReply, sendReplyAll, forward } from "../lib/sync";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import SimpleButton from "./SimpleButton";
 import { AttachmentButton } from "./AttachmentButton";
-import Tooltip from "./Tooltip";
+import Portal from "./ReactPortal";
+import TooltipPopover from "./TooltipPopover";
 
 interface MessageProps {
   message: IMessage;
@@ -26,6 +27,11 @@ export default function Message({ message, folderId }: MessageProps) {
   const [sendingReply, setSendingReply] = useState(false);
   const [editorMode, setEditorMode] = useState<"reply" | "replyAll" | "forward" | "none">("none");
   const [forwardTo, setForwardTo] = useState("");
+  const [tooltipData, setTooltipData] = useState<{ showTooltip: boolean; coords: React.CSSProperties | undefined; message: string }>({
+    showTooltip: false,
+    coords: undefined,
+    message: "",
+  });
 
   const replyRef = createRef<HTMLDivElement>();
   const editorRef = createRef<Editor>();
@@ -107,6 +113,25 @@ export default function Message({ message, folderId }: MessageProps) {
     }
   }, [showReply, replyRef, editorRef]);
 
+  const handleMouseEnter = (event: React.MouseEvent<HTMLElement>, message: string) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipData({
+      showTooltip: true,
+      coords: {
+        left: `${rect.x + rect.width / 2}px`,
+        top: `${rect.y + rect.height}px`,
+      },
+      message: message,
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setTooltipData({
+      ...tooltipData,
+      showTooltip: false,
+    });
+  };
+
   return (
     <div className="w-full h-auto flex flex-col border border-slate-200 dark:border-zinc-700">
       <div
@@ -119,7 +144,10 @@ export default function Message({ message, folderId }: MessageProps) {
         <div className="flex items-center">
           {showBody && (
             <>
-              <Tooltip text="Reply">
+              <div
+                onMouseEnter={(event) => {handleMouseEnter(event, "Reply")}}
+                onMouseLeave={handleMouseLeave}
+              >
                 <ArrowUturnLeftIcon
                   onClick={(e) => {
                     e.stopPropagation();
@@ -127,8 +155,11 @@ export default function Message({ message, folderId }: MessageProps) {
                   }}
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
-              </Tooltip>
-              <Tooltip text="Reply All">
+              </div>
+              <div
+                onMouseEnter={(event) => {handleMouseEnter(event, "Reply All")}}
+                onMouseLeave={handleMouseLeave}
+              >
                 <ArrowUturnLeftIcon
                   onClick={(e) => {
                     e.stopPropagation();
@@ -136,8 +167,11 @@ export default function Message({ message, folderId }: MessageProps) {
                   }}
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
-              </Tooltip>
-              <Tooltip text="Forward">
+              </div>                
+              <div
+                onMouseEnter={(event) => {handleMouseEnter(event, "Forward")}}
+                onMouseLeave={handleMouseLeave}
+              >
                 <ArrowUturnRightIcon
                   onClick={(e) => {
                     e.stopPropagation();
@@ -145,7 +179,10 @@ export default function Message({ message, folderId }: MessageProps) {
                   }}
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
-              </Tooltip>
+              </div>
+              <Portal>
+                <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
+              </Portal>
             </>
           )}
           <p className="dark:text-zinc-400 text-slate-500 text-sm">

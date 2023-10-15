@@ -10,7 +10,9 @@ import {
 } from "@heroicons/react/24/outline";
 
 import { useNavigate } from "react-router-dom";
-import Tooltip from "./Tooltip";
+import React, { useState } from "react";
+import Portal from "./ReactPortal";
+import TooltipPopover from "./TooltipPopover";
 
 const navigation = [
   { name: "Inbox", href: "/", icon: InboxIcon, current: false },
@@ -36,6 +38,31 @@ const navigation = [
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const [tooltipData, setTooltipData] = useState<{ showTooltip: boolean; coords: React.CSSProperties | undefined; message: string }>({
+    showTooltip: false,
+    coords: undefined,
+    message: "",
+  });
+  
+  const handleMouseEnter = (event: React.MouseEvent<HTMLElement>, message: string) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipData({
+      showTooltip: true,
+      coords: {
+        left: `${rect.x + rect.width / 2}px`,
+        top: `${rect.y + rect.height}px`,
+      },
+      message: message,
+    });
+  };
+  
+  const handleMouseLeave = () => {
+    setTooltipData({
+      ...tooltipData,
+      showTooltip: false,
+    });
+  };
+  
 
   return (
     <div className="flex-shrink-0 w-20 overflow-y-auto pb-4 h-full overflow-hidden">
@@ -58,15 +85,21 @@ export default function Sidebar() {
                 } 'group flex gap-x-3 rounded-md p-3 text-sm text-slate-600 dark:text-zinc-300 leading-6 font-semibold'
               `}
               >
-                <Tooltip text={item.name == "Deleted Items" ? 'Deleted' : item.name}>
+                <div
+                  onMouseEnter={(event) => {handleMouseEnter(event, item.name == "Deleted Items" ? 'Deleted' : item.name)}}
+                  onMouseLeave={() => {handleMouseLeave()}}
+                >
                   <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-                </Tooltip>
+                </div>
                 <span className="sr-only">{item.name}</span>
               </div>
             </li>
           ))}
         </ul>
       </nav>
+      <Portal>
+        <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
+      </Portal>
     </div>
     // <div className="h-screen w-[200px] min-w-[256px] bg-slate-300 text-white flex flex-col items-center justify-center">
     //   <div>hello</div>
