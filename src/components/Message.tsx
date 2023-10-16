@@ -11,7 +11,6 @@ import { partialSync, sendReply, sendReplyAll, forward } from "../lib/sync";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import SimpleButton from "./SimpleButton";
 import { AttachmentButton } from "./AttachmentButton";
-import Portal from "./ReactPortal";
 import TooltipPopover from "./TooltipPopover";
 
 interface MessageProps {
@@ -180,9 +179,7 @@ export default function Message({ message, folderId }: MessageProps) {
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
               </div>
-              <Portal>
-                <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
-              </Portal>
+              <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
             </>
           )}
           <p className="dark:text-zinc-400 text-slate-500 text-sm">

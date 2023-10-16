@@ -18,7 +18,6 @@ import {
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { HorizontalAttachments } from "./HorizontalAttachments";
-import Portal from "./ReactPortal";
 import TooltipPopover from "./TooltipPopover";
 
 function isToday(date: Date) {
@@ -332,9 +331,7 @@ export default function ThreadList({
           </div>
         ) : null}
       </div>
-      <Portal>
-        <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
-      </Portal>
+      <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
     </div>
   );
 }

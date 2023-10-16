@@ -11,7 +11,6 @@ import {
 
 import { useNavigate } from "react-router-dom";
 import React, { useState } from "react";
-import Portal from "./ReactPortal";
 import TooltipPopover from "./TooltipPopover";
 
 const navigation = [
@@ -76,6 +75,8 @@ export default function Sidebar() {
           {navigation.map((item) => (
             <li className="cursor-pointer" key={item.name}>
               <div
+                onMouseEnter={(event) => {handleMouseEnter(event, item.name == "Deleted Items" ? 'Deleted' : item.name)}}
+                onMouseLeave={() => {handleMouseLeave()}}
                 onClick={() => navigate(item.href)}
                 className={`
                 ${
@@ -85,21 +86,14 @@ export default function Sidebar() {
                 } 'group flex gap-x-3 rounded-md p-3 text-sm text-slate-600 dark:text-zinc-300 leading-6 font-semibold'
               `}
               >
-                <div
-                  onMouseEnter={(event) => {handleMouseEnter(event, item.name == "Deleted Items" ? 'Deleted' : item.name)}}
-                  onMouseLeave={() => {handleMouseLeave()}}
-                >
-                  <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-                </div>
+                <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
                 <span className="sr-only">{item.name}</span>
               </div>
             </li>
           ))}
         </ul>
       </nav>
-      <Portal>
-        <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
-      </Portal>
+      <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
     </div>
     // <div className="h-screen w-[200px] min-w-[256px] bg-slate-300 text-white flex flex-col items-center justify-center">
     //   <div>hello</div>

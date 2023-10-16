@@ -11,7 +11,6 @@ import AccountActionsMenu from "./AccountActionsMenu";
 import { fullSync } from "../lib/sync";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { WriteMessage } from "../components/WriteMessage";
-import Portal from "./ReactPortal";
 import TooltipPopover from "./TooltipPopover";
 
 interface ThreadViewProps {
@@ -161,9 +160,7 @@ export default function ThreadView(props: ThreadViewProps) {
               handleMouseEnter={handleMouseEnter}
               handleMouseLeave={handleMouseLeave}
             />
-            <Portal>
-                <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />              
-            </Portal>
+            <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />              
           </div>
         </div>
         {process.env.NODE_ENV !== "production" ? (
