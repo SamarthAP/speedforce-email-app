@@ -10,8 +10,8 @@ import {
 } from "@heroicons/react/24/outline";
 
 import { useNavigate } from "react-router-dom";
-import React, { useState } from "react";
 import TooltipPopover from "./TooltipPopover";
+import { useTooltip } from "./UseTooltip";
 
 const navigation = [
   { name: "Inbox", href: "/", icon: InboxIcon, current: false },
@@ -37,30 +37,7 @@ const navigation = [
 
 export default function Sidebar() {
   const navigate = useNavigate();
-  const [tooltipData, setTooltipData] = useState<{ showTooltip: boolean; coords: React.CSSProperties | undefined; message: string }>({
-    showTooltip: false,
-    coords: undefined,
-    message: "",
-  });
-  
-  const handleMouseEnter = (event: React.MouseEvent<HTMLElement>, message: string) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setTooltipData({
-      showTooltip: true,
-      coords: {
-        left: `${rect.x + rect.width / 2}px`,
-        top: `${rect.y + rect.height}px`,
-      },
-      message: message,
-    });
-  };
-  
-  const handleMouseLeave = () => {
-    setTooltipData({
-      ...tooltipData,
-      showTooltip: false,
-    });
-  };
+  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
   
 
   return (
@@ -70,7 +47,7 @@ export default function Sidebar() {
           <ViewColumnsIcon className="h-6 w-6 shrink-0" aria-hidden="true" />
         </div>
       </div> */}
-      <nav className="mt-4 overflow-scroll pb-4">
+      <nav className="mt-4 overflow-scroll">
         <ul role="list" className="flex flex-col items-center space-y-1">
           {navigation.map((item) => (
             <li className="cursor-pointer" key={item.name}>

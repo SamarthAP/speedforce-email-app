@@ -12,6 +12,7 @@ import { useEmailPageOutletContext } from "../pages/_emailPage";
 import SimpleButton from "./SimpleButton";
 import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
+import { useTooltip } from "./UseTooltip";
 
 interface MessageProps {
   message: IMessage;
@@ -26,11 +27,7 @@ export default function Message({ message, folderId }: MessageProps) {
   const [sendingReply, setSendingReply] = useState(false);
   const [editorMode, setEditorMode] = useState<"reply" | "replyAll" | "forward" | "none">("none");
   const [forwardTo, setForwardTo] = useState("");
-  const [tooltipData, setTooltipData] = useState<{ showTooltip: boolean; coords: React.CSSProperties | undefined; message: string }>({
-    showTooltip: false,
-    coords: undefined,
-    message: "",
-  });
+  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
 
   const replyRef = createRef<HTMLDivElement>();
   const editorRef = createRef<Editor>();
@@ -111,25 +108,6 @@ export default function Message({ message, folderId }: MessageProps) {
       }
     }
   }, [showReply, replyRef, editorRef]);
-
-  const handleMouseEnter = (event: React.MouseEvent<HTMLElement>, message: string) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setTooltipData({
-      showTooltip: true,
-      coords: {
-        left: `${rect.x + rect.width / 2}px`,
-        top: `${rect.y + rect.height}px`,
-      },
-      message: message,
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setTooltipData({
-      ...tooltipData,
-      showTooltip: false,
-    });
-  };
 
   return (
     <div className="w-full h-auto flex flex-col border border-slate-200 dark:border-zinc-700">

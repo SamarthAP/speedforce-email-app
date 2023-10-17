@@ -12,6 +12,7 @@ import { fullSync } from "../lib/sync";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { WriteMessage } from "../components/WriteMessage";
 import TooltipPopover from "./TooltipPopover";
+import { useTooltip } from "./UseTooltip";
 
 interface ThreadViewProps {
   folderId: string;
@@ -26,11 +27,7 @@ export default function ThreadView(props: ThreadViewProps) {
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const [writeEmailMode, setWriteEmailMode] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [tooltipData, setTooltipData] = useState<{ showTooltip: boolean; coords: React.CSSProperties | undefined; message: string }>({
-    showTooltip: false,
-    coords: undefined,
-    message: "",
-  });
+  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
 
   const renderCounter = useRef(0);
   const MAX_RENDER_COUNT = 5;
@@ -116,25 +113,6 @@ export default function ThreadView(props: ThreadViewProps) {
     });
   };
 
-  const handleMouseEnter = (event: React.MouseEvent<HTMLElement>, message: string) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setTooltipData({
-      showTooltip: true,
-      coords: {
-        left: `${rect.x + rect.width / 2}px`,
-        top: `${rect.y + 20}px`,
-      },
-      message: message,
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setTooltipData({
-      ...tooltipData,
-      showTooltip: false,
-    });
-  };
-
   return (
     <React.Fragment>
       <Sidebar />
@@ -160,7 +138,7 @@ export default function ThreadView(props: ThreadViewProps) {
               handleMouseEnter={handleMouseEnter}
               handleMouseLeave={handleMouseLeave}
             />
-            <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />              
+            <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
           </div>
         </div>
         {process.env.NODE_ENV !== "production" ? (

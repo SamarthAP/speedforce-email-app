@@ -19,6 +19,7 @@ import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { HorizontalAttachments } from "./HorizontalAttachments";
 import TooltipPopover from "./TooltipPopover";
+import { useTooltip } from "./UseTooltip";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -69,11 +70,7 @@ export default function ThreadList({
   folderId,
 }: ThreadListProps) {
   const observerTarget = useRef<HTMLDivElement>(null);
-  const [tooltipData, setTooltipData] = useState<{ showTooltip: boolean; coords: React.CSSProperties | undefined; message: string }>({
-    showTooltip: false,
-    coords: undefined,
-    message: "",
-  });
+  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
 
   // 'threads' is initially empty so the div with 'observerTarget' doesn't render, so observerTarget is null,
   // and when the list is updated with data, the div renders but it doesnt update observerTarget. To fix this,
@@ -121,24 +118,6 @@ export default function ThreadList({
     }
   }
 
-  const handleMouseEnter = (event: React.MouseEvent<HTMLButtonElement>, message: string) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setTooltipData({
-      showTooltip: true,
-      coords: {
-        left: `${rect.x + rect.width / 2}px`,
-        top: `${rect.y + rect.height}px`,
-      },
-      message: message,
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setTooltipData({
-      ...tooltipData,
-      showTooltip: false,
-    });
-  };
 
   return (
     <div ref={scrollRef} className="h-full overflow-y-scroll">

@@ -13,16 +13,16 @@ const TooltipPopover: React.FC<TooltipPopoverProps> = ({ coords, message, showTo
     <Transition
       show={showTooltip}
       enter="transition-all duration-1000 ease-out"
-      enterFrom=" opacity-0"
-      enterTo=" opacity-100"
+      enterFrom="opacity-0"
+      enterTo="opacity-100"
       leave="transition-all duration-100 ease-out"
-      leaveFrom=" opacity-100"
-      leaveTo=" opacity-0"
+      leaveFrom="opacity-100"
+      leaveTo="opacity-0"
     >
       <div
         className={clsx(
           "absolute bg-slate-600 text-white text-xs px-2 py-1 mt-1 rounded-md whitespace-nowrap",
-          "top-full left-1/2 transform -translate-x-1/2 pointer-events-none z-50"
+          "transform -translate-x-1/2 pointer-events-none"
         )}
         style={{ ...coords }}
       >
