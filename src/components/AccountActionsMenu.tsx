@@ -12,6 +12,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 interface AccountActionsProps {
   selectedEmail: ISelectedEmail;
   setSelectedEmail: (email: IEmail) => void;
+  handleMouseEnter: (event: React.MouseEvent<HTMLElement>, message: string) => void;
+  handleMouseLeave: () => void;
 }
 
 export default function AccountActions(props: AccountActionsProps) {
@@ -24,7 +26,7 @@ export default function AccountActions(props: AccountActionsProps) {
   return (
     <div className="relative">
       <Menu>
-        <Menu.Button>
+        <Menu.Button onMouseEnter={(event: React.MouseEvent<HTMLElement>) => {props.handleMouseEnter(event, "Account Actions")}} onMouseLeave={() => {props.handleMouseLeave()}}>
           <UserCircleIcon className="h-6 w-6 mr-3 shrink-0 text-black dark:text-white" />
         </Menu.Button>
         <Transition

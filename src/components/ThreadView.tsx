@@ -11,6 +11,8 @@ import AccountActionsMenu from "./AccountActionsMenu";
 import { fullSync } from "../lib/sync";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { WriteMessage } from "../components/WriteMessage";
+import TooltipPopover from "./TooltipPopover";
+import { useTooltip } from "./UseTooltip";
 
 interface ThreadViewProps {
   folderId: string;
@@ -25,6 +27,7 @@ export default function ThreadView(props: ThreadViewProps) {
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const [writeEmailMode, setWriteEmailMode] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
 
   const renderCounter = useRef(0);
   const MAX_RENDER_COUNT = 5;
@@ -121,6 +124,8 @@ export default function ThreadView(props: ThreadViewProps) {
           <div className="flex items-center">
             <button
               className="mr-3"
+              onMouseEnter={(event) => {handleMouseEnter(event, "Compose")}}
+              onMouseLeave={handleMouseLeave}
               onClick={() => {
                 setWriteEmailMode(true);
               }}
@@ -130,7 +135,10 @@ export default function ThreadView(props: ThreadViewProps) {
             <AccountActionsMenu
               selectedEmail={selectedEmail}
               setSelectedEmail={(email) => void setSelectedEmail(email)}
+              handleMouseEnter={handleMouseEnter}
+              handleMouseLeave={handleMouseLeave}
             />
+            <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
           </div>
         </div>
         {process.env.NODE_ENV !== "production" ? (
