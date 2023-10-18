@@ -1,7 +1,7 @@
 import UnreadDot from "./UnreadDot";
 import { IEmailThread, ISelectedEmail } from "../lib/db";
 import he from "he";
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   archiveThread,
   loadNextPage,
@@ -18,6 +18,8 @@ import {
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { HorizontalAttachments } from "./HorizontalAttachments";
+import TooltipPopover from "./TooltipPopover";
+import { useTooltip } from "./UseTooltip";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -68,6 +70,7 @@ export default function ThreadList({
   folderId,
 }: ThreadListProps) {
   const observerTarget = useRef<HTMLDivElement>(null);
+  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
 
   // 'threads' is initially empty so the div with 'observerTarget' doesn't render, so observerTarget is null,
   // and when the list is updated with data, the div renders but it doesnt update observerTarget. To fix this,
@@ -114,6 +117,7 @@ export default function ThreadList({
       await starThread(selectedEmail.email, selectedEmail.provider, thread.id);
     }
   }
+
 
   return (
     <div ref={scrollRef} className="h-full overflow-y-scroll">
@@ -189,6 +193,8 @@ export default function ThreadList({
                   <div className="flex flex-col items-center justify-center px-2">
                     {thread.labelIds.includes("STARRED") ? (
                       <button
+                        onMouseEnter={(event) => {handleMouseEnter(event, "Unstar")}}
+                        onMouseLeave={handleMouseLeave}
                         onClick={(
                           event: React.MouseEvent<HTMLButtonElement, MouseEvent>
                         ) => {
@@ -200,6 +206,8 @@ export default function ThreadList({
                       </button>
                     ) : (
                       <button
+                        onMouseEnter={(event) => {handleMouseEnter(event, "Star")}}
+                        onMouseLeave={handleMouseLeave}
                         onClick={(
                           event: React.MouseEvent<HTMLButtonElement, MouseEvent>
                         ) => {
@@ -241,6 +249,8 @@ export default function ThreadList({
                       </span>
                       <span className="flex flex-row">
                         <button
+                          onMouseEnter={(event) => {handleMouseEnter(event, "Mark as done")}}
+                          onMouseLeave={handleMouseLeave}
                           onClick={(
                             event: React.MouseEvent<
                               HTMLButtonElement,
@@ -260,6 +270,8 @@ export default function ThreadList({
                           <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
                         </button>
                         <button
+                          onMouseEnter={(event) => {handleMouseEnter(event, "Delete")}}
+                          onMouseLeave={handleMouseLeave}
                           onClick={(
                             event: React.MouseEvent<
                               HTMLButtonElement,
@@ -297,6 +309,7 @@ export default function ThreadList({
           </div>
         ) : null}
       </div>
+      <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
     </div>
   );
 }
