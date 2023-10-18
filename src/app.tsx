@@ -7,13 +7,16 @@ import Login from "./pages/Login";
 import { SessionContext } from "./contexts/SessionContext";
 import { Session } from "@supabase/supabase-js";
 import { Toaster } from "react-hot-toast";
+import InitialLoadingScreen from "./components/InitialLoadingScreen";
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      setLoading(false);
     });
 
     supabase.auth.onAuthStateChange((_event, session) => {
@@ -51,7 +54,14 @@ function App() {
     <SessionContext.Provider value={session}>
       <div className={`${theme}`}>
         <ThemeContext.Provider value={themeValue}>
-          {session ? <AppRouter /> : <Login />}
+          {/* {session ? <AppRouter /> : <Login />} */}
+          {loading ? (
+            <InitialLoadingScreen />
+          ) : session ? (
+            <AppRouter />
+          ) : (
+            <Login />
+          )}
           <Toaster position="bottom-center" reverseOrder={false} />
         </ThemeContext.Provider>
       </div>
