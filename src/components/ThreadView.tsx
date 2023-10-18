@@ -11,6 +11,7 @@ import AccountActionsMenu from "./AccountActionsMenu";
 import { fullSync } from "../lib/sync";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { WriteMessage } from "../components/WriteMessage";
+import SelectedThreadBar from "./SelectedThreadBar";
 
 interface ThreadViewProps {
   folderId: string;
@@ -78,6 +79,7 @@ export default function ThreadView(props: ThreadViewProps) {
     return (
       <React.Fragment>
         <WriteMessage setWriteEmailMode={setWriteEmailMode} />
+        {/* TODO: Create another Bar component for this that is more helpful for writing emails */}
         <AssistBar
           thread={hoveredThread}
           setSelectedThread={setSelectedThread}
@@ -94,9 +96,9 @@ export default function ThreadView(props: ThreadViewProps) {
           setSelectedThread={setSelectedThread}
           folderId={props.folderId}
         />
-        <AssistBar
-          thread={hoveredThread} // NOTE: since this is hovered thread, when you switch current thread from AssistBar, it won't update the past emails list
-          setSelectedThread={setSelectedThread}
+        <SelectedThreadBar
+          thread={selectedThread}
+          email={selectedEmail.email}
         />
       </React.Fragment>
     );

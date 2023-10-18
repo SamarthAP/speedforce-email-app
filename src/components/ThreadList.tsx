@@ -283,8 +283,7 @@ export default function ThreadList({
                     </div>
                   </div>
                 </div>
-                {/* could make HA component return null if no attachments (*current*), could also add a flag in Thread to set if there are attachmetns */}
-                <HorizontalAttachments threadId={thread.id} />
+                <HorizontalAttachments thread={thread} />
               </div>
             </div>
           );

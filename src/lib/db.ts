@@ -32,6 +32,7 @@ export interface IEmailThread {
   date: number;
   unread: boolean;
   labelIds: string[];
+  hasAttachments: boolean;
 }
 
 export interface IMessage {
@@ -89,7 +90,10 @@ export class SubClassedDexie extends Dexie {
 
     // Define schema versioning
     this.version(1).stores(dexieSchemas[1].schema);
-    this.version(2).stores(dexieSchemas[2].schema).upgrade(dexieSchemas[2].upgradeFnc);
+    this.version(2)
+      .stores(dexieSchemas[2].schema)
+      .upgrade(dexieSchemas[2].upgradeFnc);
+    this.version(3).stores(dexieSchemas[3].schema);
   }
 }
 
