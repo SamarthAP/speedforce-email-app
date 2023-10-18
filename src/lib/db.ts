@@ -93,7 +93,9 @@ export class SubClassedDexie extends Dexie {
     this.version(2)
       .stores(dexieSchemas[2].schema)
       .upgrade(dexieSchemas[2].upgradeFnc);
-    this.version(3).stores(dexieSchemas[3].schema);
+    this.version(3)
+      .stores(dexieSchemas[3].schema)
+      .upgrade(dexieSchemas[3].upgradeFnc);
   }
 }
 
