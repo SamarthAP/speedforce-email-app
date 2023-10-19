@@ -6,7 +6,7 @@ interface GetAuthURLDataType {
 }
 
 // provider can be 'google' or 'outlook'
-export const getAuthURL = async (provider: string) => {
+export const getAuthURL = async (provider: "google" | "outlook") => {
   const authHeader = await getJWTHeaders();
   let data: GetAuthURLDataType | null = null;
   let error: string | null = null;
@@ -14,6 +14,34 @@ export const getAuthURL = async (provider: string) => {
   try {
     const res: Response = await fetch(
       SPEEDFORCE_API_URL + "/auth/getAuthURL?provider=" + provider,
+      {
+        headers: {
+          ...authHeader,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      error = "Error fetching auth url";
+    } else {
+      data = await res.json();
+    }
+  } catch (e) {
+    error = "Error fetching auth url";
+  }
+
+  return { data, error };
+};
+
+// provider can be 'google' or 'outlook'
+export const getReAuthURL = async (email: string, provider: "google" | "outlook") => {
+  const authHeader = await getJWTHeaders();
+  let data: GetAuthURLDataType | null = null;
+  let error: string | null = null;
+
+  try {
+    const res: Response = await fetch(
+      SPEEDFORCE_API_URL + `/auth/getReAuthURL?email=${email}&provider=${provider}`,
       {
         headers: {
           ...authHeader,

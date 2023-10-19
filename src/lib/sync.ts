@@ -11,7 +11,7 @@ import {
   addLabelIds,
 } from "../api/gmail/users/threads";
 import { list as gHistoryList } from "../api/gmail/users/history";
-import { getToRecipients } from "../api/gmail/helpers";
+import { getToRecipients, buildForwardedHTML } from "../api/gmail/helpers";
 
 import {
   get as mThreadGet,
@@ -849,24 +849,20 @@ export async function forward(
   const accessToken = await getAccessToken(email);
   if (provider === "google") {
     const from = email;
-    const fromOriginal = getMessageHeader(message.headers, "From");
-    const toOriginal = getMessageHeader(message.headers, "To");
     const subject = getMessageHeader(message.headers, "Subject");
     const headerMessageId = getMessageHeader(message.headers, "Message-ID");
-    const date = getMessageHeader(message.headers, "Date");
     const threadId = message.threadId;
-    console.log(message)
+
+    const forwardHTML = await buildForwardedHTML(message, html);
  
     return await gForward(
       accessToken,
       from,
-      fromOriginal,
       toRecipients,
-      toOriginal,
       subject,
       headerMessageId,
       threadId,
-      html
+      forwardHTML,
     );
   } else if (provider === "outlook") {
     try {

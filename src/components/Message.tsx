@@ -55,17 +55,7 @@ export default function Message({ message, folderId }: MessageProps) {
     let error: string | null = null;
 
     setSendingReply(true);
-    if (editorMode === "forward") {
-      const toRecipients = forwardTo.split(/[ ,]+/);
-
-      ({ error } = await forward(
-        selectedEmail.email,
-        selectedEmail.provider,
-        message,
-        toRecipients,
-        "<div>--- Forwarded message ---</div>"
-      ));
-    } else if (editorComponentRef.current) {
+    if (editorComponentRef.current) {
       const editorState = editorComponentRef.current.getEditorState();
       const context = editorState.getCurrentContent();
       const html = stateToHTML(context);
@@ -82,6 +72,16 @@ export default function Message({ message, folderId }: MessageProps) {
           selectedEmail.email,
           selectedEmail.provider,
           message,
+          html
+        ));
+      } else {
+        const toRecipients = forwardTo.split(/[ ,]+/);
+  
+        ({ error } = await forward(
+          selectedEmail.email,
+          selectedEmail.provider,
+          message,
+          toRecipients,
           html
         ));
       }
@@ -101,9 +101,12 @@ export default function Message({ message, folderId }: MessageProps) {
   useEffect(() => {
     if (showReply) {
       if (replyRef.current) {
-        if (editorRef.current) {
-          editorRef.current.focus();
-        }
+        // Removed the following code so that on forward UI, the focus does not switch to editor when typing recipient address
+        // Consequence: When you click on reply/replyAll/forward, the editor still scrolls into view but without cursor
+
+        // if (editorRef.current) {
+        //   editorRef.current.focus();
+        // }
         replyRef.current.scrollIntoView({
           behavior: "smooth",
           block: "start",
@@ -212,9 +215,7 @@ export default function Message({ message, folderId }: MessageProps) {
             </span>
           ) : null}
 
-          {["reply", "replyAll"].includes(editorMode) && (
-            <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
-          )}
+          <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
 
           <SimpleButton
             onClick={() => void handleSendReply()}
