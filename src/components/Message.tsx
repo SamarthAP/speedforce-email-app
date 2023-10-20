@@ -16,6 +16,7 @@ import SimpleButton from "./SimpleButton";
 import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
+import toast from "react-hot-toast";
 
 interface MessageProps {
   message: IMessage;
@@ -92,6 +93,7 @@ export default function Message({ message, folderId }: MessageProps) {
 
     if (error) {
       console.log(error);
+      toast("Error sending messsage", { icon: "❌", duration: 5000 })
     } else {
       await partialSync(selectedEmail.email, selectedEmail.provider, {
         folderId: folderId,

@@ -195,13 +195,13 @@ export const forward = async (
       }),
     });
     if (!response.ok) {
-      error = "Error sending reply";
+      error = "Error forwarding message";
     } else {
       data = await response.json();
     }
   } catch (e) {
     dLog(e);
-    error = "Error sending reply";
+    error = "Error forwarding messages";
   }
 
   return { data, error };
