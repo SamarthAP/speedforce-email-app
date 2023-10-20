@@ -1,7 +1,7 @@
 import { createRef, useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { IMessage } from "../lib/db";
-import { cleanHtmlString } from "../lib/util";
+import { classNames, cleanHtmlString } from "../lib/util";
 import ShadowDom from "./ShadowDom";
 import {
   ArrowUturnLeftIcon,
@@ -14,7 +14,8 @@ import { partialSync, sendReply, sendReplyAll, forward } from "../lib/sync";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import SimpleButton from "./SimpleButton";
 import { AttachmentButton } from "./AttachmentButton";
-import Tooltip from "./Tooltip";
+import TooltipPopover from "./TooltipPopover";
+import { useTooltip } from "./UseTooltip";
 
 interface MessageProps {
   message: IMessage;
@@ -26,11 +27,13 @@ export default function Message({ message, folderId }: MessageProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   const [showBody, setShowBody] = useState(true);
   const [showReply, setShowReply] = useState(false);
+  const [showImages, setShowImages] = useState(false);
   const [sendingReply, setSendingReply] = useState(false);
   const [editorMode, setEditorMode] = useState<
     "reply" | "replyAll" | "forward" | "none"
   >("none");
   const [forwardTo, setForwardTo] = useState("");
+  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
 
   const replyRef = createRef<HTMLDivElement>();
   const editorRef = createRef<Editor>();
@@ -127,7 +130,10 @@ export default function Message({ message, folderId }: MessageProps) {
         <div className="flex items-center">
           {showBody && (
             <>
-              <Tooltip text="Reply">
+              <div
+                onMouseEnter={(event) => {handleMouseEnter(event, "Reply")}}
+                onMouseLeave={handleMouseLeave}
+              >
                 <ArrowUturnLeftIcon
                   onClick={(e) => {
                     e.stopPropagation();
@@ -135,8 +141,11 @@ export default function Message({ message, folderId }: MessageProps) {
                   }}
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
-              </Tooltip>
-              <Tooltip text="Reply All">
+              </div>
+              <div
+                onMouseEnter={(event) => {handleMouseEnter(event, "Reply All")}}
+                onMouseLeave={handleMouseLeave}
+              >
                 <ArrowUturnLeftIcon
                   onClick={(e) => {
                     e.stopPropagation();
@@ -144,8 +153,11 @@ export default function Message({ message, folderId }: MessageProps) {
                   }}
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
-              </Tooltip>
-              <Tooltip text="Forward">
+              </div>                
+              <div
+                onMouseEnter={(event) => {handleMouseEnter(event, "Forward")}}
+                onMouseLeave={handleMouseLeave}
+              >
                 <ArrowUturnRightIcon
                   onClick={(e) => {
                     e.stopPropagation();
@@ -153,13 +165,29 @@ export default function Message({ message, folderId }: MessageProps) {
                   }}
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
-              </Tooltip>
+              </div>
+              <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
             </>
           )}
           <p className="dark:text-zinc-400 text-slate-500 text-sm">
             {dayjs(message.date).format("MMM D, YYYY h:mm A")}
           </p>
         </div>
+      </div>
+
+      <div className="flex px-4 pb-4">
+        <button
+          className={classNames(
+            "inline-flex items-center ",
+            "rounded-md px-2 py-1",
+            "ring-1 ring-inset",
+            "text-xs font-medium",
+            "text-xs text-slate-700 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-500/10 ring-slate-600/20 dark:ring-zinc-500/20"
+          )}
+          onClick={() => setShowImages((old) => !old)}
+        >
+          {showImages ? "Hide Images" : "Show Images"}
+        </button>
       </div>
 
       {showBody && (
@@ -170,6 +198,7 @@ export default function Message({ message, folderId }: MessageProps) {
               message.htmlData,
               selectedEmail.provider === "google"
             )}
+            showImages={showImages}
           />
         </div>
       )}

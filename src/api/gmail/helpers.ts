@@ -1,14 +1,18 @@
 import { IMessage } from "../../lib/db";
-import { decodeGoogleMessageData, getMessageHeader, formatDateForForwardTemplate } from "../../lib/util";
+import {
+  decodeGoogleMessageData,
+  getMessageHeader,
+  formatDateForForwardTemplate,
+} from "../../lib/util";
 import _ from "lodash";
 
 export function getToRecipients(message: IMessage, email: string): string[] {
   const from =
-    getMessageHeader(message.headers, "From").match(/[\w\.-]+@[\w\.-]+/g) || [];
+    getMessageHeader(message.headers, "From").match(/[\w.-]+@[\w.-]+/g) || [];
   const to =
-    getMessageHeader(message.headers, "To").match(/[\w\.-]+@[\w\.-]+/g) || [];
+    getMessageHeader(message.headers, "To").match(/[\w.-]+@[\w.-]+/g) || [];
   const cc =
-    getMessageHeader(message.headers, "Cc").match(/[\w\.-]+@[\w\.-]+/g) || [];
+    getMessageHeader(message.headers, "Cc").match(/[\w.-]+@[\w.-]+/g) || [];
 
   // Recipients can come from any of the from, to, and cc fields
   const toRecipients = _.uniq(
@@ -23,19 +27,22 @@ export function addTabbedMessageToForwardedHTML(
   message: IMessage,
   afterString: string
 ) {
-  const from = getMessageHeader(message.headers, "From");
+  const from =
+    getMessageHeader(message.headers, "From").match(/[\w.-]+@[\w.-]+/g)?.[0] ||
+    "";
+  const to =
+    getMessageHeader(message.headers, "To").match(/[\w.-]+@[\w.-]+/g)?.[0] ||
+    "";
   const subject = getMessageHeader(message.headers, "Subject");
-  const to = getMessageHeader(message.headers, "To");
   const date = getMessageHeader(message.headers, "Date");
   // TODO: consider other fields here, including cc, bcc, etc.
-  
+
   if (!from || !date) {
     return { beforeString, afterString };
   }
 
   const formattedDate = formatDateForForwardTemplate(new Date(date));
-  const htmlData = unescape(encodeURIComponent(decodeGoogleMessageData(message.htmlData)));
-  console.log("htmlData", htmlData);
+  const htmlData = decodeGoogleMessageData(message.htmlData);
 
   return {
     beforeString: `${beforeString}

@@ -11,6 +11,9 @@ import AccountActionsMenu from "./AccountActionsMenu";
 import { fullSync } from "../lib/sync";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { WriteMessage } from "../components/WriteMessage";
+import SelectedThreadBar from "./SelectedThreadBar";
+import TooltipPopover from "./TooltipPopover";
+import { useTooltip } from "./UseTooltip";
 
 interface ThreadViewProps {
   folderId: string;
@@ -33,6 +36,7 @@ export default function ThreadView({
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const [writeEmailMode, setWriteEmailMode] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
 
   const renderCounter = useRef(0);
   const MAX_RENDER_COUNT = 5;
@@ -86,6 +90,7 @@ export default function ThreadView({
     return (
       <React.Fragment>
         <WriteMessage setWriteEmailMode={setWriteEmailMode} />
+        {/* TODO: Create another Bar component for this that is more helpful for writing emails */}
         <AssistBar
           thread={hoveredThread}
           setSelectedThread={setSelectedThread}
@@ -102,9 +107,9 @@ export default function ThreadView({
           setSelectedThread={setSelectedThread}
           folderId={folderId}
         />
-        <AssistBar
-          thread={hoveredThread} // NOTE: since this is hovered thread, when you switch current thread from AssistBar, it won't update the past emails list
-          setSelectedThread={setSelectedThread}
+        <SelectedThreadBar
+          thread={selectedThread}
+          email={selectedEmail.email}
         />
       </React.Fragment>
     );
@@ -129,6 +134,10 @@ export default function ThreadView({
           <div className="flex items-center">
             <button
               className="mr-3"
+              onMouseEnter={(event) => {
+                handleMouseEnter(event, "Compose");
+              }}
+              onMouseLeave={handleMouseLeave}
               onClick={() => {
                 setWriteEmailMode(true);
               }}
@@ -138,6 +147,13 @@ export default function ThreadView({
             <AccountActionsMenu
               selectedEmail={selectedEmail}
               setSelectedEmail={(email) => void setSelectedEmail(email)}
+              handleMouseEnter={handleMouseEnter}
+              handleMouseLeave={handleMouseLeave}
+            />
+            <TooltipPopover
+              message={tooltipData.message}
+              showTooltip={tooltipData.showTooltip}
+              coords={tooltipData.coords}
             />
           </div>
         </div>

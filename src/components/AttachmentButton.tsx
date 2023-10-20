@@ -82,3 +82,24 @@ export function AttachmentButton({
     </button>
   );
 }
+
+export function AttachmentButtonSkeleton() {
+  return (
+    <button
+      className={classNames(
+        "inline-flex items-center h-[32px]",
+        "rounded-md px-2 py-2 text-xs font-semibold shadow-sm focus:outline-none",
+        "bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-300 dark:hover:bg-zinc-600"
+      )}
+    >
+      <PaperClipIcon
+        className={classNames(
+          "w-4 h-4 mr-1",
+          "bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300"
+        )}
+      />
+
+      <span className="max-w-[128px] truncate">....</span>
+    </button>
+  );
+}

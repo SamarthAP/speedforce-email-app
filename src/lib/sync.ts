@@ -5,11 +5,15 @@ import {
   listNextPage as gThreadListNextPage,
   removeLabelIds,
   sendReply as gSendReply,
-  sendEmail as gSendEmail,
-  forward as gForward,
   trashThread as gTrashThread,
   addLabelIds,
 } from "../api/gmail/users/threads";
+import {
+  sendEmail as gSendEmail,
+  sendEmailWithAttachments as gSendEmailWithAttachments,
+  forward as gForward,
+  getAttachment as gAttachmentGet,
+} from "../api/gmail/users/messages";
 import { list as gHistoryList } from "../api/gmail/users/history";
 import { getToRecipients, buildForwardedHTML } from "../api/gmail/helpers";
 
@@ -54,8 +58,8 @@ import { dLog } from "./noProd";
 import { IThreadFilter } from "../api/model/users.thread";
 import { ID_DONE, ID_INBOX, ID_TRASH, ID_SENT } from "../api/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
-import { getAttachment as gAttachmentGet } from "../api/gmail/users/messages";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
+import { NewAttachment } from "../components/WriteMessage";
 
 async function handleNewThreadsGoogle(
   accessToken: string,
@@ -98,6 +102,7 @@ async function handleNewThreadsGoogle(
         maxHistoryId = parseInt(thread.historyId);
       }
 
+      let hasAttachments = false;
       thread.messages.forEach((message) => {
         // multipart/alternative is text and html, multipart/mixed is attachment
         // const textData =
@@ -137,6 +142,7 @@ async function handleNewThreadsGoogle(
               attachmentId: part.body.attachmentId || "",
               size: part.body.size || 0,
             });
+            hasAttachments = true;
           }
         });
 
@@ -178,6 +184,7 @@ async function handleNewThreadsGoogle(
         date: parseInt(thread.messages[lastMessageIndex].internalDate),
         unread: thread.messages[lastMessageIndex].labelIds?.includes("UNREAD"),
         labelIds: labelIds,
+        hasAttachments,
       });
     });
 
@@ -326,6 +333,7 @@ async function handleNewThreadsOutlook(
         ).getTime(),
         unread: unread,
         labelIds: labelIds,
+        hasAttachments: false, // TODO: implement for outlook
       });
     }
 
@@ -850,9 +858,6 @@ export async function forward(
   if (provider === "google") {
     const from = email;
     const subject = getMessageHeader(message.headers, "Subject");
-    const headerMessageId = getMessageHeader(message.headers, "Message-ID");
-    const threadId = message.threadId;
-
     const forwardHTML = await buildForwardedHTML(message, html);
  
     return await gForward(
@@ -860,9 +865,7 @@ export async function forward(
       from,
       toRecipients,
       subject,
-      headerMessageId,
-      threadId,
-      forwardHTML,
+      unescape(encodeURIComponent(forwardHTML)),
     );
   } else if (provider === "outlook") {
     try {
@@ -897,6 +900,32 @@ export async function sendEmail(
     }
   }
 
+  return { data: null, error: "Not implemented" };
+}
+
+export async function sendEmailWithAttachments(
+  email: string,
+  provider: "google" | "outlook",
+  to: string,
+  subject: string,
+  html: string,
+  attachments: NewAttachment[]
+) {
+  const accessToken = await getAccessToken(email);
+
+  if (provider === "google") {
+    return await gSendEmailWithAttachments(
+      accessToken,
+      email,
+      to,
+      subject,
+      html,
+      attachments
+    );
+  } else if (provider === "outlook") {
+    // TODO: implement
+    return { data: null, error: "Not implemented" };
+  }
   return { data: null, error: "Not implemented" };
 }
 
