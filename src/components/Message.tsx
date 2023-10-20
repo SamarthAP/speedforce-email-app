@@ -6,7 +6,6 @@ import ShadowDom from "./ShadowDom";
 import {
   ArrowUturnLeftIcon,
   ArrowUturnRightIcon,
-  ChevronDoubleLeftIcon,
 } from "@heroicons/react/24/outline";
 import EmailEditor, { EditorComponentRef } from "./EmailEditor";
 import { Editor } from "draft-js";
@@ -23,10 +22,9 @@ interface MessageProps {
   message: IMessage;
   key: string;
   folderId: string;
-  setSelectedThread: (threadId: string) => void;
 }
 
-export default function Message({ message, folderId, setSelectedThread }: MessageProps) {
+export default function Message({ message, folderId }: MessageProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   const [showBody, setShowBody] = useState(true);
   const [showReply, setShowReply] = useState(false);
@@ -128,23 +126,9 @@ export default function Message({ message, folderId, setSelectedThread }: Messag
         onClick={() => setShowBody((old) => !old)}
         className="flex justify-between p-4 cursor-pointer"
       >
-        <div className="flex items-center">
-          <div 
-            onMouseEnter={(event) => {handleMouseEnter(event, "Back")}}
-            onMouseLeave={handleMouseLeave}
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedThread("");
-            }}
-          >
-            <ChevronDoubleLeftIcon
-              className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
-            />
-          </div>
-          <p className="dark:text-zinc-400 text-slate-500 text-sm">
-            {message.from}
-          </p>
-        </div>
+        <p className="dark:text-zinc-400 text-slate-500 text-sm">
+          {message.from}
+        </p>
         <div className="flex items-center">
           {showBody && (
             <>
@@ -271,7 +255,6 @@ export default function Message({ message, folderId, setSelectedThread }: Messag
           />
         </div>
       )}
-      <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
     </div>
   );
 }
