@@ -1,3 +1,4 @@
+import { unescape } from "lodash";
 import { dLog } from "../../../lib/noProd";
 import { GMAIL_API_URL } from "../constants";
 
@@ -154,6 +155,53 @@ export const sendEmailWithAttachments = async (
   } catch (e) {
     dLog(e);
     error = "Error sending email";
+  }
+
+  return { data, error };
+};
+
+export const forward = async (
+  accessToken: string,
+  from: string,
+  to: string[],
+  subject: string,
+  messageContent: string
+) => {
+  let data: any | null = null; // TODO: define type
+  let error: string | null = null;
+
+  try {
+    const encodedReply = btoa(
+      'Content-Type: text/html; charset="UTF-8"\n' +
+        "MIME-Version: 1.0\n" +
+        "Content-Transfer-Encoding: 7bit\n" +
+        `Subject: Fwd: ${subject}\n` +
+        `From: ${from}\n` +
+        `To: ${to}\n\n` +
+        messageContent
+    )
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    const response = await fetch(`${GMAIL_API_URL}/messages/send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        raw: encodedReply,
+      }),
+    });
+    if (!response.ok) {
+      error = "Error forwarding message";
+    } else {
+      data = await response.json();
+    }
+  } catch (e) {
+    dLog(e);
+    error = "Error forwarding messages";
   }
 
   return { data, error };

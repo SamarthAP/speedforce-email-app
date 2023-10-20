@@ -115,7 +115,7 @@ export const forward = async (
       },
       method: "POST",
       body: JSON.stringify({
-        comment: "Forwarded from Speedforce",
+        comment: "--- Forwarded message ---",
         toRecipients: toRecipients.map((email) => {
           return {
             emailAddress: {

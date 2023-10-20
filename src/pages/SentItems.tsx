@@ -5,6 +5,6 @@ import { ID_SENT } from "../api/constants";
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now
 export default function SentItems() {
   return (
-    <ThreadView folderId={ID_SENT} title="Sent"/>
+    <ThreadView folderId={ID_SENT} title="Sent" canArchiveThread canTrashThread/>
   )
 }

@@ -1,5 +1,5 @@
 // Helper functions for Outlook to follow Gmail nomenclature
-import { OutlookMessageDataType } from "../model/users.thread";
+import { OutlookMessageDataType } from "../model/users.message";
 import { db } from "../../lib/db";
 import { get } from "./users/folder";
 import { getAccessToken } from "../accessToken";

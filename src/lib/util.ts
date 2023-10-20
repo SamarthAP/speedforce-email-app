@@ -86,3 +86,17 @@ export function upsertLabelIds(labelIds: string[], labelId: string) {
 
   return labelIds;
 }
+
+export function formatDateForForwardTemplate(date: Date){
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  };
+  
+  return new Intl.DateTimeFormat('en-US', options).format(date);
+}

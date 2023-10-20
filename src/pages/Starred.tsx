@@ -14,6 +14,6 @@ export default function Starred() {
     .sortBy("date");
 
   return (
-    <ThreadView folderId={ID_STARRED} title="Starred" queryFnc={queryFnc}/>
+    <ThreadView folderId={ID_STARRED} title="Starred" queryFnc={queryFnc} canArchiveThread canTrashThread/>
   )
 }

@@ -1,7 +1,7 @@
 import UnreadDot from "./UnreadDot";
 import { IEmailThread, ISelectedEmail } from "../lib/db";
 import he from "he";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   archiveThread,
   loadNextPage,
@@ -58,6 +58,8 @@ interface ThreadListProps {
   setScrollPosition: (position: number) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
   folderId: string;
+  canArchiveThread?: boolean;
+  canTrashThread?: boolean;
 }
 
 export default function ThreadList({
@@ -68,6 +70,8 @@ export default function ThreadList({
   setScrollPosition,
   scrollRef,
   folderId,
+  canArchiveThread = false,
+  canTrashThread = false,
 }: ThreadListProps) {
   const observerTarget = useRef<HTMLDivElement>(null);
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
@@ -117,7 +121,6 @@ export default function ThreadList({
       await starThread(selectedEmail.email, selectedEmail.provider, thread.id);
     }
   }
-
 
   return (
     <div ref={scrollRef} className="h-full overflow-y-scroll">
@@ -193,7 +196,9 @@ export default function ThreadList({
                   <div className="flex flex-col items-center justify-center px-2">
                     {thread.labelIds.includes("STARRED") ? (
                       <button
-                        onMouseEnter={(event) => {handleMouseEnter(event, "Unstar")}}
+                        onMouseEnter={(event) => {
+                          handleMouseEnter(event, "Unstar");
+                        }}
                         onMouseLeave={handleMouseLeave}
                         onClick={(
                           event: React.MouseEvent<HTMLButtonElement, MouseEvent>
@@ -206,7 +211,9 @@ export default function ThreadList({
                       </button>
                     ) : (
                       <button
-                        onMouseEnter={(event) => {handleMouseEnter(event, "Star")}}
+                        onMouseEnter={(event) => {
+                          handleMouseEnter(event, "Star");
+                        }}
                         onMouseLeave={handleMouseLeave}
                         onClick={(
                           event: React.MouseEvent<HTMLButtonElement, MouseEvent>
@@ -247,50 +254,59 @@ export default function ThreadList({
                       <span className="group-hover:hidden block">
                         {new Date(thread.date).toDateString()}
                       </span>
+
                       <span className="flex flex-row">
-                        <button
-                          onMouseEnter={(event) => {handleMouseEnter(event, "Mark as done")}}
-                          onMouseLeave={handleMouseLeave}
-                          onClick={(
-                            event: React.MouseEvent<
-                              HTMLButtonElement,
-                              MouseEvent
-                            >
-                          ) => {
-                            event.stopPropagation();
-                            void archiveThread(
-                              selectedEmail.email,
-                              selectedEmail.provider,
-                              thread.id
-                            );
-                            toast("Marked as done");
-                          }}
-                          className="group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
-                        >
-                          <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
-                        </button>
-                        <button
-                          onMouseEnter={(event) => {handleMouseEnter(event, "Delete")}}
-                          onMouseLeave={handleMouseLeave}
-                          onClick={(
-                            event: React.MouseEvent<
-                              HTMLButtonElement,
-                              MouseEvent
-                            >
-                          ) => {
-                            event.stopPropagation();
-                            void trashThread(
-                              selectedEmail.email,
-                              selectedEmail.provider,
-                              thread.id
-                            ).then(() => {
-                              toast("Trashed thread");
-                            });
-                          }}
-                          className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
-                        >
-                          <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
-                        </button>
+                        {canArchiveThread && (
+                          <button
+                            onMouseEnter={(event) => {
+                              handleMouseEnter(event, "Mark as done");
+                            }}
+                            onMouseLeave={handleMouseLeave}
+                            onClick={(
+                              event: React.MouseEvent<
+                                HTMLButtonElement,
+                                MouseEvent
+                              >
+                            ) => {
+                              event.stopPropagation();
+                              void archiveThread(
+                                selectedEmail.email,
+                                selectedEmail.provider,
+                                thread.id
+                              );
+                              toast("Marked as done");
+                            }}
+                            className="group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
+                          >
+                            <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+                          </button>
+                        )}
+                        {canTrashThread && (
+                          <button
+                            onMouseEnter={(event) => {
+                              handleMouseEnter(event, "Delete");
+                            }}
+                            onMouseLeave={handleMouseLeave}
+                            onClick={(
+                              event: React.MouseEvent<
+                                HTMLButtonElement,
+                                MouseEvent
+                              >
+                            ) => {
+                              event.stopPropagation();
+                              void trashThread(
+                                selectedEmail.email,
+                                selectedEmail.provider,
+                                thread.id
+                              ).then(() => {
+                                toast("Trashed thread");
+                              });
+                            }}
+                            className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
+                          >
+                            <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+                          </button>
+                        )}
                       </span>
                     </div>
                   </div>
@@ -309,7 +325,11 @@ export default function ThreadList({
           </div>
         ) : null}
       </div>
-      <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
+      <TooltipPopover
+        message={tooltipData.message}
+        showTooltip={tooltipData.showTooltip}
+        coords={tooltipData.coords}
+      />
     </div>
   );
 }

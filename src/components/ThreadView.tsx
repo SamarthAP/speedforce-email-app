@@ -19,9 +19,17 @@ interface ThreadViewProps {
   folderId: string;
   title: string;
   queryFnc?: (email: string) => Promise<IEmailThread[]>;
+  canArchiveThread?: boolean;
+  canTrashThread?: boolean;
 }
 
-export default function ThreadView(props: ThreadViewProps) {
+export default function ThreadView({
+  folderId,
+  title,
+  queryFnc,
+  canArchiveThread = false,
+  canTrashThread = false,
+}: ThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
   const [selectedThread, setSelectedThread] = useState<string>("");
@@ -50,12 +58,12 @@ export default function ThreadView(props: ThreadViewProps) {
 
   const threads = useLiveQuery(
     () => {
-      if (props.queryFnc) return props.queryFnc(selectedEmail.email);
+      if (queryFnc) return queryFnc(selectedEmail.email);
 
       const emailThreads = db.emailThreads
         .where("email")
         .equals(selectedEmail.email)
-        .and((thread) => thread.labelIds?.includes(props.folderId))
+        .and((thread) => thread.labelIds?.includes(folderId))
         .reverse()
         .sortBy("date");
 
@@ -72,11 +80,11 @@ export default function ThreadView(props: ThreadViewProps) {
       // TODO: Do a partial sync periodically to check for new threads (when not empty)
       if (threads?.length === 0) {
         void fullSync(selectedEmail.email, selectedEmail.provider, {
-          folderId: props.folderId,
+          folderId: folderId,
         });
       }
     }
-  }, [props.folderId, selectedEmail.email, selectedEmail.provider, threads]);
+  }, [folderId, selectedEmail.email, selectedEmail.provider, threads]);
 
   if (writeEmailMode) {
     return (
@@ -97,7 +105,7 @@ export default function ThreadView(props: ThreadViewProps) {
         <ThreadFeed
           selectedThread={selectedThread}
           setSelectedThread={setSelectedThread}
-          folderId={props.folderId}
+          folderId={folderId}
         />
         <SelectedThreadBar
           thread={selectedThread}
@@ -121,7 +129,7 @@ export default function ThreadView(props: ThreadViewProps) {
       <div className="w-full flex flex-col overflow-hidden">
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-lg font-medium select-none pl-8 tracking-wide my-4 text-black dark:text-white">
-            {props.title}
+            {title}
           </h2>
           <div className="flex items-center">
             <button
@@ -150,7 +158,7 @@ export default function ThreadView(props: ThreadViewProps) {
           </div>
         </div>
         {process.env.NODE_ENV !== "production" ? (
-          <TestSyncButtons folderId={props.folderId} />
+          <TestSyncButtons folderId={folderId} />
         ) : null}
         <ThreadList
           selectedEmail={selectedEmail}
@@ -159,7 +167,9 @@ export default function ThreadView(props: ThreadViewProps) {
           setHoveredThread={setHoveredThread}
           setScrollPosition={setScrollPosition}
           scrollRef={scrollRef}
-          folderId={props.folderId}
+          folderId={folderId}
+          canArchiveThread={canArchiveThread}
+          canTrashThread={canTrashThread}
         />
       </div>
       <AssistBar thread={hoveredThread} setSelectedThread={setSelectedThread} />

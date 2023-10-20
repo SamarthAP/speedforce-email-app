@@ -6,7 +6,6 @@ import {
   GoogleThreadsModifyDataType,
   IThreadFilter,
 } from "../../model/users.thread";
-import { Base64 } from "js-base64";
 import { dLog } from "../../../lib/noProd";
 
 // in endpoints that will not be called often, we can use the async/await syntax
@@ -182,7 +181,7 @@ export const addLabelIds = async (
 export const sendReply = async (
   accessToken: string,
   from: string,
-  to: string,
+  to: string[],
   subject: string,
   headerMessageId: string,
   threadId: string,
@@ -200,7 +199,7 @@ export const sendReply = async (
         `References: ${headerMessageId}\n` +
         `Subject: Re: ${subject}\n` +
         `From: ${from}\n` +
-        `To: ${to}\n\n` +
+        `To: ${to.join(",")}\n\n` +
         messageContent
     )
       .replace(/\+/g, "-")

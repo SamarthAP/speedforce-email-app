@@ -16,6 +16,7 @@ import SimpleButton from "./SimpleButton";
 import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
+import toast from "react-hot-toast";
 
 interface MessageProps {
   message: IMessage;
@@ -58,16 +59,7 @@ export default function Message({ message, folderId }: MessageProps) {
     let error: string | null = null;
 
     setSendingReply(true);
-    if (editorMode === "forward") {
-      const toRecipients = forwardTo.split(/[ ,]+/);
-
-      ({ error } = await forward(
-        selectedEmail.email,
-        selectedEmail.provider,
-        message.id,
-        toRecipients
-      ));
-    } else if (editorComponentRef.current) {
+    if (editorComponentRef.current) {
       const editorState = editorComponentRef.current.getEditorState();
       const context = editorState.getCurrentContent();
       const html = stateToHTML(context);
@@ -86,11 +78,22 @@ export default function Message({ message, folderId }: MessageProps) {
           message,
           html
         ));
+      } else {
+        const toRecipients = forwardTo.split(/[ ,]+/);
+  
+        ({ error } = await forward(
+          selectedEmail.email,
+          selectedEmail.provider,
+          message,
+          toRecipients,
+          html
+        ));
       }
     }
 
     if (error) {
       console.log(error);
+      toast("Error sending messsage", { icon: "❌", duration: 5000 })
     } else {
       await partialSync(selectedEmail.email, selectedEmail.provider, {
         folderId: folderId,
@@ -103,9 +106,12 @@ export default function Message({ message, folderId }: MessageProps) {
   useEffect(() => {
     if (showReply) {
       if (replyRef.current) {
-        if (editorRef.current) {
-          editorRef.current.focus();
-        }
+        // Removed the following code so that on forward UI, the focus does not switch to editor when typing recipient address
+        // Consequence: When you click on reply/replyAll/forward, the editor still scrolls into view but without cursor
+
+        // if (editorRef.current) {
+        //   editorRef.current.focus();
+        // }
         replyRef.current.scrollIntoView({
           behavior: "smooth",
           block: "start",
@@ -240,9 +246,7 @@ export default function Message({ message, folderId }: MessageProps) {
             </span>
           ) : null}
 
-          {["reply", "replyAll"].includes(editorMode) && (
-            <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
-          )}
+          <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
 
           <SimpleButton
             onClick={() => void handleSendReply()}
