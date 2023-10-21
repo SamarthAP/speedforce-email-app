@@ -168,6 +168,7 @@ export default function Message({ message, folderId }: MessageProps) {
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
               </div>
+              <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
             </>
           )}
           <p className="dark:text-zinc-400 text-slate-500 text-sm">
