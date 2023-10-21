@@ -2,6 +2,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../lib/db";
 import { useEffect } from "react";
 import Message from "./Message";
+import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
 
 interface ThreadFeedProps {
   selectedThread: string;
@@ -43,6 +44,20 @@ export function ThreadFeed({
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
+      <div className="flex px-4 pt-4">
+        <div 
+          className="flex flex-row cursor-pointer items-center"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedThread("");
+          }}
+        >
+          <ArrowSmallLeftIcon className="h-5 w-5 dark:text-zinc-400 text-slate-500"/>
+          <p className="dark:text-zinc-400 text-slate-500 text-md px-1">
+            Back
+          </p>
+        </div>
+      </div>
       <div className="dark:text-white p-4 w-full">{thread?.subject}</div>
       <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll">
         {messages?.map((message) => {
