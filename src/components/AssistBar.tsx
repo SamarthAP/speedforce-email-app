@@ -76,7 +76,13 @@ export default function AssistBar({
   return (
     <div className="flex-shrink-0 flex flex-col w-64 h-full p-4 border-l border-l-slate-200 dark:border-l-zinc-700 break-words">
       <p className="text-sm dark:text-white mb-4">
-        {thread?.from.slice(0, thread?.from.lastIndexOf("<"))}
+        {thread?.from.slice(
+          0,
+          thread?.from.lastIndexOf("<") == -1
+            ? undefined
+            : thread?.from.lastIndexOf("<")
+        )}
+        {/* {thread?.from} */}
       </p>
       <p className="mb-2 text-sm font-bold text-slate-500 dark:text-zinc-400">
         {thread?.subject}
