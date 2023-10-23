@@ -4,33 +4,7 @@ import SimpleButton from "./SimpleButton";
 import { useState } from "react";
 import { Transition } from "@headlessui/react";
 import { summarizeThread } from "../api/llm";
-import { decodeGoogleMessageData } from "../lib/util";
-
-function extractTextFromNode(node: Node, textNodes: string[]) {
-  if (node.nodeType === Node.TEXT_NODE) {
-    if (node.textContent && node.textContent.trim().length > 0) {
-      textNodes.push(node.textContent);
-    }
-  } else if (node.nodeType === Node.ELEMENT_NODE) {
-    for (const child of node.childNodes) {
-      extractTextFromNode(child, textNodes);
-    }
-  }
-}
-
-function extractTextFromHTML(html: string) {
-  const div = document.createElement("div");
-  div.innerHTML = html;
-  div.querySelectorAll("style, script").forEach((element) => element.remove());
-
-  const textNodes: string[] = [];
-
-  for (const child of div.childNodes) {
-    extractTextFromNode(child, textNodes);
-  }
-
-  return textNodes.join("-");
-}
+import { decodeGoogleMessageData, extractTextFromHTML } from "../lib/util";
 
 interface CompletionObject {
   summary: {

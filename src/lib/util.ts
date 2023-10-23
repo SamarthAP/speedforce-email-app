@@ -87,16 +87,42 @@ export function upsertLabelIds(labelIds: string[], labelId: string) {
   return labelIds;
 }
 
-export function formatDateForForwardTemplate(date: Date){
+export function formatDateForForwardTemplate(date: Date) {
   const options: Intl.DateTimeFormatOptions = {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
     hour12: true,
   };
-  
-  return new Intl.DateTimeFormat('en-US', options).format(date);
+
+  return new Intl.DateTimeFormat("en-US", options).format(date);
+}
+
+export function extractTextFromNode(node: Node, textNodes: string[]) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    if (node.textContent && node.textContent.trim().length > 0) {
+      textNodes.push(node.textContent);
+    }
+  } else if (node.nodeType === Node.ELEMENT_NODE) {
+    for (const child of node.childNodes) {
+      extractTextFromNode(child, textNodes);
+    }
+  }
+}
+
+export function extractTextFromHTML(html: string) {
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  div.querySelectorAll("style, script").forEach((element) => element.remove());
+
+  const textNodes: string[] = [];
+
+  for (const child of div.childNodes) {
+    extractTextFromNode(child, textNodes);
+  }
+
+  return textNodes.join("-");
 }
