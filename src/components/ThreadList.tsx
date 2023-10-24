@@ -20,6 +20,10 @@ import toast from "react-hot-toast";
 import { HorizontalAttachments } from "./HorizontalAttachments";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
+import { executeInstantAsyncAction } from "../lib/asyncHelpers";
+import { updateLabelIdsForEmailThread } from "../lib/util";
+import { ID_INBOX, ID_SENT, ID_DONE, ID_TRASH } from "../api/constants";
+import _ from "lodash";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -112,14 +116,53 @@ export default function ThreadList({
 
   async function handleStarClick(thread: IEmailThread) {
     if (thread.labelIds.includes("STARRED")) {
-      await unstarThread(
-        selectedEmail.email,
-        selectedEmail.provider,
-        thread.id
+      await executeInstantAsyncAction(
+        () => void updateLabelIdsForEmailThread(thread.id, [], ["STARRED"]),
+        async () =>
+          await unstarThread(selectedEmail.email, selectedEmail.provider, thread.id),
+        () => {
+          void updateLabelIdsForEmailThread(thread.id, ["STARRED"], []);
+          toast("Unable to unstar thread");
+        }
       );
     } else {
-      await starThread(selectedEmail.email, selectedEmail.provider, thread.id);
+      await executeInstantAsyncAction(
+        () => void updateLabelIdsForEmailThread(thread.id, ["STARRED"], []),
+        async () =>
+          await starThread(selectedEmail.email, selectedEmail.provider, thread.id),
+        () => {
+          void updateLabelIdsForEmailThread(thread.id, [], ["STARRED"]);
+          toast("Unable to star thread");
+        }
+      );
     }
+  }
+
+  async function handleArchiveClick(thread: IEmailThread) {
+    const labelsToRemove = _.intersection(thread.labelIds, [ID_INBOX, ID_SENT]);
+
+    await executeInstantAsyncAction(
+      () => void updateLabelIdsForEmailThread(thread.id, [ID_DONE], labelsToRemove),
+      async () =>
+        await archiveThread(selectedEmail.email, selectedEmail.provider, thread.id),
+      () => {
+        void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [ID_DONE]);
+        toast("Unable to archive thread");
+      }
+    );
+  }
+
+  async function handleTrashClick(thread: IEmailThread) {
+    const labelsToRemove = _.intersection(thread.labelIds, [ID_INBOX, ID_SENT]);
+
+    await executeInstantAsyncAction(
+      () => void updateLabelIdsForEmailThread(thread.id, [ID_TRASH], labelsToRemove),
+      async () => await trashThread(selectedEmail.email, selectedEmail.provider, thread.id),
+      () => {
+        void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [ID_TRASH]);
+        toast("Unable to trash thread");
+      }
+    );
   }
 
   return (
@@ -269,12 +312,7 @@ export default function ThreadList({
                               >
                             ) => {
                               event.stopPropagation();
-                              void archiveThread(
-                                selectedEmail.email,
-                                selectedEmail.provider,
-                                thread.id
-                              );
-                              toast("Marked as done");
+                              void handleArchiveClick(thread);
                             }}
                             className="group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
                           >
@@ -294,13 +332,7 @@ export default function ThreadList({
                               >
                             ) => {
                               event.stopPropagation();
-                              void trashThread(
-                                selectedEmail.email,
-                                selectedEmail.provider,
-                                thread.id
-                              ).then(() => {
-                                toast("Trashed thread");
-                              });
+                              void handleTrashClick(thread);
                             }}
                             className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
                           >

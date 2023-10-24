@@ -1,5 +1,7 @@
 import { Base64 } from "js-base64";
 import DomPurify from "dompurify";
+import { db } from "./db";
+import { dLog } from "./noProd";
 
 export function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -125,4 +127,24 @@ export function extractTextFromHTML(html: string) {
   }
 
   return textNodes.join("-");
+}
+
+// Specify a list of labels to add or remove from a thread
+// Example use case: Archiving a thread means removeing INBOX,SENT,etc. and adding ARCHIVE
+export async function updateLabelIdsForEmailThread(
+  threadId: string,
+  addLabelIds: string[],
+  removeLabelIds: string[]
+) {
+  const thread = await db.emailThreads.get(threadId);
+  if (!thread) {
+    dLog("no thread");
+    return;
+  }
+
+  const labelIds = thread.labelIds
+    .filter((labelId) => !removeLabelIds?.includes(labelId))
+    .concat(addLabelIds);
+
+  await db.emailThreads.update(threadId, { labelIds });
 }
