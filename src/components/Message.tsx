@@ -80,7 +80,7 @@ export default function Message({ message, folderId }: MessageProps) {
         ));
       } else {
         const toRecipients = forwardTo.split(/[ ,]+/);
-  
+
         ({ error } = await forward(
           selectedEmail.email,
           selectedEmail.provider,
@@ -93,7 +93,7 @@ export default function Message({ message, folderId }: MessageProps) {
 
     if (error) {
       console.log(error);
-      toast("Error sending messsage", { icon: "❌", duration: 5000 })
+      toast("Error sending messsage", { icon: "❌", duration: 5000 });
     } else {
       await partialSync(selectedEmail.email, selectedEmail.provider, {
         folderId: folderId,
@@ -108,7 +108,6 @@ export default function Message({ message, folderId }: MessageProps) {
       if (replyRef.current) {
         // Removed the following code so that on forward UI, the focus does not switch to editor when typing recipient address
         // Consequence: When you click on reply/replyAll/forward, the editor still scrolls into view but without cursor
-
         // if (editorRef.current) {
         //   editorRef.current.focus();
         // }
@@ -133,31 +132,53 @@ export default function Message({ message, folderId }: MessageProps) {
           {showBody && (
             <>
               <div
-                onMouseEnter={(event) => {handleMouseEnter(event, "Reply")}}
+                onMouseEnter={(event) => {
+                  handleMouseEnter(event, "Reply");
+                }}
                 onMouseLeave={handleMouseLeave}
               >
                 <ArrowUturnLeftIcon
                   onClick={(e) => {
                     e.stopPropagation();
                     handleClickReply();
+                    replyRef.current?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
                   }}
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
               </div>
               <div
-                onMouseEnter={(event) => {handleMouseEnter(event, "Reply All")}}
+                onMouseEnter={(event) => {
+                  handleMouseEnter(event, "Reply All");
+                }}
                 onMouseLeave={handleMouseLeave}
               >
-                <ArrowUturnLeftIcon
+                <svg
                   onClick={(e) => {
                     e.stopPropagation();
                     handleClickReplyAll();
                   }}
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  aria-hidden="true"
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
-                />
-              </div>                
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3 M13 15L7 9m0 0l6-6"
+                  ></path>
+                </svg>
+              </div>
               <div
-                onMouseEnter={(event) => {handleMouseEnter(event, "Forward")}}
+                onMouseEnter={(event) => {
+                  handleMouseEnter(event, "Forward");
+                }}
                 onMouseLeave={handleMouseLeave}
               >
                 <ArrowUturnRightIcon
@@ -168,7 +189,11 @@ export default function Message({ message, folderId }: MessageProps) {
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
               </div>
-              <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
+              <TooltipPopover
+                message={tooltipData.message}
+                showTooltip={tooltipData.showTooltip}
+                coords={tooltipData.coords}
+              />
             </>
           )}
           <p className="dark:text-zinc-400 text-slate-500 text-sm">
