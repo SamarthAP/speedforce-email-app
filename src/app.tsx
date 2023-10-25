@@ -8,6 +8,7 @@ import { SessionContext } from "./contexts/SessionContext";
 import { Session } from "@supabase/supabase-js";
 import { Toaster } from "react-hot-toast";
 import InitialLoadingScreen from "./components/InitialLoadingScreen";
+import { asyncWithLDProvider } from "launchdarkly-react-client-sdk";
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -72,4 +73,14 @@ function App() {
 const container = document.getElementById("root");
 if (!container) throw new Error("No root element found");
 const root = createRoot(container); // createRoot(container!) if you use TypeScript
-root.render(<App />);
+void (async () => {
+  const LDProvider = await asyncWithLDProvider({
+    clientSideID: process.env.LAUNCHDARKLY_CLIENT_ID || "",
+  });
+
+  root.render(
+    <LDProvider>
+      <App />
+    </LDProvider>
+  );
+})();
