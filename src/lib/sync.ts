@@ -52,7 +52,10 @@ import {
   setPageToken,
   setHistoryId,
 } from "./dexie/helpers";
-import { getMessageHeader, upsertLabelIds } from "./util";
+import {
+  getMessageHeader,
+  upsertLabelIds,
+} from "./util";
 import _ from "lodash";
 import { dLog } from "./noProd";
 import { IThreadFilter } from "../api/model/users.thread";
@@ -60,6 +63,7 @@ import { ID_DONE, ID_INBOX, ID_TRASH, ID_SENT } from "../api/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { NewAttachment } from "../components/WriteMessage";
+import toast from "react-hot-toast";
 
 async function handleNewThreadsGoogle(
   accessToken: string,
@@ -489,24 +493,6 @@ async function loadNextPageOutlook(email: string, filter: IThreadFilter) {
   }
 }
 
-async function updateLabelIdsForEmailThread(
-  threadId: string,
-  addLabelIds: string[],
-  removeLabelIds: string[]
-) {
-  const thread = await db.emailThreads.get(threadId);
-  if (!thread) {
-    dLog("no thread");
-    return;
-  }
-
-  const labelIds = thread.labelIds
-    .filter((labelId) => !removeLabelIds?.includes(labelId))
-    .concat(addLabelIds);
-
-  await db.emailThreads.update(threadId, { labelIds });
-}
-
 export async function fullSync(
   email: string,
   provider: "google" | "outlook",
@@ -604,7 +590,7 @@ export async function starThread(
 
     if (error || !data) {
       dLog("Error starring thread");
-      return;
+      return { data: null, error };
     } else {
       const promises = data.messages.map((message) => {
         return db.messages.update(message.id, {
@@ -613,7 +599,6 @@ export async function starThread(
       });
 
       await Promise.all(promises);
-      await updateLabelIdsForEmailThread(threadId, ["STARRED"], []);
     }
   } else if (provider === "outlook") {
     // In outlook, starring = flagging the most recent message not sent by active user
@@ -629,7 +614,7 @@ export async function starThread(
 
     if (!message) {
       dLog("Error starring thread");
-      return;
+      return { data: null, error: "Error starring thread" };
     }
 
     try {
@@ -637,11 +622,13 @@ export async function starThread(
       await db.messages.update(message.id, {
         labelIds: addLabelIdsOutlook(message.labelIds, "STARRED"),
       });
-      await updateLabelIdsForEmailThread(threadId, ["STARRED"], []);
     } catch (e) {
       dLog("Error starring thread");
+      return { data: null, error: "Error starring thread" };
     }
   }
+
+  return { data: null, error: null };
 }
 
 export async function unstarThread(
@@ -657,7 +644,7 @@ export async function unstarThread(
 
     if (error || !data) {
       dLog("Error unstarring thread");
-      return;
+      return { data: null, error };
     } else {
       const promises = data.messages.map((message) => {
         return db.messages.update(message.id, {
@@ -666,7 +653,6 @@ export async function unstarThread(
       });
 
       await Promise.all(promises);
-      await updateLabelIdsForEmailThread(threadId, [], ["STARRED"]);
     }
   } else {
     const messages = await db.messages
@@ -687,11 +673,13 @@ export async function unstarThread(
     try {
       await Promise.all(apiPromises);
       await Promise.all(updateDexiePromises);
-      await updateLabelIdsForEmailThread(threadId, [], ["STARRED"]);
     } catch (e) {
       dLog("Error starring thread");
+      return { data: null, error: "Error unstarring thread" };
     }
   }
+
+  return { data: null, error: null };
 }
 
 export async function archiveThread(
@@ -707,7 +695,7 @@ export async function archiveThread(
 
     if (error || !data) {
       dLog("Error archiving thread");
-      return;
+      return { data: null, error };
     } else {
       const promises = data.messages.map((message) => {
         return db.messages.update(message.id, {
@@ -716,17 +704,12 @@ export async function archiveThread(
       });
 
       await Promise.all(promises);
-      await updateLabelIdsForEmailThread(
-        threadId,
-        [ID_DONE],
-        [ID_INBOX, ID_SENT]
-      ); // TODO: set up proper archive folder?
       const res = await addLabelIds(accessToken, threadId, ["ARCHIVE"]);
 
       if (res.error || !res.data) {
         dLog("Error adding DONE label to thread:");
         dLog(res.error);
-        return;
+        return { data: null, error };
       } else {
         dLog("Added DONE label to thread:");
         dLog(res.data);
@@ -746,26 +729,16 @@ export async function archiveThread(
       );
     });
 
-    const updateDexiePromises = messages.map(() => {
-      return updateLabelIdsForEmailThread(
-        threadId,
-        [ID_DONE],
-        [ID_INBOX, ID_SENT]
-      );
-    });
-
     try {
       await Promise.all(apiPromises);
-      await Promise.all(updateDexiePromises);
-      await updateLabelIdsForEmailThread(
-        threadId,
-        [ID_DONE],
-        [ID_INBOX, ID_SENT]
-      );
     } catch (e) {
       dLog("Error archiving thread");
+      return { data: null, error: "Error archiving thread" };
     }
   }
+
+  toast("Marked as done");
+  return { data: null, error: null };
 }
 
 export async function sendReply(
@@ -979,7 +952,7 @@ export async function trashThread(
 
     if (error || !data) {
       dLog("Error trashing thread");
-      return;
+      return { data: null, error };
     } else {
       const promises = data.messages.map((message) => {
         return db.messages.update(message.id, {
@@ -988,11 +961,6 @@ export async function trashThread(
       });
 
       await Promise.all(promises);
-      await updateLabelIdsForEmailThread(
-        threadId,
-        [ID_TRASH],
-        [ID_INBOX, ID_SENT]
-      );
     }
   } else if (provider === "outlook") {
     const messages = await db.messages
@@ -1008,27 +976,16 @@ export async function trashThread(
       );
     });
 
-    // Update labelIds in dexie
-    const updateDexiePromises = messages.map(() => {
-      return updateLabelIdsForEmailThread(
-        threadId,
-        [ID_TRASH],
-        [ID_INBOX, ID_SENT]
-      );
-    });
-
     try {
       await Promise.all(apiPromises);
-      await Promise.all(updateDexiePromises);
-      await updateLabelIdsForEmailThread(
-        threadId,
-        [ID_TRASH],
-        [ID_INBOX, ID_SENT]
-      );
     } catch (e) {
       dLog("Error deleting thread");
+      return { data: null, error: "Error deleting thread" };
     }
   }
+
+  toast("Trashed thread");
+  return { data: null, error: null };
 }
 
 export async function downloadAttachment(
