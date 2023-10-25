@@ -82,6 +82,7 @@
     "electron-updater": "^6.1.4",
     "he": "^1.2.0",
     "js-base64": "^3.7.5",
+    "launchdarkly-react-client-sdk": "^3.0.9",
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
