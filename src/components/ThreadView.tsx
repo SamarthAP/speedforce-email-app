@@ -8,8 +8,8 @@ import { ThreadFeed } from "../components/ThreadFeed";
 import AssistBar from "../components/AssistBar";
 import { TestSyncButtons } from "../lib/experiments";
 import AccountActionsMenu from "./AccountActionsMenu";
-import { fullSync } from "../lib/sync";
-import { PencilSquareIcon } from "@heroicons/react/24/outline";
+import { fullSync, partialSync } from "../lib/sync";
+import { PencilSquareIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { WriteMessage } from "../components/WriteMessage";
 import SelectedThreadBar from "./SelectedThreadBar";
 import TooltipPopover from "./TooltipPopover";
@@ -143,6 +143,20 @@ export default function ThreadView({
               }}
             >
               <PencilSquareIcon className="h-5 w-5 mb-2 shrink-0 text-black dark:text-white" />
+            </button>
+            <button
+              className="mr-3"
+              onMouseEnter={(event) => {
+                handleMouseEnter(event, "Refresh");
+              }}
+              onMouseLeave={handleMouseLeave}
+              onClick={() => {
+                void partialSync(selectedEmail.email, selectedEmail.provider, {
+                  folderId: folderId,
+                });
+              }}
+            >
+              <ArrowPathIcon className="h-5 w-5 mb-2 shrink-0 text-black dark:text-white" />
             </button>
             <AccountActionsMenu
               selectedEmail={selectedEmail}
