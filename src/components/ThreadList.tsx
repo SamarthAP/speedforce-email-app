@@ -119,7 +119,11 @@ export default function ThreadList({
       await executeInstantAsyncAction(
         () => void updateLabelIdsForEmailThread(thread.id, [], ["STARRED"]),
         async () =>
-          await unstarThread(selectedEmail.email, selectedEmail.provider, thread.id),
+          await unstarThread(
+            selectedEmail.email,
+            selectedEmail.provider,
+            thread.id
+          ),
         () => {
           void updateLabelIdsForEmailThread(thread.id, ["STARRED"], []);
           toast("Unable to unstar thread");
@@ -129,7 +133,11 @@ export default function ThreadList({
       await executeInstantAsyncAction(
         () => void updateLabelIdsForEmailThread(thread.id, ["STARRED"], []),
         async () =>
-          await starThread(selectedEmail.email, selectedEmail.provider, thread.id),
+          await starThread(
+            selectedEmail.email,
+            selectedEmail.provider,
+            thread.id
+          ),
         () => {
           void updateLabelIdsForEmailThread(thread.id, [], ["STARRED"]);
           toast("Unable to star thread");
@@ -142,9 +150,14 @@ export default function ThreadList({
     const labelsToRemove = _.intersection(thread.labelIds, [ID_INBOX, ID_SENT]);
 
     await executeInstantAsyncAction(
-      () => void updateLabelIdsForEmailThread(thread.id, [ID_DONE], labelsToRemove),
+      () =>
+        void updateLabelIdsForEmailThread(thread.id, [ID_DONE], labelsToRemove),
       async () =>
-        await archiveThread(selectedEmail.email, selectedEmail.provider, thread.id),
+        await archiveThread(
+          selectedEmail.email,
+          selectedEmail.provider,
+          thread.id
+        ),
       () => {
         void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [ID_DONE]);
         toast("Unable to archive thread");
@@ -156,10 +169,22 @@ export default function ThreadList({
     const labelsToRemove = _.intersection(thread.labelIds, [ID_INBOX, ID_SENT]);
 
     await executeInstantAsyncAction(
-      () => void updateLabelIdsForEmailThread(thread.id, [ID_TRASH], labelsToRemove),
-      async () => await trashThread(selectedEmail.email, selectedEmail.provider, thread.id),
+      () =>
+        void updateLabelIdsForEmailThread(
+          thread.id,
+          [ID_TRASH],
+          labelsToRemove
+        ),
+      async () =>
+        await trashThread(
+          selectedEmail.email,
+          selectedEmail.provider,
+          thread.id
+        ),
       () => {
-        void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [ID_TRASH]);
+        void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [
+          ID_TRASH,
+        ]);
         toast("Unable to trash thread");
       }
     );
@@ -281,11 +306,14 @@ export default function ThreadList({
                     {thread.from.slice(0, thread.from.lastIndexOf("<"))}
                   </span>
                 </div>
-                <div className="col-span-8 grid grid-cols-10">
-                  <div className="text-sm truncate pr-4 col-span-2 text-black dark:text-zinc-100">
-                    {thread.subject || "(no subject)"}
+                <div className="col-span-8 flex overflow-hidden">
+                  <div className="flex max-w-[50%]">
+                    <div className="text-sm truncate pr-4 col-span-2 text-black dark:text-zinc-100">
+                      {thread.subject || "(no subject)"}
+                    </div>
                   </div>
-                  <div className="col-span-8 flex">
+
+                  <div className="flex flex-grow overflow-hidden">
                     <div className="text-sm truncate text-slate-400 dark:text-zinc-500 w-full">
                       {/* {he.decode(
                         thread.snippet.slice(0, thread.snippet.indexOf("\n"))

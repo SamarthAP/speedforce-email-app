@@ -220,6 +220,8 @@ const createWindow = (): void => {
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
+  } else {
+    app.quit(); // TODO: temporary fix for timers not stopping and then causing a crash on macOS
   }
 });
 
