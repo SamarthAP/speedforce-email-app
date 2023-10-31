@@ -16,6 +16,9 @@ import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
 import { classNames } from "../lib/util";
 
+const MAX_RENDER_COUNT = 5;
+const MIN_REFRESH_DELAY_MS = 1000;
+
 interface ThreadViewProps {
   folderId: string;
   title: string;
@@ -41,8 +44,6 @@ export default function ThreadView({
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
 
   const renderCounter = useRef(0);
-  const MAX_RENDER_COUNT = 5;
-  const MIN_REFRESH_DELAY_MS = 1000;
   renderCounter.current = renderCounter.current + 1;
 
   useEffect(() => {
@@ -98,6 +99,7 @@ export default function ThreadView({
     });
 
     // If sync duration < MIN_REFRESH_DELAY_MS, wait until MIN_REFRESH_DELAY_MS has passed
+    // Generally, this function will always take MIN_REFRESH_DELAY_MS
     const endTime = new Date().getTime();
     if (endTime - startTime < MIN_REFRESH_DELAY_MS) {
       await new Promise((resolve) =>
