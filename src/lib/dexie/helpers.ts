@@ -1,10 +1,8 @@
 import { db } from "../db";
+import { isOutlookNextPageTokenNewer } from "../../api/outlook/helpers";
 
 export async function getGoogleMetaData(email: string, folderId: string) {
-  const metaData = await db.googleMetadata
-    .where("email")
-    .equals(email)
-    .first();
+  const metaData = await db.googleMetadata.where("email").equals(email).first();
 
   return metaData?.threadsListNextPageTokens.find(
     (obj) => obj.folderId === folderId
@@ -60,7 +58,12 @@ export async function setPageToken(
             folderId,
             token: nextPageToken,
           });
-        } else {
+        } else if (
+          isOutlookNextPageTokenNewer(
+            row.threadsListNextPageTokens[i].token,
+            nextPageToken
+          )
+        ) {
           row.threadsListNextPageTokens[i].token = nextPageToken;
         }
       });

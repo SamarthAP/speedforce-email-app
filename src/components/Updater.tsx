@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import clsx from "clsx";
+import { classNames } from "../lib/util";
 
 function createButtonConfig(
   updateAvailable: boolean,
@@ -109,7 +109,7 @@ export default function Updater() {
           buttonConfig.onClick?.();
         }}
         disabled={buttonConfig.disabled}
-        className={clsx(
+        className={classNames(
           "inline-flex items-center ",
           "rounded-md px-2 py-1",
           "ring-1 ring-inset",
