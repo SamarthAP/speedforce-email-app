@@ -59,7 +59,7 @@ function App() {
           {loading ? (
             <InitialLoadingScreen />
           ) : session ? (
-            <AppRouter />
+            <AppRouter session={session} />
           ) : (
             <Login />
           )}
