@@ -14,6 +14,7 @@ import { WriteMessage } from "../components/WriteMessage";
 import SelectedThreadBar from "./SelectedThreadBar";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
+import { classNames } from "../lib/util";
 
 interface ThreadViewProps {
   folderId: string;
@@ -35,11 +36,13 @@ export default function ThreadView({
   const [selectedThread, setSelectedThread] = useState<string>("");
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const [writeEmailMode, setWriteEmailMode] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
 
   const renderCounter = useRef(0);
   const MAX_RENDER_COUNT = 5;
+  const MIN_REFRESH_DELAY_MS = 1000;
   renderCounter.current = renderCounter.current + 1;
 
   useEffect(() => {
@@ -85,6 +88,25 @@ export default function ThreadView({
       }
     }
   }, [folderId, selectedEmail.email, selectedEmail.provider, threads]);
+
+  const handleRefreshClick = async () => {
+    setRefreshing(true);
+    const startTime = new Date().getTime();
+
+    await partialSync(selectedEmail.email, selectedEmail.provider, {
+      folderId: folderId,
+    });
+
+    // If sync duration < MIN_REFRESH_DELAY_MS, wait until MIN_REFRESH_DELAY_MS has passed
+    const endTime = new Date().getTime();
+    if (endTime - startTime < MIN_REFRESH_DELAY_MS) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, MIN_REFRESH_DELAY_MS - (endTime - startTime))
+      );
+    }
+
+    setRefreshing(false);
+  };
 
   if (writeEmailMode) {
     return (
@@ -150,13 +172,14 @@ export default function ThreadView({
                 handleMouseEnter(event, "Refresh");
               }}
               onMouseLeave={handleMouseLeave}
-              onClick={() => {
-                void partialSync(selectedEmail.email, selectedEmail.provider, {
-                  folderId: folderId,
-                });
-              }}
+              onClick={refreshing ? void 0 : handleRefreshClick}
             >
-              <ArrowPathIcon className="h-5 w-5 mb-2 shrink-0 text-black dark:text-white" />
+              <ArrowPathIcon
+                className={classNames(
+                  "h-5 w-5 mb-2 shrink-0 text-black dark:text-white",
+                  refreshing ? "animate-spin" : ""
+                )}
+              />
             </button>
             <AccountActionsMenu
               selectedEmail={selectedEmail}
