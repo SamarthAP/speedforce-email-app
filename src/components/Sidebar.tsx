@@ -12,6 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
+import { classNames } from "../lib/util";
 
 const navigation = [
   { name: "Inbox", href: "/", icon: InboxIcon, current: false },
@@ -38,7 +39,6 @@ const navigation = [
 export default function Sidebar() {
   const navigate = useNavigate();
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
-  
 
   return (
     <div className="flex-shrink-0 w-20 overflow-y-auto pb-4 h-full overflow-hidden">
@@ -47,21 +47,27 @@ export default function Sidebar() {
           <ViewColumnsIcon className="h-6 w-6 shrink-0" aria-hidden="true" />
         </div>
       </div> */}
-      <nav className="mt-4 overflow-scroll">
+      <nav className="mt-4">
         <ul role="list" className="flex flex-col items-center space-y-1">
           {navigation.map((item) => (
             <li className="cursor-pointer" key={item.name}>
               <div
-                onMouseEnter={(event) => {handleMouseEnter(event, item.name == "Deleted Items" ? 'Deleted' : item.name)}}
-                onMouseLeave={() => {handleMouseLeave()}}
+                onMouseEnter={(event) => {
+                  handleMouseEnter(
+                    event,
+                    item.name == "Deleted Items" ? "Deleted" : item.name
+                  );
+                }}
+                onMouseLeave={() => {
+                  handleMouseLeave();
+                }}
                 onClick={() => navigate(item.href)}
-                className={`
-                ${
+                className={classNames(
                   item.current
                     ? "bg-slate-100 dark:bg-zinc-800"
-                    : "hover:bg-slate-100 dark:hover:bg-zinc-800"
-                } 'group flex gap-x-3 rounded-md p-3 text-sm text-slate-600 dark:text-zinc-300 leading-6 font-semibold'
-              `}
+                    : "hover:bg-slate-100 dark:hover:bg-zinc-800",
+                  "group flex gap-x-3 rounded-md p-3 text-sm text-slate-600 dark:text-zinc-300 leading-6 font-semibold"
+                )}
               >
                 <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
                 <span className="sr-only">{item.name}</span>
@@ -70,7 +76,11 @@ export default function Sidebar() {
           ))}
         </ul>
       </nav>
-      <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
+      <TooltipPopover
+        message={tooltipData.message}
+        showTooltip={tooltipData.showTooltip}
+        coords={tooltipData.coords}
+      />
     </div>
     // <div className="h-screen w-[200px] min-w-[256px] bg-slate-300 text-white flex flex-col items-center justify-center">
     //   <div>hello</div>

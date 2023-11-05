@@ -8,10 +8,12 @@ export const SPEEDFORCE_WS_URL =
     ? "ws://localhost:8080"
     : "ws://localhost:8080";
 
-export const ID_INBOX = "ID_INBOX";
-export const ID_SENT = "ID_SENT";
-export const ID_DRAFTS = "ID_DRAFTS";
-export const ID_TRASH = "ID_TRASH";
-export const ID_SPAM = "ID_SPAM";
-export const ID_STARRED = "ID_STARRED";
-export const ID_DONE = "ID_DONE";
+export const FOLDER_IDS = {
+  INBOX: "ID_INBOX",
+  SENT: "ID_SENT",
+  DRAFTS: "ID_DRAFTS",
+  TRASH: "ID_TRASH",
+  SPAM: "ID_SPAM",
+  STARRED: "ID_STARRED",
+  DONE: "ID_DONE",
+};
