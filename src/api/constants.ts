@@ -3,6 +3,11 @@ export const SPEEDFORCE_API_URL =
     ? "https://api.speedforce.me"
     : "https://preprod.api.speedforce.me";
 
+export const SPEEDFORCE_WS_URL =
+  process.env.NODE_ENV === "production"
+    ? "ws://localhost:8080"
+    : "ws://localhost:8080";
+
 export const ID_INBOX = "ID_INBOX";
 export const ID_SENT = "ID_SENT";
 export const ID_DRAFTS = "ID_DRAFTS";
