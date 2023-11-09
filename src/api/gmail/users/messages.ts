@@ -1,6 +1,7 @@
 import { unescape } from "lodash";
 import { dLog } from "../../../lib/noProd";
 import { GMAIL_API_URL } from "../constants";
+import { Base64 } from "js-base64";
 
 interface GoogleGetAttachmentResponse {
   size: number;
@@ -49,11 +50,11 @@ export const sendEmail = async (
   let error: string | null = null;
 
   try {
-    const encodedReply = btoa(
+    const encodedReply = Base64.encode(
       'Content-Type: text/html; charset="UTF-8"\n' +
         "MIME-Version: 1.0\n" +
         "Content-Transfer-Encoding: 7bit\n" +
-        `Subject: ${subject}\n` +
+        `Subject: =?UTF-8?B?${Base64.encode(subject)}?=\n` +
         `From: ${from}\n` +
         `To: ${to}\n\n` +
         messageContent
@@ -102,11 +103,11 @@ export const sendEmailWithAttachments = async (
     // The boundary parameter is a text string used to delineate one part
     // of the message body from another.
     // https://learn.microsoft.com/en-us/exchange/troubleshoot/administration/multipart-mixed-mime-message-format
-    const encodedReply = btoa(
+    const encodedReply = Base64.encode(
       'Content-Type: multipart/mixed; boundary="spdfrce"\n' +
         "MIME-Version: 1.0\n" +
         "Content-Transfer-Encoding: 7bit\n" +
-        `Subject: ${subject}\n` +
+        `Subject: =?UTF-8?B?${Base64.encode(subject)}?=\n` +
         `From: ${from}\n` +
         `To: ${to}\n\n` +
         `--spdfrce\n` +
@@ -171,11 +172,11 @@ export const forward = async (
   let error: string | null = null;
 
   try {
-    const encodedReply = btoa(
+    const encodedReply = Base64.encode(
       'Content-Type: text/html; charset="UTF-8"\n' +
         "MIME-Version: 1.0\n" +
         "Content-Transfer-Encoding: 7bit\n" +
-        `Subject: Fwd: ${subject}\n` +
+        `Subject: Fwd: =?UTF-8?B?${Base64.encode(subject)}?=\n` +
         `From: ${from}\n` +
         `To: ${to}\n\n` +
         messageContent

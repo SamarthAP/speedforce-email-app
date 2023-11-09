@@ -10,6 +10,8 @@ import AddAccount from "../pages/AddAccount";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../lib/db";
 import EmailPage from "../pages/_emailPage";
+import WeekCalendarPage from "../pages/WeekCalendarPage";
+import WeekCalendar from "../components/Calendars/WeekCalendar";
 
 export default function AppRouter() {
   // returns undefined if the row doesnt exist, also rerenders when u switch tabs and switch back
@@ -34,6 +36,12 @@ export default function AppRouter() {
           <>
             <Route
               path="/"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<WeekCalendarPage />} />
+            </Route>
+            <Route
+              path="/calendar"
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
               <Route index element={<Home />} />
@@ -75,6 +83,7 @@ export default function AppRouter() {
               <Route index element={<Done />} />
             </Route>
             <Route path="/page/addAccount" element={<AddAccount />} />
+            {/* <Route path="/calendar" element={<WeekCalendarPage />}></Route> */}
           </>
         )}
       </Routes>

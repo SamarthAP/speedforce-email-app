@@ -7,6 +7,7 @@ import {
   TrashIcon,
   StarIcon,
   ArchiveBoxIcon,
+  CalendarIcon,
 } from "@heroicons/react/24/outline";
 
 import { useNavigate } from "react-router-dom";
@@ -14,6 +15,7 @@ import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
 
 const navigation = [
+  { name: "Calendar", href: "/calendar", icon: CalendarIcon, current: false },
   { name: "Inbox", href: "/", icon: InboxIcon, current: false },
   { name: "Starred", href: "/starred", icon: StarIcon, current: false },
   { name: "Sent", href: "/sent", icon: PaperAirplaneIcon, current: false },
@@ -38,7 +40,6 @@ const navigation = [
 export default function Sidebar() {
   const navigate = useNavigate();
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
-  
 
   return (
     <div className="flex-shrink-0 w-20 overflow-y-auto pb-4 h-full overflow-hidden">
@@ -52,8 +53,15 @@ export default function Sidebar() {
           {navigation.map((item) => (
             <li className="cursor-pointer" key={item.name}>
               <div
-                onMouseEnter={(event) => {handleMouseEnter(event, item.name == "Deleted Items" ? 'Deleted' : item.name)}}
-                onMouseLeave={() => {handleMouseLeave()}}
+                onMouseEnter={(event) => {
+                  handleMouseEnter(
+                    event,
+                    item.name == "Deleted Items" ? "Deleted" : item.name
+                  );
+                }}
+                onMouseLeave={() => {
+                  handleMouseLeave();
+                }}
                 onClick={() => navigate(item.href)}
                 className={`
                 ${
@@ -70,7 +78,11 @@ export default function Sidebar() {
           ))}
         </ul>
       </nav>
-      <TooltipPopover message={tooltipData.message} showTooltip={tooltipData.showTooltip} coords={tooltipData.coords} />
+      <TooltipPopover
+        message={tooltipData.message}
+        showTooltip={tooltipData.showTooltip}
+        coords={tooltipData.coords}
+      />
     </div>
     // <div className="h-screen w-[200px] min-w-[256px] bg-slate-300 text-white flex flex-col items-center justify-center">
     //   <div>hello</div>
