@@ -392,12 +392,22 @@ async function fullSyncOutlook(email: string, filter: IThreadFilter) {
   }
 }
 
-async function partialSyncGoogle(email: string) {
+async function partialSyncGoogle(email: string, filter: IThreadFilter) {
   const accessToken = await getAccessToken(email);
   const metadata = await db.googleMetadata.where("email").equals(email).first();
 
   if (!metadata) {
     dLog("no metadata");
+    return;
+  }
+
+  // If never queried, call a full sync
+  if (
+    metadata.threadsListNextPageTokens.findIndex(
+      (t) => t.folderId == filter?.folderId
+    ) === -1
+  ) {
+    await fullSyncGoogle(email, filter);
     return;
   }
 
@@ -502,7 +512,7 @@ export async function partialSync(
   filter: IThreadFilter
 ) {
   if (provider === "google") {
-    await partialSyncGoogle(email);
+    await partialSyncGoogle(email, filter);
   } else if (provider === "outlook") {
     await partialSyncOutlook(email, filter);
   }

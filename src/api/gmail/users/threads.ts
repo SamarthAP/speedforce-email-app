@@ -14,18 +14,6 @@ export const list = async (accessToken: string, filter: IThreadFilter) => {
   let error: string | null = null;
 
   try {
-    // let folderQuery = "";
-    // const inboxName = GMAIL_FOLDER_IDS_MAP.getValue(filter.folderId);
-    // if (filter && filter.folderId && inboxName) {
-    //   if (filter.folderId !== FOLDER_IDS.DONE) {
-    //     folderQuery = `&labelIds=${inboxName}`;
-    //   }
-
-    //   if ([FOLDER_IDS.SPAM, FOLDER_IDS.TRASH].includes(filter.folderId)) {
-    //     folderQuery += `&includeSpamTrash=true`;
-    //   }
-    // }
-
     // &q=from:hello@digest.producthunt.com for testing
     const res: Response = await fetch(
       `${GMAIL_API_URL}/threads?maxResults=20${filter.gmailQuery}`,

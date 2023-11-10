@@ -12,7 +12,7 @@ export default function SentItems() {
   )}`;
   const outlookFetchQuery = `/mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
     FOLDER_IDS.SENT
-  )}/messages`;
+  )}/messages?$select=id,conversationId&$top=20`;
 
   const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
     db.emailThreads

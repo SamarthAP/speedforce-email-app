@@ -12,7 +12,7 @@ export default function Drafts() {
   )}`;
   const outlookFetchQuery = `/mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
     FOLDER_IDS.DRAFTS
-  )}/messages`;
+  )}/messages?$select=id,conversationId&$top=20`;
 
   const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
     db.emailThreads
