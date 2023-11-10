@@ -1,6 +1,7 @@
 import he from "he";
 import { IEmailThread, db } from "../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
+import Feedback from "./Feedback";
 
 interface IAssistBarProps {
   thread: IEmailThread | null;
@@ -45,6 +46,9 @@ export default function AssistBar({
             {thread.subject}
           </div>
         ))}
+      </div>
+      <div className="fixed bottom-10 right-0 h-18 w-6 rounded-l-md bg-slate-600 dark:bg-zinc-200 shrink-0">
+        <Feedback />
       </div>
       {/* <Calendar /> */}
     </div>
