@@ -38,12 +38,6 @@ export default function AppRouter() {
               path="/"
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
-              <Route index element={<WeekCalendarPage />} />
-            </Route>
-            <Route
-              path="/calendar"
-              element={<EmailPage selectedEmail={selectedEmail} />}
-            >
               <Route index element={<Home />} />
             </Route>
             <Route
@@ -82,8 +76,13 @@ export default function AppRouter() {
             >
               <Route index element={<Done />} />
             </Route>
+            <Route
+              path="/calendar"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<WeekCalendarPage />} />
+            </Route>
             <Route path="/page/addAccount" element={<AddAccount />} />
-            {/* <Route path="/calendar" element={<WeekCalendarPage />}></Route> */}
           </>
         )}
       </Routes>

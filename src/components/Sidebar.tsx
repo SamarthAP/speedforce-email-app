@@ -15,8 +15,8 @@ import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
 
 const navigation = [
-  { name: "Calendar", href: "/calendar", icon: CalendarIcon, current: false },
   { name: "Inbox", href: "/", icon: InboxIcon, current: false },
+  { name: "Calendar", href: "/calendar", icon: CalendarIcon, current: false },
   { name: "Starred", href: "/starred", icon: StarIcon, current: false },
   { name: "Sent", href: "/sent", icon: PaperAirplaneIcon, current: false },
   {

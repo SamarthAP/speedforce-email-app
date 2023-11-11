@@ -38,8 +38,8 @@ export default function WeekCalendar() {
   const containerOffset = useRef<HTMLDivElement>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  console.log(selectedDate);
-  console.log(getWeek(selectedDate));
+  // console.log(selectedDate);
+  // console.log(getWeek(selectedDate));
 
   useEffect(() => {
     // Set the container scroll position based on the current time.
