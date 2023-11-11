@@ -10,6 +10,8 @@ import AddAccount from "../pages/AddAccount";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../lib/db";
 import EmailPage from "../pages/_emailPage";
+import WeekCalendarPage from "../pages/WeekCalendarPage";
+import WeekCalendar from "../components/Calendars/WeekCalendar";
 import { Session } from "@supabase/supabase-js";
 import useWebSocket from "react-use-websocket";
 import { SPEEDFORCE_WS_URL } from "../api/constants";
@@ -206,6 +208,12 @@ export default function AppRouter({ session }: AppRouterProps) {
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
               <Route index element={<Done />} />
+            </Route>
+            <Route
+              path="/calendar"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<WeekCalendarPage />} />
             </Route>
             <Route path="/page/addAccount" element={<AddAccount />} />
           </>
