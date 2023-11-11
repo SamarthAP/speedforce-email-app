@@ -21,6 +21,8 @@ function cleanIndexedDb() {
 
 interface TestSyncButtonsProps {
   folderId: string;
+  gmailFetchQuery?: string;
+  outlookFetchQuery?: string;
 }
 
 const TestSyncButtons = (props: TestSyncButtonsProps) => {
@@ -94,6 +96,8 @@ const TestSyncButtons = (props: TestSyncButtonsProps) => {
         onClick={() =>
           void partialSync(selectedEmail.email, selectedEmail.provider, {
             folderId: props.folderId,
+            gmailQuery: props.gmailFetchQuery,
+            outlookQuery: props.outlookFetchQuery,
           })
         }
       >
@@ -105,6 +109,8 @@ const TestSyncButtons = (props: TestSyncButtonsProps) => {
         onClick={() =>
           void fullSync(selectedEmail.email, selectedEmail.provider, {
             folderId: props.folderId,
+            gmailQuery: props.gmailFetchQuery,
+            outlookQuery: props.outlookFetchQuery,
           })
         }
       >

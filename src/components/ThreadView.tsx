@@ -1,6 +1,6 @@
 import ThreadList from "../components/ThreadList";
 import Sidebar from "../components/Sidebar";
-import { IEmail, IEmailThread, db } from "../lib/db";
+import { IEmail, IEmailThread, ISelectedEmail, db } from "../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import React, { useEffect, useRef, useState } from "react";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
@@ -22,7 +22,9 @@ const MIN_REFRESH_DELAY_MS = 1000;
 interface ThreadViewProps {
   folderId: string;
   title: string;
-  queryFnc?: (email: string) => Promise<IEmailThread[]>;
+  filterThreadsFnc?: (selectedEmail: ISelectedEmail) => Promise<IEmailThread[]>;
+  gmailFetchQuery?: string;
+  outlookFetchQuery?: string;
   canArchiveThread?: boolean;
   canTrashThread?: boolean;
 }
@@ -30,7 +32,9 @@ interface ThreadViewProps {
 export default function ThreadView({
   folderId,
   title,
-  queryFnc,
+  filterThreadsFnc,
+  gmailFetchQuery = "",
+  outlookFetchQuery = "",
   canArchiveThread = false,
   canTrashThread = false,
 }: ThreadViewProps) {
@@ -62,7 +66,7 @@ export default function ThreadView({
 
   const threads = useLiveQuery(
     () => {
-      if (queryFnc) return queryFnc(selectedEmail.email);
+      if (filterThreadsFnc) return filterThreadsFnc(selectedEmail);
 
       const emailThreads = db.emailThreads
         .where("email")
@@ -85,6 +89,8 @@ export default function ThreadView({
       if (threads?.length === 0) {
         void fullSync(selectedEmail.email, selectedEmail.provider, {
           folderId: folderId,
+          gmailQuery: gmailFetchQuery,
+          outlookQuery: outlookFetchQuery,
         });
       }
     }
@@ -94,8 +100,11 @@ export default function ThreadView({
     setRefreshing(true);
     const startTime = new Date().getTime();
 
+    // TODO: Partial sync if metadata, or else full sync
     await partialSync(selectedEmail.email, selectedEmail.provider, {
       folderId: folderId,
+      gmailQuery: gmailFetchQuery,
+      outlookQuery: outlookFetchQuery,
     });
 
     // If sync duration < MIN_REFRESH_DELAY_MS, wait until MIN_REFRESH_DELAY_MS has passed
@@ -197,7 +206,11 @@ export default function ThreadView({
           </div>
         </div>
         {process.env.NODE_ENV !== "production" ? (
-          <TestSyncButtons folderId={folderId} />
+          <TestSyncButtons
+            folderId={folderId}
+            gmailFetchQuery={gmailFetchQuery}
+            outlookFetchQuery={outlookFetchQuery}
+          />
         ) : null}
         <ThreadList
           selectedEmail={selectedEmail}

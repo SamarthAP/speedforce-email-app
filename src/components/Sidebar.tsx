@@ -13,6 +13,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
+import { classNames } from "../lib/util";
 
 const navigation = [
   { name: "Inbox", href: "/", icon: InboxIcon, current: false },
@@ -48,7 +49,7 @@ export default function Sidebar() {
           <ViewColumnsIcon className="h-6 w-6 shrink-0" aria-hidden="true" />
         </div>
       </div> */}
-      <nav className="mt-4 overflow-scroll">
+      <nav className="mt-4">
         <ul role="list" className="flex flex-col items-center space-y-1">
           {navigation.map((item) => (
             <li className="cursor-pointer" key={item.name}>
@@ -63,13 +64,12 @@ export default function Sidebar() {
                   handleMouseLeave();
                 }}
                 onClick={() => navigate(item.href)}
-                className={`
-                ${
+                className={classNames(
                   item.current
                     ? "bg-slate-100 dark:bg-zinc-800"
-                    : "hover:bg-slate-100 dark:hover:bg-zinc-800"
-                } 'group flex gap-x-3 rounded-md p-3 text-sm text-slate-600 dark:text-zinc-300 leading-6 font-semibold'
-              `}
+                    : "hover:bg-slate-100 dark:hover:bg-zinc-800",
+                  "group flex gap-x-3 rounded-md p-3 text-sm text-slate-600 dark:text-zinc-300 leading-6 font-semibold"
+                )}
               >
                 <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
                 <span className="sr-only">{item.name}</span>

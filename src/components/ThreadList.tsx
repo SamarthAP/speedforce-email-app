@@ -22,7 +22,7 @@ import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
 import { executeInstantAsyncAction } from "../lib/asyncHelpers";
 import { updateLabelIdsForEmailThread } from "../lib/util";
-import { ID_INBOX, ID_SENT, ID_DONE, ID_TRASH } from "../api/constants";
+import { FOLDER_IDS } from "../api/constants";
 import _ from "lodash";
 
 function isToday(date: Date) {
@@ -147,11 +147,18 @@ export default function ThreadList({
   }
 
   async function handleArchiveClick(thread: IEmailThread) {
-    const labelsToRemove = _.intersection(thread.labelIds, [ID_INBOX, ID_SENT]);
+    const labelsToRemove = _.intersection(thread.labelIds, [
+      FOLDER_IDS.INBOX,
+      FOLDER_IDS.SENT,
+    ]);
 
     await executeInstantAsyncAction(
       () =>
-        void updateLabelIdsForEmailThread(thread.id, [ID_DONE], labelsToRemove),
+        void updateLabelIdsForEmailThread(
+          thread.id,
+          [FOLDER_IDS.DONE],
+          labelsToRemove
+        ),
       async () =>
         await archiveThread(
           selectedEmail.email,
@@ -159,20 +166,25 @@ export default function ThreadList({
           thread.id
         ),
       () => {
-        void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [ID_DONE]);
+        void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [
+          FOLDER_IDS.DONE,
+        ]);
         toast("Unable to archive thread");
       }
     );
   }
 
   async function handleTrashClick(thread: IEmailThread) {
-    const labelsToRemove = _.intersection(thread.labelIds, [ID_INBOX, ID_SENT]);
+    const labelsToRemove = _.intersection(thread.labelIds, [
+      FOLDER_IDS.INBOX,
+      FOLDER_IDS.SENT,
+    ]);
 
     await executeInstantAsyncAction(
       () =>
         void updateLabelIdsForEmailThread(
           thread.id,
-          [ID_TRASH],
+          [FOLDER_IDS.TRASH],
           labelsToRemove
         ),
       async () =>
@@ -183,7 +195,7 @@ export default function ThreadList({
         ),
       () => {
         void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [
-          ID_TRASH,
+          FOLDER_IDS.TRASH,
         ]);
         toast("Unable to trash thread");
       }

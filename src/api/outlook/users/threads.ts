@@ -17,7 +17,7 @@ export const list = async (accessToken: string, filter: IThreadFilter) => {
     }
 
     const res: Response = await fetch(
-      `${OUTLOOK_API_URL}/${folderId}/messages?$select=id,conversationId&$top=20`,
+      `${OUTLOOK_API_URL}/${filter.outlookQuery}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,

@@ -73,7 +73,6 @@ export async function setPageToken(
 export async function setHistoryId(
   email: string,
   provider: "google" | "outlook",
-  folderId: string,
   maxHistoryId: number
 ) {
   if (provider === "google") {
@@ -81,15 +80,8 @@ export async function setHistoryId(
       .where("email")
       .equals(email)
       .modify((row) => {
-        const i = row.threadsListNextPageTokens.findIndex(
-          (obj) => obj.folderId === folderId
-        );
-        if (i != -1) {
-          const historyId = row.threadsListNextPageTokens[i].historyId;
-          if (parseInt(historyId) < maxHistoryId) {
-            row.threadsListNextPageTokens[i].historyId =
-              maxHistoryId.toString();
-          }
+        if (maxHistoryId > parseInt(row.historyId)) {
+          row.historyId = maxHistoryId.toString();
         }
       });
   } else if (provider === "outlook") {
