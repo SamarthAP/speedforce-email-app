@@ -52,14 +52,11 @@ import {
   setPageToken,
   setHistoryId,
 } from "./dexie/helpers";
-import {
-  getMessageHeader,
-  upsertLabelIds,
-} from "./util";
+import { getMessageHeader, upsertLabelIds } from "./util";
 import _ from "lodash";
 import { dLog } from "./noProd";
 import { IThreadFilter } from "../api/model/users.thread";
-import { ID_DONE, ID_INBOX, ID_TRASH, ID_SENT } from "../api/constants";
+import { FOLDER_IDS } from "../api/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { NewAttachment } from "../components/WriteMessage";
@@ -68,8 +65,7 @@ import toast from "react-hot-toast";
 async function handleNewThreadsGoogle(
   accessToken: string,
   email: string,
-  threadIds: string[],
-  filter: IThreadFilter
+  threadIds: string[]
 ) {
   let maxHistoryId = 0;
 
@@ -98,9 +94,9 @@ async function handleNewThreadsGoogle(
       if (isStarred) labelIds = upsertLabelIds(labelIds, "STARRED");
 
       // if folderId is DONE and thread includes INBOX labelId, skip
-      if (filter.folderId === ID_DONE && hasInboxLabel) {
-        return;
-      }
+      // if (filter.folderId === FOLDER_IDS.DONE && hasInboxLabel) {
+      //   return;
+      // }
       // thread history id i think will be max of all messages' history ids
       if (parseInt(thread.historyId) > maxHistoryId) {
         maxHistoryId = parseInt(thread.historyId);
@@ -192,7 +188,7 @@ async function handleNewThreadsGoogle(
       });
     });
 
-    await setHistoryId(email, "google", filter.folderId, maxHistoryId);
+    await setHistoryId(email, "google", maxHistoryId);
 
     // save threads
     await db.emailThreads.bulkPut(parsedThreads);
@@ -398,10 +394,20 @@ async function fullSyncOutlook(email: string, filter: IThreadFilter) {
 
 async function partialSyncGoogle(email: string, filter: IThreadFilter) {
   const accessToken = await getAccessToken(email);
-  const metadata = await getGoogleMetaData(email, filter.folderId);
+  const metadata = await db.googleMetadata.where("email").equals(email).first();
 
   if (!metadata) {
     dLog("no metadata");
+    return;
+  }
+
+  // If never queried, call a full sync
+  if (
+    metadata.threadsListNextPageTokens.findIndex(
+      (t) => t.folderId == filter?.folderId
+    ) === -1
+  ) {
+    await fullSyncGoogle(email, filter);
     return;
   }
 
@@ -423,12 +429,7 @@ async function partialSyncGoogle(email: string, filter: IThreadFilter) {
   });
 
   if (newThreadIds.size > 0) {
-    await handleNewThreadsGoogle(
-      accessToken,
-      email,
-      Array.from(newThreadIds),
-      filter
-    );
+    await handleNewThreadsGoogle(accessToken, email, Array.from(newThreadIds));
   }
 }
 
@@ -725,7 +726,7 @@ export async function archiveThread(
       return mMoveMessage(
         accessToken,
         message.id,
-        OUTLOOK_FOLDER_IDS_MAP.getValue(ID_DONE) || ""
+        OUTLOOK_FOLDER_IDS_MAP.getValue(FOLDER_IDS.DONE) || ""
       );
     });
 
@@ -832,13 +833,13 @@ export async function forward(
     const from = email;
     const subject = getMessageHeader(message.headers, "Subject");
     const forwardHTML = await buildForwardedHTML(message, html);
- 
+
     return await gForward(
       accessToken,
       from,
       toRecipients,
       subject,
-      unescape(encodeURIComponent(forwardHTML)),
+      unescape(encodeURIComponent(forwardHTML))
     );
   } else if (provider === "outlook") {
     try {
@@ -972,7 +973,7 @@ export async function trashThread(
       return mMoveMessage(
         accessToken,
         message.id,
-        OUTLOOK_FOLDER_IDS_MAP.getValue(ID_TRASH) || ""
+        OUTLOOK_FOLDER_IDS_MAP.getValue(FOLDER_IDS.TRASH) || ""
       );
     });
 

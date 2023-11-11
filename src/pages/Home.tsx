@@ -1,46 +1,34 @@
 import ThreadView from "../components/ThreadView";
-import { ID_INBOX } from "../api/constants";
-import { useEffect } from "react";
-import { useEmailPageOutletContext } from "./_emailPage";
-import { partialSync } from "../lib/sync";
-import { dLog } from "../lib/noProd";
+import { FOLDER_IDS } from "../api/constants";
+import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
+import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
+import { ISelectedEmail, db } from "../lib/db";
 
 export default function Home() {
-  const { selectedEmail } = useEmailPageOutletContext();
+  const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
+    FOLDER_IDS.INBOX
+  )}`;
+  const outlookFetchQuery = `/mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
+    FOLDER_IDS.INBOX
+  )}/messages?$select=id,conversationId&$top=20`;
 
-  // syncs every 10 mins, but not on render
-  useEffect(() => {
-    async function handler() {
-      dLog("periodic sync");
-      await partialSync(selectedEmail.email, selectedEmail.provider, {
-        folderId: ID_INBOX,
-      });
-    }
+  const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
+    db.emailThreads
+      .where("email")
+      .equals(selectedEmail.email)
+      .and((thread) => thread.labelIds.includes(FOLDER_IDS.INBOX))
+      .reverse()
+      .sortBy("date");
 
-    return window.electron.ipcRenderer.onSyncEmails(handler);
-  }, [selectedEmail]);
-
-  // syncs on render if last sync was more than 10 mins ago
-  useEffect(() => {
-    void window.electron.ipcRenderer
-      .invoke("store-get", "client.lastSyncTime")
-      .then(async (time) => {
-        const lastSyncTime = time ? new Date(time) : new Date(0);
-        const now = new Date();
-        const diff = now.getTime() - lastSyncTime.getTime();
-        const mins = diff / (1000 * 60 * 10);
-        if (mins > 10) {
-          dLog("on render sync");
-          await partialSync(selectedEmail.email, selectedEmail.provider, {
-            folderId: ID_INBOX,
-          });
-          await window.electron.ipcRenderer.invoke("store-set", {
-            key: "client.lastSyncTime",
-            value: now,
-          });
-        }
-      });
-  }, [selectedEmail]);
-
-  return <ThreadView folderId={ID_INBOX} title="Important" canArchiveThread canTrashThread/>;
+  return (
+    <ThreadView
+      folderId={FOLDER_IDS.INBOX}
+      title="Important"
+      gmailFetchQuery={gmailFetchQuery}
+      outlookFetchQuery={outlookFetchQuery}
+      filterThreadsFnc={filterThreadsFnc}
+      canArchiveThread
+      canTrashThread
+    />
+  );
 }

@@ -81,5 +81,7 @@ export interface OutlookThreadsListDataType {
 
 export interface IThreadFilter {
   folderId: string;
+  gmailQuery?: string;
+  outlookQuery?: string;
   // TODO: Add more email filters as needed
 }
