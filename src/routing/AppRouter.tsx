@@ -22,6 +22,7 @@ import { watch } from "../api/gmail/notifications/pushNotifications";
 import { NotificationMessageType } from "../api/model/notifications";
 import { partialSync } from "../lib/sync";
 import { FOLDER_IDS } from "../api/constants";
+import { handleMessage } from "../lib/wsHelpers";
 
 interface AppRouterProps {
   session: Session;
@@ -59,8 +60,9 @@ export default function AppRouter({ session }: AppRouterProps) {
       "client.id"
     );
 
-
-    return `${SPEEDFORCE_WS_URL}?emails=${emailAddresses.join(",")}&providers=${providers.join(",")}&accessToken=${
+    return `${SPEEDFORCE_WS_URL}?emails=${emailAddresses.join(
+      ","
+    )}&providers=${providers.join(",")}&accessToken=${
       session?.access_token
     }&clientId=${clientId}`;
   }, [session]);
@@ -82,79 +84,61 @@ export default function AppRouter({ session }: AppRouterProps) {
     onClose: () => {
       dLog("Websocket connection closed");
     },
-    onMessage: async (event) => {
-      dLog("Websocket message received: ", event);
-      const data: NotificationMessageType = JSON.parse(event.data);
-      
-      if(data.messageData.provider === "google"){
-
-        if(isPendingPartialSync) return;
+    onMessage: (event) => {
+      async function handle() {
+        if (isPendingPartialSync) return;
         isPendingPartialSync = true;
-        console.log("partial sync running")
-
-        const metadata = await db.googleMetadata.where("email").equals(data.messageData.email).first();
-        if(!metadata) return;
-
-        if(parseInt(data.messageData.historyId) > parseInt(metadata.historyId)){
-          await partialSync(data.messageData.email, data.messageData.provider, {
-            folderId: FOLDER_IDS.INBOX,
-          });
-        }
-
-        await setTimeout(() => {}, 1000);
+        await handleMessage(event);
         isPendingPartialSync = false;
-        console.log("partial sync done")
-
-      } else {
-        // TODO: handle outlook notifications
       }
+      void handle();
     },
     shouldReconnect: (closeEvent) => true,
     reconnectAttempts: 10,
     reconnectInterval: 3000,
   });
 
-    // syncs every 10 mins, but not on render
-    useEffect(() => {
-      async function handler() {
-        dLog("periodic sync");
-        if(selectedEmail)
+  // syncs every 10 mins, but not on render
+  useEffect(() => {
+    async function handler() {
+      dLog("periodic sync");
+      if (selectedEmail)
+        await partialSync(selectedEmail.email, selectedEmail.provider, {
+          folderId: FOLDER_IDS.INBOX,
+        });
+    }
+
+    return window.electron.ipcRenderer.onSyncEmails(handler);
+  }, [selectedEmail]);
+
+  // syncs on render if last sync was more than 10 mins ago
+  useEffect(() => {
+    void window.electron.ipcRenderer
+      .invoke("store-get", "client.lastWatchTime")
+      .then(async (time) => {
+        const lastSyncTime = time ? new Date(time) : new Date(0);
+        const now = new Date();
+        const diff = now.getTime() - lastSyncTime.getTime();
+        const days = diff / (1000 * 60 * 60 * 24);
+        if (days > 3 && selectedEmail) {
+          dLog("on render sync");
+
+          const { data, error } = await watch(selectedEmail.email);
+          if (error || !data) {
+            dLog(error);
+            return;
+          }
+
           await partialSync(selectedEmail.email, selectedEmail.provider, {
             folderId: FOLDER_IDS.INBOX,
           });
-      }
-  
-      return window.electron.ipcRenderer.onSyncEmails(handler);
-    }, [selectedEmail]);
-  
-    // syncs on render if last sync was more than 10 mins ago
-    useEffect(() => {
-      void window.electron.ipcRenderer
-        .invoke("store-get", "client.lastWatchTime")
-        .then(async (time) => {
-          const lastSyncTime = time ? new Date(time) : new Date(0);
-          const now = new Date();
-          const diff = now.getTime() - lastSyncTime.getTime();
-          const days = diff / (1000 * 60 * 60 * 24);
-          if (days > 3 && selectedEmail) {
-            dLog("on render sync");
-
-            const { data, error } = await watch(selectedEmail.email);
-            if(error || !data) {
-              dLog(error);
-              return;
-            }      
-
-            await partialSync(selectedEmail.email, selectedEmail.provider, {
-              folderId: FOLDER_IDS.INBOX,
-            });
-            await window.electron.ipcRenderer.invoke("store-set", {
-              key: "client.lastWatchTime",
-              value: now,
-            });
-          }
-        });
-    }, [selectedEmail]);
+          await window.electron.ipcRenderer.invoke("store-set", {
+            key: "client.lastWatchTime",
+            value: now,
+          });
+        }
+      });
+  }, [selectedEmail]);
 
   if (!loaded) {
     return <div className="h-screen w-screen"></div>;

@@ -5,8 +5,8 @@ export const SPEEDFORCE_API_URL =
 
 export const SPEEDFORCE_WS_URL =
   process.env.NODE_ENV === "production"
-    ? "ws://localhost:8080"
-    : "ws://localhost:8080";
+    ? "wss://ws.speedforce.me"
+    : "wss://preprod.ws.speedforce.me";
 
 export const FOLDER_IDS = {
   INBOX: "ID_INBOX",
