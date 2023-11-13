@@ -3,6 +3,7 @@ import { db } from "../lib/db";
 import { useEffect } from "react";
 import Message from "./Message";
 import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
+import { dLog } from "../lib/noProd";
 
 interface ThreadFeedProps {
   selectedThread: string;
@@ -31,7 +32,7 @@ export function ThreadFeed({
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setSelectedThread("");
-        console.log("Escape key pressed");
+        dLog("Escape pressed");
       }
     };
 

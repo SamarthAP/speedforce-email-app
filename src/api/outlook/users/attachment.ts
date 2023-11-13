@@ -1,3 +1,4 @@
+import { dLog } from "../../../lib/noProd";
 import { OutlookAttachmentDataType } from "../../model/users.attachment";
 import { OUTLOOK_API_URL } from "../constants";
 
@@ -22,7 +23,7 @@ export const list = async (accessToken: string, messageId: string) => {
       data = resData.value;
     }
   } catch (e) {
-    console.log(e);
+    dLog(e);
     error = "Error fetching attachments";
   }
 
@@ -53,7 +54,7 @@ export const get = async (
       data = await res.json();
     }
   } catch (e) {
-    console.log(e);
+    dLog(e);
     error = "Error fetching attachment";
   }
 

@@ -3,6 +3,7 @@ import { OutlookMessageDataType } from "../model/users.message";
 import { db } from "../../lib/db";
 import { get } from "./users/folder";
 import { getAccessToken } from "../accessToken";
+import { dLog } from "../../lib/noProd";
 
 // Build headers for outlook messages for send functionality
 export function buildMessageHeadersOutlook(message: OutlookMessageDataType) {
@@ -47,14 +48,12 @@ export function getLabelIdsForMoveMessageOutlook(
   folderId: string,
   allowList: string[] = []
 ) {
-  console.log("Before:", labelIds);
   const filteredLabelIds = labelIds.filter((labelId) => {
     return allowList?.includes(labelId);
   });
 
   filteredLabelIds.push(folderId);
 
-  console.log("After:", filteredLabelIds);
   return filteredLabelIds;
 }
 
@@ -81,7 +80,7 @@ export async function getFolderNameFromIdOutlook(
   const { data, error } = await get(accessToken, folderId);
 
   if (!data || error) {
-    console.log("Error fetching folder name");
+    dLog("Error fetching folder name");
     return "";
   }
 

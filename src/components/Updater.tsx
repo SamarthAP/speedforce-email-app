@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { classNames } from "../lib/util";
+import { dLog } from "../lib/noProd";
 
 function createButtonConfig(
   updateAvailable: boolean,
@@ -54,7 +55,7 @@ export default function Updater() {
 
   useEffect(() => {
     async function handler1() {
-      console.log("update available");
+      dLog("update available");
       setUpdateAvailable(true);
     }
 
@@ -63,7 +64,7 @@ export default function Updater() {
 
   useEffect(() => {
     async function handler2() {
-      console.log("update not available");
+      dLog("update not available");
       setUpdateAvailable(false);
     }
 
@@ -72,7 +73,7 @@ export default function Updater() {
 
   useEffect(() => {
     async function handler3() {
-      console.log("update downloaded");
+      dLog("update downloaded");
       setUpdateDownloaded(true);
     }
 
@@ -81,7 +82,7 @@ export default function Updater() {
 
   useEffect(() => {
     async function handler4(progress: number) {
-      console.log("update progress", progress);
+      dLog("update progress", progress);
       setDownloadProgress(progress);
     }
 
@@ -90,7 +91,10 @@ export default function Updater() {
 
   useEffect(() => {
     async function handler5(error: Error) {
-      console.log("update error", error);
+      dLog("update error", error);
+      setUpdateAvailable(false);
+      setUpdateDownloaded(false);
+      setDownloadProgress(0);
     }
 
     return window.electron.ipcRenderer.onUpdateError(handler5);

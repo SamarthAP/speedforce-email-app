@@ -1,4 +1,6 @@
 import { Transaction } from "dexie";
+import { dLog } from "../noProd";
+import { cleanIndexedDb } from "../experiments";
 
 export const dexieSchemas = {
   /*
@@ -39,7 +41,7 @@ export const dexieSchemas = {
       outlookFolders: "id, displayName",
     },
     upgradeFnc: async (tx: Transaction) => {
-      console.log("Upgrading schema to version 2");
+      dLog("Upgrading schema to version 2");
 
       // Test upgrade function: map single recipient to array type
       return tx
@@ -73,15 +75,17 @@ export const dexieSchemas = {
       outlookFolders: "id, displayName",
     },
     upgradeFnc: async (tx: Transaction) => {
-      console.log("Upgrading schema to version 3");
+      dLog("Upgrading schema to version 3");
 
+      // this is the initial change but we just decided to delete the whole db
       // set hasAttachments to false for all emailThreads
-      return tx
-        .table("emailThreads")
-        .toCollection()
-        .modify((emailThread) => {
-          emailThread.hasAttachments = false;
-        });
+      // return tx
+      //   .table("emailThreads")
+      //   .toCollection()
+      //   .modify((emailThread) => {
+      //     emailThread.hasAttachments = false;
+      //   });
+      cleanIndexedDb();
     },
   },
 };

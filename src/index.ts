@@ -253,7 +253,7 @@ ipcMain.handle("save-file", (_event, filename, data) => {
     saveFileToDownloadsFolder(filename, data);
     return true;
   } catch (e) {
-    console.log(e);
+    // console.log(e);
     return false;
   }
 });
