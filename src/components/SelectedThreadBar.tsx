@@ -70,12 +70,12 @@ export default function SelectedThreadBar({
 
   return (
     <div className="flex-shrink-0 flex flex-col w-64 h-full p-4 border-l border-l-slate-200 dark:border-l-zinc-700 break-words">
-      <SimpleButton
+      {/* <SimpleButton
         text="Summarize with AI"
         loading={loadingCompletion}
         onClick={() => void handleSummarizeThread()}
         width="w-full"
-      />
+      /> */}
       <Transition
         show={completion.summary.content ? true : false}
         enter="transition-opacity duration-300"
