@@ -1,8 +1,9 @@
 // Helper functions for Outlook to follow Gmail nomenclature
-import { OutlookMessageDataType } from "../model/users.thread";
+import { OutlookMessageDataType } from "../model/users.message";
 import { db } from "../../lib/db";
 import { get } from "./users/folder";
 import { getAccessToken } from "../accessToken";
+import { dLog } from "../../lib/noProd";
 
 // Build headers for outlook messages for send functionality
 export function buildMessageHeadersOutlook(message: OutlookMessageDataType) {
@@ -47,14 +48,12 @@ export function getLabelIdsForMoveMessageOutlook(
   folderId: string,
   allowList: string[] = []
 ) {
-  console.log("Before:", labelIds);
   const filteredLabelIds = labelIds.filter((labelId) => {
     return allowList?.includes(labelId);
   });
 
   filteredLabelIds.push(folderId);
 
-  console.log("After:", filteredLabelIds);
   return filteredLabelIds;
 }
 
@@ -81,7 +80,7 @@ export async function getFolderNameFromIdOutlook(
   const { data, error } = await get(accessToken, folderId);
 
   if (!data || error) {
-    console.log("Error fetching folder name");
+    dLog("Error fetching folder name");
     return "";
   }
 
@@ -92,4 +91,29 @@ export async function getFolderNameFromIdOutlook(
   });
 
   return formattedDisplayName;
+}
+
+// Tokens are of the form "https://graph.microsoft.com/v1.0/me/mailFolders('Inbox')/messages?%24select=id%2cconversationId&%24top=20&%24skip=20"
+// query param top is the number of messages to query
+// query param skip is the number of messages to skip
+export function isOutlookNextPageTokenNewer(
+  oldToken: string,
+  newToken: string
+) {
+  const oldTokenSkip = /%24skip=(\d+)/.exec(oldToken);
+  const newTokenSkip = /%24skip=(\d+)/.exec(newToken);
+
+  if (!newTokenSkip) {
+    return false;
+  }
+
+  if (!oldTokenSkip) {
+    return true;
+  }
+
+  return parseInt(newTokenSkip[1]) > parseInt(oldTokenSkip[1]);
+}
+
+export function getOutlookHistoryIdFromDateTime(dateTime: string) {
+  return new Date(dateTime).getTime() / 1000;
 }

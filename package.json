@@ -1,10 +1,11 @@
 {
   "name": "speedforce",
   "productName": "Speedforce",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "An improved email experience.",
   "main": ".webpack/main",
   "scripts": {
+    "dev": "electron-forge start",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
@@ -69,7 +70,6 @@
     "@types/dompurify": "^3.0.3",
     "@types/draft-js": "^0.11.13",
     "@types/he": "^1.2.1",
-    "clsx": "^2.0.0",
     "dayjs": "^1.11.10",
     "dexie": "^3.2.4",
     "dexie-react-hooks": "^1.1.6",
@@ -82,11 +82,13 @@
     "electron-updater": "^6.1.4",
     "he": "^1.2.0",
     "js-base64": "^3.7.5",
+    "launchdarkly-react-client-sdk": "^3.0.9",
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",
     "react-router-dom": "^6.16.0",
-    "react-tooltip": "^5.21.5"
+    "react-tooltip": "^5.21.5",
+    "react-use-websocket": "^4.5.0"
   }
 }

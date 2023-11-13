@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { classNames } from "../lib/util";
+import { dLog } from "../lib/noProd";
 
 function createButtonConfig(
   updateAvailable: boolean,
@@ -10,23 +12,31 @@ function createButtonConfig(
       buttonText: "restart to update",
       disabled: false,
       onClick: installUpdate,
+      colors:
+        "text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-500/10 ring-slate-yellow/20 dark:ring-yellow-500/20",
     };
   if (downloadProgress > 0)
     return {
       buttonText: `downloading update ${downloadProgress.toFixed(0)}%`,
       disabled: true,
       onClick: undefined,
+      colors:
+        "text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 ring-blue-600/20 dark:ring-blue-500/20",
     };
   if (updateAvailable)
     return {
       buttonText: "update available",
       disabled: false,
       onClick: downloadUpdate,
+      colors:
+        "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-500/10 ring-green-600/20 dark:ring-green-500/20", // DONE
     };
   return {
     buttonText: "no updates available",
     disabled: true,
     onClick: undefined,
+    colors:
+      "text-slate-700 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-500/10 ring-slate-600/20 dark:ring-zinc-500/20", // DONE
   };
 }
 
@@ -45,7 +55,7 @@ export default function Updater() {
 
   useEffect(() => {
     async function handler1() {
-      console.log("update available");
+      dLog("update available");
       setUpdateAvailable(true);
     }
 
@@ -54,7 +64,7 @@ export default function Updater() {
 
   useEffect(() => {
     async function handler2() {
-      console.log("update not available");
+      dLog("update not available");
       setUpdateAvailable(false);
     }
 
@@ -63,7 +73,7 @@ export default function Updater() {
 
   useEffect(() => {
     async function handler3() {
-      console.log("update downloaded");
+      dLog("update downloaded");
       setUpdateDownloaded(true);
     }
 
@@ -72,7 +82,7 @@ export default function Updater() {
 
   useEffect(() => {
     async function handler4(progress: number) {
-      console.log("update progress", progress);
+      dLog("update progress", progress);
       setDownloadProgress(progress);
     }
 
@@ -81,7 +91,10 @@ export default function Updater() {
 
   useEffect(() => {
     async function handler5(error: Error) {
-      console.log("update error", error);
+      dLog("update error", error);
+      setUpdateAvailable(false);
+      setUpdateDownloaded(false);
+      setDownloadProgress(0);
     }
 
     return window.electron.ipcRenderer.onUpdateError(handler5);
@@ -100,7 +113,13 @@ export default function Updater() {
           buttonConfig.onClick?.();
         }}
         disabled={buttonConfig.disabled}
-        className="inline-flex items-center rounded-md bg-green-50 dark:bg-green-500/10 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-400 ring-1 ring-inset ring-green-600/20 dark:ring-green-500/20"
+        className={classNames(
+          "inline-flex items-center ",
+          "rounded-md px-2 py-1",
+          "ring-1 ring-inset",
+          "text-xs font-medium",
+          buttonConfig.colors
+        )}
       >
         <p className="text-[8px] whitespace-nowrap">
           {buttonConfig.buttonText}

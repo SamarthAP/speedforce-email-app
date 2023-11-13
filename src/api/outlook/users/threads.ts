@@ -3,6 +3,7 @@ import {
   OutlookThreadsListDataType,
   IThreadFilter,
 } from "../../model/users.thread";
+import { dLog } from "../../../lib/noProd";
 
 // in endpoints that will not be called often, we can use the async/await syntax
 export const list = async (accessToken: string, filter: IThreadFilter) => {
@@ -10,14 +11,8 @@ export const list = async (accessToken: string, filter: IThreadFilter) => {
   let error: string | null = null;
 
   try {
-    let folderId = "";
-    const inboxName = OUTLOOK_FOLDER_IDS_MAP.getValue(filter.folderId);
-    if (filter && filter.folderId && inboxName) {
-      folderId = `mailfolders/${inboxName}`;
-    }
-
     const res: Response = await fetch(
-      `${OUTLOOK_API_URL}/${folderId}/messages?$select=id,conversationId&$top=20`,
+      `${OUTLOOK_API_URL}/${filter.outlookQuery}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -35,7 +30,7 @@ export const list = async (accessToken: string, filter: IThreadFilter) => {
       };
     }
   } catch (e) {
-    console.log(e);
+    dLog(e);
     error = "Error fetching threads";
   }
 
@@ -74,7 +69,7 @@ export const listNextPage = async (
       };
     }
   } catch (e) {
-    console.log(e);
+    dLog(e);
     error = "Error fetching threads";
   }
 
@@ -115,7 +110,7 @@ export const forward = async (
       },
       method: "POST",
       body: JSON.stringify({
-        comment: "Forwarded from Speedforce",
+        comment: "--- Forwarded message ---",
         toRecipients: toRecipients.map((email) => {
           return {
             emailAddress: {

@@ -1,4 +1,6 @@
 import { Transaction } from "dexie";
+import { dLog } from "../noProd";
+import { cleanIndexedDb } from "../experiments";
 
 export const dexieSchemas = {
   /*
@@ -39,15 +41,51 @@ export const dexieSchemas = {
       outlookFolders: "id, displayName",
     },
     upgradeFnc: async (tx: Transaction) => {
-      console.log("Upgrading schema to version 2");
+      dLog("Upgrading schema to version 2");
 
       // Test upgrade function: map single recipient to array type
-      return tx.table("messages").toCollection().modify((message) => {
-        if (message.to) {
-          message.toRecipients = [message.to];
-          delete message.to;
-        }
-      });
-    }
+      return tx
+        .table("messages")
+        .toCollection()
+        .modify((message) => {
+          if (message.to) {
+            message.toRecipients = [message.to];
+            delete message.to;
+          }
+        });
+    },
+  },
+
+  /*
+  Schema Version 3:
+  Oldest Compatible App Version 0.0.5
+  Change description:
+    - Add support for attaching files to emails
+  */
+  3: {
+    schema: {
+      emails: "email, provider, accessToken, expiresAt",
+      selectedEmail: "id, email, provider",
+      emailThreads:
+        "id, historyId, email, from, subject, snippet, date, unread, *labelIds, hasAttachments",
+      googleMetadata: "email, historyId, *threadsListNextPageTokens",
+      outlookMetadata: "email, historyId, *threadsListNextPageTokens",
+      messages:
+        "id, threadId, *labelIds, from, *toRecipients, snippet, headers, textData, htmlData, date, *attachments",
+      outlookFolders: "id, displayName",
+    },
+    upgradeFnc: async (tx: Transaction) => {
+      dLog("Upgrading schema to version 3");
+
+      // this is the initial change but we just decided to delete the whole db
+      // set hasAttachments to false for all emailThreads
+      // return tx
+      //   .table("emailThreads")
+      //   .toCollection()
+      //   .modify((emailThread) => {
+      //     emailThread.hasAttachments = false;
+      //   });
+      cleanIndexedDb();
+    },
   },
 };

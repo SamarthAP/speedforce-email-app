@@ -1,7 +1,7 @@
 import UnreadDot from "./UnreadDot";
 import { IEmailThread, ISelectedEmail } from "../lib/db";
 import he from "he";
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   archiveThread,
   loadNextPage,
@@ -18,6 +18,12 @@ import {
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { HorizontalAttachments } from "./HorizontalAttachments";
+import TooltipPopover from "./TooltipPopover";
+import { useTooltip } from "./UseTooltip";
+import { executeInstantAsyncAction } from "../lib/asyncHelpers";
+import { updateLabelIdsForEmailThread } from "../lib/util";
+import { FOLDER_IDS } from "../api/constants";
+import _ from "lodash";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -56,6 +62,8 @@ interface ThreadListProps {
   setScrollPosition: (position: number) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
   folderId: string;
+  canArchiveThread?: boolean;
+  canTrashThread?: boolean;
 }
 
 export default function ThreadList({
@@ -66,8 +74,11 @@ export default function ThreadList({
   setScrollPosition,
   scrollRef,
   folderId,
+  canArchiveThread = false,
+  canTrashThread = false,
 }: ThreadListProps) {
   const observerTarget = useRef<HTMLDivElement>(null);
+  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
 
   // 'threads' is initially empty so the div with 'observerTarget' doesn't render, so observerTarget is null,
   // and when the list is updated with data, the div renders but it doesnt update observerTarget. To fix this,
@@ -105,14 +116,90 @@ export default function ThreadList({
 
   async function handleStarClick(thread: IEmailThread) {
     if (thread.labelIds.includes("STARRED")) {
-      await unstarThread(
-        selectedEmail.email,
-        selectedEmail.provider,
-        thread.id
+      await executeInstantAsyncAction(
+        () => void updateLabelIdsForEmailThread(thread.id, [], ["STARRED"]),
+        async () =>
+          await unstarThread(
+            selectedEmail.email,
+            selectedEmail.provider,
+            thread.id
+          ),
+        () => {
+          void updateLabelIdsForEmailThread(thread.id, ["STARRED"], []);
+          toast("Unable to unstar thread");
+        }
       );
     } else {
-      await starThread(selectedEmail.email, selectedEmail.provider, thread.id);
+      await executeInstantAsyncAction(
+        () => void updateLabelIdsForEmailThread(thread.id, ["STARRED"], []),
+        async () =>
+          await starThread(
+            selectedEmail.email,
+            selectedEmail.provider,
+            thread.id
+          ),
+        () => {
+          void updateLabelIdsForEmailThread(thread.id, [], ["STARRED"]);
+          toast("Unable to star thread");
+        }
+      );
     }
+  }
+
+  async function handleArchiveClick(thread: IEmailThread) {
+    const labelsToRemove = _.intersection(thread.labelIds, [
+      FOLDER_IDS.INBOX,
+      FOLDER_IDS.SENT,
+    ]);
+
+    await executeInstantAsyncAction(
+      () =>
+        void updateLabelIdsForEmailThread(
+          thread.id,
+          [FOLDER_IDS.DONE],
+          labelsToRemove
+        ),
+      async () =>
+        await archiveThread(
+          selectedEmail.email,
+          selectedEmail.provider,
+          thread.id
+        ),
+      () => {
+        void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [
+          FOLDER_IDS.DONE,
+        ]);
+        toast("Unable to archive thread");
+      }
+    );
+  }
+
+  async function handleTrashClick(thread: IEmailThread) {
+    const labelsToRemove = _.intersection(thread.labelIds, [
+      FOLDER_IDS.INBOX,
+      FOLDER_IDS.SENT,
+    ]);
+
+    await executeInstantAsyncAction(
+      () =>
+        void updateLabelIdsForEmailThread(
+          thread.id,
+          [FOLDER_IDS.TRASH],
+          labelsToRemove
+        ),
+      async () =>
+        await trashThread(
+          selectedEmail.email,
+          selectedEmail.provider,
+          thread.id
+        ),
+      () => {
+        void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [
+          FOLDER_IDS.TRASH,
+        ]);
+        toast("Unable to trash thread");
+      }
+    );
   }
 
   return (
@@ -189,6 +276,10 @@ export default function ThreadList({
                   <div className="flex flex-col items-center justify-center px-2">
                     {thread.labelIds.includes("STARRED") ? (
                       <button
+                        onMouseEnter={(event) => {
+                          handleMouseEnter(event, "Unstar");
+                        }}
+                        onMouseLeave={handleMouseLeave}
                         onClick={(
                           event: React.MouseEvent<HTMLButtonElement, MouseEvent>
                         ) => {
@@ -200,6 +291,10 @@ export default function ThreadList({
                       </button>
                     ) : (
                       <button
+                        onMouseEnter={(event) => {
+                          handleMouseEnter(event, "Star");
+                        }}
+                        onMouseLeave={handleMouseLeave}
                         onClick={(
                           event: React.MouseEvent<HTMLButtonElement, MouseEvent>
                         ) => {
@@ -223,11 +318,14 @@ export default function ThreadList({
                     {thread.from.slice(0, thread.from.lastIndexOf("<"))}
                   </span>
                 </div>
-                <div className="col-span-8 grid grid-cols-10">
-                  <div className="text-sm truncate pr-4 col-span-2 text-black dark:text-zinc-100">
-                    {thread.subject || "(no subject)"}
+                <div className="col-span-8 flex overflow-hidden">
+                  <div className="flex max-w-[50%]">
+                    <div className="text-sm truncate pr-4 col-span-2 text-black dark:text-zinc-100">
+                      {thread.subject || "(no subject)"}
+                    </div>
                   </div>
-                  <div className="col-span-8 flex">
+
+                  <div className="flex flex-grow overflow-hidden">
                     <div className="text-sm truncate text-slate-400 dark:text-zinc-500 w-full">
                       {/* {he.decode(
                         thread.snippet.slice(0, thread.snippet.indexOf("\n"))
@@ -239,52 +337,53 @@ export default function ThreadList({
                       <span className="group-hover:hidden block">
                         {new Date(thread.date).toDateString()}
                       </span>
+
                       <span className="flex flex-row">
-                        <button
-                          onClick={(
-                            event: React.MouseEvent<
-                              HTMLButtonElement,
-                              MouseEvent
-                            >
-                          ) => {
-                            event.stopPropagation();
-                            void archiveThread(
-                              selectedEmail.email,
-                              selectedEmail.provider,
-                              thread.id
-                            );
-                            toast("Marked as done");
-                          }}
-                          className="group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
-                        >
-                          <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
-                        </button>
-                        <button
-                          onClick={(
-                            event: React.MouseEvent<
-                              HTMLButtonElement,
-                              MouseEvent
-                            >
-                          ) => {
-                            event.stopPropagation();
-                            void trashThread(
-                              selectedEmail.email,
-                              selectedEmail.provider,
-                              thread.id
-                            ).then(() => {
-                              toast("Trashed thread");
-                            });
-                          }}
-                          className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
-                        >
-                          <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
-                        </button>
+                        {canArchiveThread && (
+                          <button
+                            onMouseEnter={(event) => {
+                              handleMouseEnter(event, "Mark as done");
+                            }}
+                            onMouseLeave={handleMouseLeave}
+                            onClick={(
+                              event: React.MouseEvent<
+                                HTMLButtonElement,
+                                MouseEvent
+                              >
+                            ) => {
+                              event.stopPropagation();
+                              void handleArchiveClick(thread);
+                            }}
+                            className="group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
+                          >
+                            <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+                          </button>
+                        )}
+                        {canTrashThread && (
+                          <button
+                            onMouseEnter={(event) => {
+                              handleMouseEnter(event, "Delete");
+                            }}
+                            onMouseLeave={handleMouseLeave}
+                            onClick={(
+                              event: React.MouseEvent<
+                                HTMLButtonElement,
+                                MouseEvent
+                              >
+                            ) => {
+                              event.stopPropagation();
+                              void handleTrashClick(thread);
+                            }}
+                            className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
+                          >
+                            <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+                          </button>
+                        )}
                       </span>
                     </div>
                   </div>
                 </div>
-                {/* could make HA component return null if no attachments (*current*), could also add a flag in Thread to set if there are attachmetns */}
-                <HorizontalAttachments threadId={thread.id} />
+                <HorizontalAttachments thread={thread} />
               </div>
             </div>
           );
@@ -298,6 +397,11 @@ export default function ThreadList({
           </div>
         ) : null}
       </div>
+      <TooltipPopover
+        message={tooltipData.message}
+        showTooltip={tooltipData.showTooltip}
+        coords={tooltipData.coords}
+      />
     </div>
   );
 }

@@ -1,19 +1,17 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { IAttachment, IMessage, db } from "../lib/db";
-import { AttachmentButton } from "./AttachmentButton";
+import { IAttachment, IEmailThread, IMessage, db } from "../lib/db";
+import { AttachmentButton, AttachmentButtonSkeleton } from "./AttachmentButton";
 
 interface HorizontalAttachmentsProps {
-  threadId: string;
+  thread: IEmailThread;
 }
 
-export function HorizontalAttachments({
-  threadId,
-}: HorizontalAttachmentsProps) {
+export function HorizontalAttachments({ thread }: HorizontalAttachmentsProps) {
   const messages = useLiveQuery(
     () => {
-      return db.messages.where("threadId").equals(threadId).sortBy("date");
+      return db.messages.where("threadId").equals(thread.id).sortBy("date");
     },
-    [threadId],
+    [thread.id],
     []
   ) as IMessage[];
 
@@ -27,8 +25,16 @@ export function HorizontalAttachments({
     }
   }
 
-  if (attachments.length === 0) {
+  if (!thread.hasAttachments) {
     return null;
+  }
+
+  if (thread.hasAttachments && messages.length === 0) {
+    return (
+      <div className="px-10 my-1 col-span-full w-full flex gap-x-1 overflow-x-scroll">
+        <AttachmentButtonSkeleton />
+      </div>
+    );
   }
 
   return (

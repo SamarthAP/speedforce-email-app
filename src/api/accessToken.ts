@@ -30,6 +30,12 @@ export const getAccessToken = async (email: string) => {
         });
       });
 
+      toast(
+        `Please sign in to ${email} again. (Click Account Icon -> Click Add Account)`,
+        {
+          duration: 10000,
+        }
+      );
       return "";
     }
 

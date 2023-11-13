@@ -32,6 +32,7 @@ export interface IEmailThread {
   date: number;
   unread: boolean;
   labelIds: string[];
+  hasAttachments: boolean;
 }
 
 export interface IMessage {
@@ -54,15 +55,16 @@ export interface IMessage {
 
 export interface IGoogleMetadata {
   email: string;
+  historyId: string;
   threadsListNextPageTokens: {
     folderId: string; // TODO: reflect changes in SubClassedDexie
-    historyId: string;
     token: string;
   }[];
 }
 
 export interface IOutlookMetadata {
   email: string;
+  historyId: string;
   threadsListNextPageTokens: {
     folderId: string; // TODO: reflect changes in SubClassedDexie
     token: string;
@@ -89,7 +91,12 @@ export class SubClassedDexie extends Dexie {
 
     // Define schema versioning
     this.version(1).stores(dexieSchemas[1].schema);
-    this.version(2).stores(dexieSchemas[2].schema).upgrade(dexieSchemas[2].upgradeFnc);
+    this.version(2)
+      .stores(dexieSchemas[2].schema)
+      .upgrade(dexieSchemas[2].upgradeFnc);
+    this.version(3)
+      .stores(dexieSchemas[3].schema)
+      .upgrade(dexieSchemas[3].upgradeFnc);
   }
 }
 

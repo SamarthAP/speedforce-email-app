@@ -14,6 +14,7 @@ import GithubYmlPublisher from "./GithubYmlPublisher";
 const config: ForgeConfig = {
   // buildIdentifier: process.env.IS_BETA ? "beta" : "prod",
   packagerConfig: {
+    icon: "./static/icons/icon.icns",
     protocols: [
       {
         name: "speedforce",
@@ -60,7 +61,9 @@ const config: ForgeConfig = {
   makers: [
     new MakerSquirrel({}),
     new MakerZIP({}, ["darwin"]),
-    new MakerDMG({ format: "ULFO" }, ["darwin"]),
+    new MakerDMG({ format: "ULFO", icon: "./static/icons/icon.icns" }, [
+      "darwin",
+    ]),
     new MakerRpm({}),
     new MakerDeb({}),
   ],

@@ -1,12 +1,11 @@
 import { GMAIL_API_URL, GMAIL_FOLDER_IDS_MAP } from "../constants";
-import { ID_DONE, ID_SPAM, ID_TRASH } from "../../constants";
+import { FOLDER_IDS } from "../../constants";
 import {
   GoogleThreadsListDataType,
   GoogleThreadsGetDataType,
   GoogleThreadsModifyDataType,
   IThreadFilter,
 } from "../../model/users.thread";
-import { Base64 } from "js-base64";
 import { dLog } from "../../../lib/noProd";
 
 // in endpoints that will not be called often, we can use the async/await syntax
@@ -15,21 +14,9 @@ export const list = async (accessToken: string, filter: IThreadFilter) => {
   let error: string | null = null;
 
   try {
-    let folderQuery = "";
-    const inboxName = GMAIL_FOLDER_IDS_MAP.getValue(filter.folderId);
-    if (filter && filter.folderId && inboxName) {
-      if (filter.folderId !== ID_DONE) {
-        folderQuery = `&labelIds=${inboxName}`;
-      }
-
-      if ([ID_SPAM, ID_TRASH].includes(filter.folderId)) {
-        folderQuery += `&includeSpamTrash=true`;
-      }
-    }
-
     // &q=from:hello@digest.producthunt.com for testing
     const res: Response = await fetch(
-      `${GMAIL_API_URL}/threads?maxResults=20${folderQuery}`,
+      `${GMAIL_API_URL}/threads?maxResults=20${filter.gmailQuery}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -59,7 +46,7 @@ export const listNextPage = async (
   let error: string | null = null;
 
   let label = "";
-  if (filter?.folderId !== ID_DONE) {
+  if (filter?.folderId !== FOLDER_IDS.DONE) {
     label = GMAIL_FOLDER_IDS_MAP.getValue(filter.folderId) || "";
   }
 
@@ -182,7 +169,7 @@ export const addLabelIds = async (
 export const sendReply = async (
   accessToken: string,
   from: string,
-  to: string,
+  to: string[],
   subject: string,
   headerMessageId: string,
   threadId: string,
@@ -200,7 +187,7 @@ export const sendReply = async (
         `References: ${headerMessageId}\n` +
         `Subject: Re: ${subject}\n` +
         `From: ${from}\n` +
-        `To: ${to}\n\n` +
+        `To: ${to.join(",")}\n\n` +
         messageContent
     )
       .replace(/\+/g, "-")
@@ -226,53 +213,6 @@ export const sendReply = async (
   } catch (e) {
     dLog(e);
     error = "Error sending reply";
-  }
-
-  return { data, error };
-};
-
-export const sendEmail = async (
-  accessToken: string,
-  from: string,
-  to: string,
-  subject: string,
-  messageContent: string
-) => {
-  let data: any | null = null; // TODO: define type
-  let error: string | null = null;
-
-  try {
-    const encodedReply = btoa(
-      'Content-Type: text/html; charset="UTF-8"\n' +
-        "MIME-Version: 1.0\n" +
-        "Content-Transfer-Encoding: 7bit\n" +
-        `Subject: ${subject}\n` +
-        `From: ${from}\n` +
-        `To: ${to}\n\n` +
-        messageContent
-    )
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-
-    const response = await fetch(`${GMAIL_API_URL}/messages/send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        raw: encodedReply,
-      }),
-    });
-    if (!response.ok) {
-      error = "Error sending email";
-    } else {
-      data = await response.json();
-    }
-  } catch (e) {
-    dLog(e);
-    error = "Error sending email";
   }
 
   return { data, error };
