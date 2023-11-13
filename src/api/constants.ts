@@ -1,7 +1,7 @@
 export const SPEEDFORCE_API_URL =
   process.env.NODE_ENV === "production"
-    ? "https://preprod.api.speedforce.me"
-    : "http://localhost:8080";
+    ? "https://api.speedforce.me"
+    : "https://preprod.api.speedforce.me";
 
 export const SPEEDFORCE_WS_URL =
   process.env.NODE_ENV === "production"
