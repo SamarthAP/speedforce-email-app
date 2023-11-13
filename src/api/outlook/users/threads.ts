@@ -3,6 +3,7 @@ import {
   OutlookThreadsListDataType,
   IThreadFilter,
 } from "../../model/users.thread";
+import { dLog } from "../../../lib/noProd";
 
 // in endpoints that will not be called often, we can use the async/await syntax
 export const list = async (accessToken: string, filter: IThreadFilter) => {
@@ -29,7 +30,7 @@ export const list = async (accessToken: string, filter: IThreadFilter) => {
       };
     }
   } catch (e) {
-    console.log(e);
+    dLog(e);
     error = "Error fetching threads";
   }
 
@@ -68,7 +69,7 @@ export const listNextPage = async (
       };
     }
   } catch (e) {
-    console.log(e);
+    dLog(e);
     error = "Error fetching threads";
   }
 
