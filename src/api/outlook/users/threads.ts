@@ -10,14 +10,8 @@ export const list = async (accessToken: string, filter: IThreadFilter) => {
   let error: string | null = null;
 
   try {
-    let folderId = "";
-    const inboxName = OUTLOOK_FOLDER_IDS_MAP.getValue(filter.folderId);
-    if (filter && filter.folderId && inboxName) {
-      folderId = `mailfolders/${inboxName}`;
-    }
-
     const res: Response = await fetch(
-      `${OUTLOOK_API_URL}/${folderId}/messages?$select=id,conversationId&$top=20`,
+      `${OUTLOOK_API_URL}/${filter.outlookQuery}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,

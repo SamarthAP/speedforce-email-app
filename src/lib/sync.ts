@@ -42,6 +42,7 @@ import {
   addLabelIdsOutlook,
   removeLabelIdsOutlook,
   getFolderNameFromIdOutlook,
+  getOutlookHistoryIdFromDateTime,
 } from "../api/outlook/helpers";
 
 import { getAccessToken } from "../api/accessToken";
@@ -53,19 +54,24 @@ import {
   setHistoryId,
 } from "./dexie/helpers";
 import { getMessageHeader, upsertLabelIds } from "./util";
-import _ from "lodash";
+import _, { first } from "lodash";
 import { dLog } from "./noProd";
-import { IThreadFilter } from "../api/model/users.thread";
-import { ID_DONE, ID_INBOX, ID_TRASH, ID_SENT } from "../api/constants";
+import {
+  IThreadFilter,
+  OutlookThreadsListDataType,
+} from "../api/model/users.thread";
+import { FOLDER_IDS } from "../api/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { NewAttachment } from "../components/WriteMessage";
+import toast from "react-hot-toast";
+
+const MAX_PARTIAL_SYNC_LOOPS = 10;
 
 async function handleNewThreadsGoogle(
   accessToken: string,
   email: string,
-  threadIds: string[],
-  filter: IThreadFilter
+  threadIds: string[]
 ) {
   let maxHistoryId = 0;
 
@@ -94,9 +100,9 @@ async function handleNewThreadsGoogle(
       if (isStarred) labelIds = upsertLabelIds(labelIds, "STARRED");
 
       // if folderId is DONE and thread includes INBOX labelId, skip
-      if (filter.folderId === ID_DONE && hasInboxLabel) {
-        return;
-      }
+      // if (filter.folderId === FOLDER_IDS.DONE && hasInboxLabel) {
+      //   return;
+      // }
       // thread history id i think will be max of all messages' history ids
       if (parseInt(thread.historyId) > maxHistoryId) {
         maxHistoryId = parseInt(thread.historyId);
@@ -188,7 +194,7 @@ async function handleNewThreadsGoogle(
       });
     });
 
-    await setHistoryId(email, "google", filter.folderId, maxHistoryId);
+    await setHistoryId(email, "google", maxHistoryId);
 
     // save threads
     await db.emailThreads.bulkPut(parsedThreads);
@@ -365,7 +371,7 @@ async function fullSyncGoogle(email: string, filter: IThreadFilter) {
     : [];
 
   if (threadIds.length > 0) {
-    await handleNewThreadsGoogle(accessToken, email, threadIds, filter);
+    await handleNewThreadsGoogle(accessToken, email, threadIds);
   }
 }
 
@@ -373,19 +379,26 @@ async function fullSyncOutlook(email: string, filter: IThreadFilter) {
   const accessToken = await getAccessToken(email);
 
   // get a list of thread ids
-  const tList = await mThreadList(accessToken, filter);
+  const { data, error } = await mThreadList(accessToken, filter);
 
-  if (tList.error || !tList.data) {
+  if (error || !data) {
     // TODO: send error syncing mailbox
     return;
   }
 
-  const nextPageToken = tList.data.nextPageToken;
+  // Set page token and update historyId
+  // Not ideal as it is possible to miss some threads in other folders and still update hsitoryId
+  // A partial sync will fix this in almost all cases (unlikely to get an updates with > 20 new emails)
+  // TODO: fix this by deprecating full sync in v0.1.*
+  const nextPageToken = data.nextPageToken;
   await setPageToken(email, "outlook", filter.folderId, nextPageToken);
 
-  const threadIds = _.uniq(
-    tList.data.value.map((thread) => thread.conversationId)
+  const firstDatetime = getOutlookHistoryIdFromDateTime(
+    data.value[data.value.length - 1]?.createdDateTime
   );
+  await setHistoryId(email, "outlook", firstDatetime);
+
+  const threadIds = _.uniq(data.value.map((thread) => thread.conversationId));
 
   if (threadIds.length > 0) {
     await handleNewThreadsOutlook(accessToken, email, threadIds, filter);
@@ -394,10 +407,20 @@ async function fullSyncOutlook(email: string, filter: IThreadFilter) {
 
 async function partialSyncGoogle(email: string, filter: IThreadFilter) {
   const accessToken = await getAccessToken(email);
-  const metadata = await getGoogleMetaData(email, filter.folderId);
+  const metadata = await db.googleMetadata.where("email").equals(email).first();
 
   if (!metadata) {
     dLog("no metadata");
+    return;
+  }
+
+  // If never queried, call a full sync
+  if (
+    metadata.threadsListNextPageTokens.findIndex(
+      (t) => t.folderId == filter?.folderId
+    ) === -1
+  ) {
+    await fullSyncGoogle(email, filter);
     return;
   }
 
@@ -419,20 +442,81 @@ async function partialSyncGoogle(email: string, filter: IThreadFilter) {
   });
 
   if (newThreadIds.size > 0) {
-    await handleNewThreadsGoogle(
-      accessToken,
-      email,
-      Array.from(newThreadIds),
-      filter
-    );
+    await handleNewThreadsGoogle(accessToken, email, Array.from(newThreadIds));
   }
 }
 
 async function partialSyncOutlook(email: string, filter: IThreadFilter) {
-  // TODO: research and implement partial sync for outlook
-  // Delta tokens not applicable for mail, only calendar
+  // Use timestamp as historyId. Partial sync will not use filterData (sync all inboxes)
+  // TODO: Spike on whether to implement a message limit? API throttling shouldn't be an issue (4 concurrent requests)
+  const accessToken = await getAccessToken(email);
 
-  await fullSyncOutlook(email, filter);
+  const targetHistoryId = await db.outlookMetadata
+    .where("email")
+    .equals(email)
+    .first();
+
+  // If no historyId, do a full sync
+  if (
+    !targetHistoryId ||
+    !targetHistoryId.historyId ||
+    parseInt(targetHistoryId.historyId) === 0
+  ) {
+    dLog("no metadata. Doing a full sync");
+    await fullSyncOutlook(email, filter);
+    return;
+  }
+
+  let data: OutlookThreadsListDataType | null = null;
+  let error: string | null = null;
+
+  // Fetch the top 20 threads
+  ({ data, error } = await mThreadList(accessToken, {
+    ...filter,
+    outlookQuery: "messages?$select=id,conversationId,createdDateTime&$top=20",
+  }));
+
+  if (error || !data) {
+    dLog("Error syncing mailbox");
+    return;
+  }
+
+  const threadIds = _.uniq(data.value.map((thread) => thread.conversationId));
+  if (threadIds.length > 0) {
+    await handleNewThreadsOutlook(accessToken, email, threadIds, filter);
+  }
+
+  let firstDatetime = getOutlookHistoryIdFromDateTime(
+    data.value[data.value.length - 1]?.createdDateTime
+  );
+
+  // Until we reach the target historyId, fetch the next page of threads
+  let partialSyncLoops = 0;
+  while (
+    firstDatetime > parseInt(targetHistoryId.historyId) &&
+    partialSyncLoops < MAX_PARTIAL_SYNC_LOOPS
+  ) {
+    partialSyncLoops++;
+
+    ({ data, error } = await mThreadListNextPage(
+      accessToken,
+      data?.nextPageToken || ""
+    ));
+
+    if (error || !data) {
+      continue;
+    }
+
+    firstDatetime = getOutlookHistoryIdFromDateTime(
+      data.value[data.value.length - 1]?.createdDateTime
+    );
+
+    const threadIds = _.uniq(data.value.map((thread) => thread.conversationId));
+
+    if (threadIds.length > 0) {
+      await handleNewThreadsOutlook(accessToken, email, threadIds, filter);
+    }
+  }
 }
 
 async function loadNextPageGoogle(email: string, filter: IThreadFilter) {
@@ -457,7 +541,7 @@ async function loadNextPageGoogle(email: string, filter: IThreadFilter) {
   const threadIds = tList.data.threads.map((thread) => thread.id);
 
   if (threadIds.length > 0) {
-    await handleNewThreadsGoogle(accessToken, email, threadIds, filter);
+    await handleNewThreadsGoogle(accessToken, email, threadIds);
   }
 }
 
@@ -487,24 +571,6 @@ async function loadNextPageOutlook(email: string, filter: IThreadFilter) {
   if (threadIds.length > 0) {
     await handleNewThreadsOutlook(accessToken, email, threadIds, filter);
   }
-}
-
-async function updateLabelIdsForEmailThread(
-  threadId: string,
-  addLabelIds: string[],
-  removeLabelIds: string[]
-) {
-  const thread = await db.emailThreads.get(threadId);
-  if (!thread) {
-    dLog("no thread");
-    return;
-  }
-
-  const labelIds = thread.labelIds
-    .filter((labelId) => !removeLabelIds?.includes(labelId))
-    .concat(addLabelIds);
-
-  await db.emailThreads.update(threadId, { labelIds });
 }
 
 export async function fullSync(
@@ -604,7 +670,7 @@ export async function starThread(
 
     if (error || !data) {
       dLog("Error starring thread");
-      return;
+      return { data: null, error };
     } else {
       const promises = data.messages.map((message) => {
         return db.messages.update(message.id, {
@@ -613,7 +679,6 @@ export async function starThread(
       });
 
       await Promise.all(promises);
-      await updateLabelIdsForEmailThread(threadId, ["STARRED"], []);
     }
   } else if (provider === "outlook") {
     // In outlook, starring = flagging the most recent message not sent by active user
@@ -629,7 +694,7 @@ export async function starThread(
 
     if (!message) {
       dLog("Error starring thread");
-      return;
+      return { data: null, error: "Error starring thread" };
     }
 
     try {
@@ -637,11 +702,13 @@ export async function starThread(
       await db.messages.update(message.id, {
         labelIds: addLabelIdsOutlook(message.labelIds, "STARRED"),
       });
-      await updateLabelIdsForEmailThread(threadId, ["STARRED"], []);
     } catch (e) {
       dLog("Error starring thread");
+      return { data: null, error: "Error starring thread" };
     }
   }
+
+  return { data: null, error: null };
 }
 
 export async function unstarThread(
@@ -657,7 +724,7 @@ export async function unstarThread(
 
     if (error || !data) {
       dLog("Error unstarring thread");
-      return;
+      return { data: null, error };
     } else {
       const promises = data.messages.map((message) => {
         return db.messages.update(message.id, {
@@ -666,7 +733,6 @@ export async function unstarThread(
       });
 
       await Promise.all(promises);
-      await updateLabelIdsForEmailThread(threadId, [], ["STARRED"]);
     }
   } else {
     const messages = await db.messages
@@ -687,11 +753,13 @@ export async function unstarThread(
     try {
       await Promise.all(apiPromises);
       await Promise.all(updateDexiePromises);
-      await updateLabelIdsForEmailThread(threadId, [], ["STARRED"]);
     } catch (e) {
       dLog("Error starring thread");
+      return { data: null, error: "Error unstarring thread" };
     }
   }
+
+  return { data: null, error: null };
 }
 
 export async function archiveThread(
@@ -707,7 +775,7 @@ export async function archiveThread(
 
     if (error || !data) {
       dLog("Error archiving thread");
-      return;
+      return { data: null, error };
     } else {
       const promises = data.messages.map((message) => {
         return db.messages.update(message.id, {
@@ -716,17 +784,12 @@ export async function archiveThread(
       });
 
       await Promise.all(promises);
-      await updateLabelIdsForEmailThread(
-        threadId,
-        [ID_DONE],
-        [ID_INBOX, ID_SENT]
-      ); // TODO: set up proper archive folder?
       const res = await addLabelIds(accessToken, threadId, ["ARCHIVE"]);
 
       if (res.error || !res.data) {
         dLog("Error adding DONE label to thread:");
         dLog(res.error);
-        return;
+        return { data: null, error };
       } else {
         dLog("Added DONE label to thread:");
         dLog(res.data);
@@ -742,30 +805,20 @@ export async function archiveThread(
       return mMoveMessage(
         accessToken,
         message.id,
-        OUTLOOK_FOLDER_IDS_MAP.getValue(ID_DONE) || ""
-      );
-    });
-
-    const updateDexiePromises = messages.map(() => {
-      return updateLabelIdsForEmailThread(
-        threadId,
-        [ID_DONE],
-        [ID_INBOX, ID_SENT]
+        OUTLOOK_FOLDER_IDS_MAP.getValue(FOLDER_IDS.DONE) || ""
       );
     });
 
     try {
       await Promise.all(apiPromises);
-      await Promise.all(updateDexiePromises);
-      await updateLabelIdsForEmailThread(
-        threadId,
-        [ID_DONE],
-        [ID_INBOX, ID_SENT]
-      );
     } catch (e) {
       dLog("Error archiving thread");
+      return { data: null, error: "Error archiving thread" };
     }
   }
+
+  toast("Marked as done");
+  return { data: null, error: null };
 }
 
 export async function sendReply(
@@ -859,13 +912,13 @@ export async function forward(
     const from = email;
     const subject = getMessageHeader(message.headers, "Subject");
     const forwardHTML = await buildForwardedHTML(message, html);
- 
+
     return await gForward(
       accessToken,
       from,
       toRecipients,
       subject,
-      unescape(encodeURIComponent(forwardHTML)),
+      unescape(encodeURIComponent(forwardHTML))
     );
   } else if (provider === "outlook") {
     try {
@@ -979,7 +1032,7 @@ export async function trashThread(
 
     if (error || !data) {
       dLog("Error trashing thread");
-      return;
+      return { data: null, error };
     } else {
       const promises = data.messages.map((message) => {
         return db.messages.update(message.id, {
@@ -988,11 +1041,6 @@ export async function trashThread(
       });
 
       await Promise.all(promises);
-      await updateLabelIdsForEmailThread(
-        threadId,
-        [ID_TRASH],
-        [ID_INBOX, ID_SENT]
-      );
     }
   } else if (provider === "outlook") {
     const messages = await db.messages
@@ -1004,31 +1052,20 @@ export async function trashThread(
       return mMoveMessage(
         accessToken,
         message.id,
-        OUTLOOK_FOLDER_IDS_MAP.getValue(ID_TRASH) || ""
-      );
-    });
-
-    // Update labelIds in dexie
-    const updateDexiePromises = messages.map(() => {
-      return updateLabelIdsForEmailThread(
-        threadId,
-        [ID_TRASH],
-        [ID_INBOX, ID_SENT]
+        OUTLOOK_FOLDER_IDS_MAP.getValue(FOLDER_IDS.TRASH) || ""
       );
     });
 
     try {
       await Promise.all(apiPromises);
-      await Promise.all(updateDexiePromises);
-      await updateLabelIdsForEmailThread(
-        threadId,
-        [ID_TRASH],
-        [ID_INBOX, ID_SENT]
-      );
     } catch (e) {
       dLog("Error deleting thread");
+      return { data: null, error: "Error deleting thread" };
     }
   }
+
+  toast("Trashed thread");
+  return { data: null, error: null };
 }
 
 export async function downloadAttachment(

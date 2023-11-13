@@ -93,3 +93,28 @@ export async function getFolderNameFromIdOutlook(
 
   return formattedDisplayName;
 }
+
+// Tokens are of the form "https://graph.microsoft.com/v1.0/me/mailFolders('Inbox')/messages?%24select=id%2cconversationId&%24top=20&%24skip=20"
+// query param top is the number of messages to query
+// query param skip is the number of messages to skip
+export function isOutlookNextPageTokenNewer(
+  oldToken: string,
+  newToken: string
+) {
+  const oldTokenSkip = /%24skip=(\d+)/.exec(oldToken);
+  const newTokenSkip = /%24skip=(\d+)/.exec(newToken);
+
+  if (!newTokenSkip) {
+    return false;
+  }
+
+  if (!oldTokenSkip) {
+    return true;
+  }
+
+  return parseInt(newTokenSkip[1]) > parseInt(oldTokenSkip[1]);
+}
+
+export function getOutlookHistoryIdFromDateTime(dateTime: string) {
+  return new Date(dateTime).getTime() / 1000;
+}

@@ -45,17 +45,15 @@ export function ThreadFeed({
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
       <div className="flex px-4 pt-4">
-        <div 
+        <div
           className="flex flex-row cursor-pointer items-center"
           onClick={(e) => {
             e.stopPropagation();
             setSelectedThread("");
           }}
         >
-          <ArrowSmallLeftIcon className="h-5 w-5 dark:text-zinc-400 text-slate-500"/>
-          <p className="dark:text-zinc-400 text-slate-500 text-md px-1">
-            Back
-          </p>
+          <ArrowSmallLeftIcon className="h-4 w-4 dark:text-zinc-400 text-slate-500" />
+          <p className="dark:text-zinc-400 text-slate-500 text-xs px-1">Back</p>
         </div>
       </div>
       <div className="dark:text-white p-4 w-full">{thread?.subject}</div>

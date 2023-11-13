@@ -1,5 +1,5 @@
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
-import { classNames } from "../lib/util";
+import { classNames } from "../../lib/util";
 import { useState } from "react";
 
 export interface CalendarDate {

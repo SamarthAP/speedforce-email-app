@@ -14,20 +14,20 @@ export interface FeedbackData {
 }
 
 export const saveFeedback = async (feedbackData: FeedbackData) => {
-    let data = null;
-    let error = null;
-    const authHeader = await getJWTHeaders();
+  let data = null;
+  let error = null;
+  const authHeader = await getJWTHeaders();
 
   try {
     const formData = new FormData();
-    formData.append('selectedEmail', feedbackData.selectedEmail);
-    formData.append('emailProvider', feedbackData.emailProvider);
-    formData.append('title', feedbackData.text.title);
-    formData.append('description', feedbackData.text.description);
-    formData.append('keepAnonymous', feedbackData.keepAnonymous.toString());
+    formData.append("selectedEmail", feedbackData.selectedEmail);
+    formData.append("emailProvider", feedbackData.emailProvider);
+    formData.append("title", feedbackData.text.title);
+    formData.append("description", feedbackData.text.description);
+    formData.append("keepAnonymous", feedbackData.keepAnonymous.toString());
 
-    feedbackData.attachments.forEach((file, index) => {
-      formData.append(`attachment_${index}`, file);
+    feedbackData.attachments.forEach((file) => {
+      formData.append(`attachments`, file);
     });
 
     const res: Response = await fetch(
@@ -40,7 +40,7 @@ export const saveFeedback = async (feedbackData: FeedbackData) => {
         body: formData,
       }
     );
-    
+
     if (!res.ok) {
       dLog("error", {
         message: "Error saving feedback - response not ok",
@@ -51,7 +51,6 @@ export const saveFeedback = async (feedbackData: FeedbackData) => {
     } else {
       data = await res.json();
     }
-
   } catch (e) {
     dLog("error", {
       message: "!Error saving feedback - caught error",
@@ -62,4 +61,4 @@ export const saveFeedback = async (feedbackData: FeedbackData) => {
   }
 
   return { data, error };
-}
+};

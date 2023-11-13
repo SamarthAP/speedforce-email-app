@@ -55,15 +55,16 @@ export interface IMessage {
 
 export interface IGoogleMetadata {
   email: string;
+  historyId: string;
   threadsListNextPageTokens: {
     folderId: string; // TODO: reflect changes in SubClassedDexie
-    historyId: string;
     token: string;
   }[];
 }
 
 export interface IOutlookMetadata {
   email: string;
+  historyId: string;
   threadsListNextPageTokens: {
     folderId: string; // TODO: reflect changes in SubClassedDexie
     token: string;

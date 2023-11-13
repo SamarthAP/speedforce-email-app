@@ -24,7 +24,7 @@ async function insertEmail(
 
 const manualInsertEmail = async () => {
   await insertEmail(
-    "samarth@sigilinnovation.com",
+    "dwipatel00@gmail.com",
     "google",
     "ya29.something",
     1688333423087 // new Date().getTime()
@@ -32,12 +32,13 @@ const manualInsertEmail = async () => {
 
   await db.selectedEmail.put({
     id: 1,
-    email: "samarth@sigilinnovation.com",
+    email: "dwipatel00@gmail.com",
     provider: "google",
   });
 
   await db.googleMetadata.put({
-    email: "samarth@sigilinnovation.com",
+    email: "dwipatel00@gmail.com",
+    historyId: "0",
     threadsListNextPageTokens: [],
   });
 };
@@ -113,11 +114,13 @@ export default function AddAccount() {
             if (data.provider === "google") {
               await db.googleMetadata.put({
                 email: data.email,
+                historyId: "0",
                 threadsListNextPageTokens: [],
               });
             } else {
               await db.outlookMetadata.put({
                 email: data.email,
+                historyId: "0",
                 threadsListNextPageTokens: [],
               });
             }

@@ -1,6 +1,6 @@
 import ThreadList from "../components/ThreadList";
 import Sidebar from "../components/Sidebar";
-import { IEmail, IEmailThread, db } from "../lib/db";
+import { IEmail, IEmailThread, ISelectedEmail, db } from "../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import React, { useEffect, useRef, useState } from "react";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
@@ -8,17 +8,23 @@ import { ThreadFeed } from "../components/ThreadFeed";
 import AssistBar from "../components/AssistBar";
 import { TestSyncButtons } from "../lib/experiments";
 import AccountActionsMenu from "./AccountActionsMenu";
-import { fullSync } from "../lib/sync";
-import { PencilSquareIcon } from "@heroicons/react/24/outline";
+import { fullSync, partialSync } from "../lib/sync";
+import { PencilSquareIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { WriteMessage } from "../components/WriteMessage";
 import SelectedThreadBar from "./SelectedThreadBar";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
+import { classNames } from "../lib/util";
+
+const MAX_RENDER_COUNT = 5;
+const MIN_REFRESH_DELAY_MS = 1000;
 
 interface ThreadViewProps {
   folderId: string;
   title: string;
-  queryFnc?: (email: string) => Promise<IEmailThread[]>;
+  filterThreadsFnc?: (selectedEmail: ISelectedEmail) => Promise<IEmailThread[]>;
+  gmailFetchQuery?: string;
+  outlookFetchQuery?: string;
   canArchiveThread?: boolean;
   canTrashThread?: boolean;
 }
@@ -26,7 +32,9 @@ interface ThreadViewProps {
 export default function ThreadView({
   folderId,
   title,
-  queryFnc,
+  filterThreadsFnc,
+  gmailFetchQuery = "",
+  outlookFetchQuery = "",
   canArchiveThread = false,
   canTrashThread = false,
 }: ThreadViewProps) {
@@ -35,11 +43,11 @@ export default function ThreadView({
   const [selectedThread, setSelectedThread] = useState<string>("");
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const [writeEmailMode, setWriteEmailMode] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
 
   const renderCounter = useRef(0);
-  const MAX_RENDER_COUNT = 5;
   renderCounter.current = renderCounter.current + 1;
 
   useEffect(() => {
@@ -58,7 +66,7 @@ export default function ThreadView({
 
   const threads = useLiveQuery(
     () => {
-      if (queryFnc) return queryFnc(selectedEmail.email);
+      if (filterThreadsFnc) return filterThreadsFnc(selectedEmail);
 
       const emailThreads = db.emailThreads
         .where("email")
@@ -81,10 +89,35 @@ export default function ThreadView({
       if (threads?.length === 0) {
         void fullSync(selectedEmail.email, selectedEmail.provider, {
           folderId: folderId,
+          gmailQuery: gmailFetchQuery,
+          outlookQuery: outlookFetchQuery,
         });
       }
     }
   }, [folderId, selectedEmail.email, selectedEmail.provider, threads]);
+
+  const handleRefreshClick = async () => {
+    setRefreshing(true);
+    const startTime = new Date().getTime();
+
+    // TODO: Partial sync if metadata, or else full sync
+    await partialSync(selectedEmail.email, selectedEmail.provider, {
+      folderId: folderId,
+      gmailQuery: gmailFetchQuery,
+      outlookQuery: outlookFetchQuery,
+    });
+
+    // If sync duration < MIN_REFRESH_DELAY_MS, wait until MIN_REFRESH_DELAY_MS has passed
+    // Generally, this function will always take MIN_REFRESH_DELAY_MS
+    const endTime = new Date().getTime();
+    if (endTime - startTime < MIN_REFRESH_DELAY_MS) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, MIN_REFRESH_DELAY_MS - (endTime - startTime))
+      );
+    }
+
+    setRefreshing(false);
+  };
 
   if (writeEmailMode) {
     return (
@@ -144,6 +177,21 @@ export default function ThreadView({
             >
               <PencilSquareIcon className="h-5 w-5 mb-2 shrink-0 text-black dark:text-white" />
             </button>
+            <button
+              className="mr-3"
+              onMouseEnter={(event) => {
+                handleMouseEnter(event, "Refresh");
+              }}
+              onMouseLeave={handleMouseLeave}
+              onClick={refreshing ? void 0 : handleRefreshClick}
+            >
+              <ArrowPathIcon
+                className={classNames(
+                  "h-5 w-5 mb-2 shrink-0 text-black dark:text-white",
+                  refreshing ? "animate-spin" : ""
+                )}
+              />
+            </button>
             <AccountActionsMenu
               selectedEmail={selectedEmail}
               setSelectedEmail={(email) => void setSelectedEmail(email)}
@@ -158,7 +206,11 @@ export default function ThreadView({
           </div>
         </div>
         {process.env.NODE_ENV !== "production" ? (
-          <TestSyncButtons folderId={folderId} />
+          <TestSyncButtons
+            folderId={folderId}
+            gmailFetchQuery={gmailFetchQuery}
+            outlookFetchQuery={outlookFetchQuery}
+          />
         ) : null}
         <ThreadList
           selectedEmail={selectedEmail}

@@ -1,5 +1,5 @@
 import React from "react";
-import clsx from "clsx";
+import { classNames } from "../lib/util";
 import { Transition } from "@headlessui/react";
 
 interface TooltipPopoverProps {
@@ -20,7 +20,7 @@ const TooltipPopover: React.FC<TooltipPopoverProps> = ({ coords, message, showTo
       leaveTo="opacity-0"
     >
       <div
-        className={clsx(
+        className={classNames(
           "absolute bg-slate-600 text-white text-xs px-2 py-1 mt-1 rounded-md whitespace-nowrap",
           "transform -translate-x-1/2 pointer-events-none"
         )}
