@@ -24,8 +24,7 @@ export async function setPageToken(
   email: string,
   provider: "google" | "outlook",
   folderId: string,
-  nextPageToken: string,
-  maxHistoryId = 0
+  nextPageToken: string
 ) {
   if (provider === "google") {
     await db.googleMetadata
@@ -38,7 +37,6 @@ export async function setPageToken(
         if (i == -1) {
           row.threadsListNextPageTokens.push({
             folderId,
-            historyId: maxHistoryId.toString(),
             token: nextPageToken,
           });
         } else {
@@ -85,6 +83,13 @@ export async function setHistoryId(
         }
       });
   } else if (provider === "outlook") {
-    // TODO: implement
+    await db.outlookMetadata
+      .where("email")
+      .equals(email)
+      .modify((row) => {
+        if (maxHistoryId > parseInt(row.historyId)) {
+          row.historyId = maxHistoryId.toString();
+        }
+      });
   }
 }

@@ -67,7 +67,7 @@ export const dexieSchemas = {
       emailThreads:
         "id, historyId, email, from, subject, snippet, date, unread, *labelIds, hasAttachments",
       googleMetadata: "email, historyId, *threadsListNextPageTokens",
-      outlookMetadata: "email, *threadsListNextPageTokens",
+      outlookMetadata: "email, historyId, *threadsListNextPageTokens",
       messages:
         "id, threadId, *labelIds, from, *toRecipients, snippet, headers, textData, htmlData, date, *attachments",
       outlookFolders: "id, displayName",

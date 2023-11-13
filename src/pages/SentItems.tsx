@@ -10,9 +10,9 @@ export default function SentItems() {
   const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
     FOLDER_IDS.SENT
   )}`;
-  const outlookFetchQuery = `/mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
+  const outlookFetchQuery = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
     FOLDER_IDS.SENT
-  )}/messages?$select=id,conversationId&$top=20`;
+  )}/messages?$select=id,conversationId,createdDateTime&$top=20`;
 
   const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
     db.emailThreads

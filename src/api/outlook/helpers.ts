@@ -114,3 +114,7 @@ export function isOutlookNextPageTokenNewer(
 
   return parseInt(newTokenSkip[1]) > parseInt(oldTokenSkip[1]);
 }
+
+export function getOutlookHistoryIdFromDateTime(dateTime: string) {
+  return new Date(dateTime).getTime() / 1000;
+}
