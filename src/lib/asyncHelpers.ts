@@ -6,7 +6,6 @@ export const executeInstantAsyncAction = async (
   asyncEffectFnc: (...args: any[]) => Promise<any>,
   rollbackFnc: (...args: any[]) => any
 ) => {
-
   // Any use for the result of instantEffect?
   let instantEffectResult: any = null;
   if (instantEffectFnc.constructor.name === "AsyncFunction") {
@@ -16,7 +15,7 @@ export const executeInstantAsyncAction = async (
   }
 
   try {
-    let asyncEffectResult = await asyncEffectFnc();
+    const asyncEffectResult = await asyncEffectFnc();
 
     // If error property of result is non-null, rollback
     if (asyncEffectResult && asyncEffectResult.error) {
@@ -27,7 +26,6 @@ export const executeInstantAsyncAction = async (
       }
     }
   } catch (e) {
-
     // If asyncEffectFnc throws an error, rollback
     if (rollbackFnc.constructor.name === "AsyncFunction") {
       await rollbackFnc();

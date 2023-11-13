@@ -120,6 +120,7 @@ export default function AddAccount() {
             } else {
               await db.outlookMetadata.put({
                 email: data.email,
+                historyId: "0",
                 threadsListNextPageTokens: [],
               });
             }

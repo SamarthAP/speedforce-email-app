@@ -9,6 +9,7 @@ import {
 } from "../lib/util";
 import toast from "react-hot-toast";
 import { dLog } from "../lib/noProd";
+import { useEmailPageOutletContext } from "../pages/_emailPage";
 
 function copyToClipboard(text: string) {
   // document.execCommand("copy"); is not supported anymore
@@ -35,6 +36,8 @@ export default function AssistBar({
   thread,
   setSelectedThread,
 }: IAssistBarProps) {
+  const { selectedEmail } = useEmailPageOutletContext();
+
   const emailThreads = useLiveQuery(
     () =>
       db.emailThreads
@@ -63,8 +66,11 @@ export default function AssistBar({
   // only show if message is within last 5 minutes
   if (latestMessage && Date.now() - latestMessage.date < 1000 * 60 * 5) {
     emailContent =
-      extractTextFromHTML(decodeGoogleMessageData(latestMessage.htmlData)) ||
-      decodeGoogleMessageData(latestMessage.textData);
+      selectedEmail.provider === "google"
+        ? extractTextFromHTML(
+            decodeGoogleMessageData(latestMessage.htmlData)
+          ) || decodeGoogleMessageData(latestMessage.textData)
+        : extractTextFromHTML(latestMessage.htmlData);
     // 6 digit code regex
     const codeRegex = /\b\d{6}\b/g;
     const matches = emailContent.match(codeRegex);

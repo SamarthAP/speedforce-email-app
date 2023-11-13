@@ -8,9 +8,9 @@ export default function Home() {
   const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
     FOLDER_IDS.INBOX
   )}`;
-  const outlookFetchQuery = `/mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
+  const outlookFetchQuery = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
     FOLDER_IDS.INBOX
-  )}/messages?$select=id,conversationId&$top=20`;
+  )}/messages?$select=id,conversationId,createdDateTime&$top=20`;
 
   const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
     db.emailThreads

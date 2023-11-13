@@ -63,7 +63,7 @@ export function addTabbedMessageToForwardedHTML(
 
 export async function buildForwardedHTML(
   message: IMessage,
-  newMessageHTML: string = ""
+  newMessageHTML = ""
 ) {
   let beforeString = `${newMessageHTML}<div>---------- Forwarded message ---------</div>`;
   let afterString = "";

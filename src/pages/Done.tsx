@@ -7,9 +7,9 @@ import { ISelectedEmail, db } from "../lib/db";
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now
 export default function Done() {
   const gmailFetchQuery = ``;
-  const outlookFetchQuery = `/mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
+  const outlookFetchQuery = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
     FOLDER_IDS.DONE
-  )}/messages?$select=id,conversationId&$top=20`;
+  )}/messages?$select=id,conversationId,createdDateTime&$top=20`;
 
   const filterThreadsFnc = (selectedEmail: ISelectedEmail) => {
     if (selectedEmail.provider === "google") {

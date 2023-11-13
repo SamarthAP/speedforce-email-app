@@ -64,6 +64,7 @@ export interface IGoogleMetadata {
 
 export interface IOutlookMetadata {
   email: string;
+  historyId: string;
   threadsListNextPageTokens: {
     folderId: string; // TODO: reflect changes in SubClassedDexie
     token: string;
