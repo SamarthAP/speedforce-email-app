@@ -49,21 +49,6 @@ export default function FeedbackTab() {
     }
   };
 
-  const truncateFileName = (fileName: string, maxLength: number) => {
-    if (fileName.length > maxLength) {
-      const fileNameWithoutExtension = fileName
-        .split(".")
-        .slice(0, -1)
-        .join(".");
-      const extension = fileName.split(".").pop();
-      return `${fileNameWithoutExtension.slice(
-        0,
-        maxLength - 4
-      )}...${extension}`;
-    }
-    return fileName;
-  };
-
   const removeAttachment = (
     index: number,
     event: React.MouseEvent<HTMLButtonElement>
@@ -74,7 +59,7 @@ export default function FeedbackTab() {
     setAttachments(updatedAttachments);
   };
 
-  async function makeRequest() {
+  async function makeFeedbackRequest() {
     const params = {
       selectedEmail: selectedEmail.email,
       emailProvider: selectedEmail.provider,
@@ -98,7 +83,7 @@ export default function FeedbackTab() {
       return;
     } else {
       setIsSubmitting(true);
-      const res = await makeRequest();
+      const res = await makeFeedbackRequest();
 
       if (res.error) {
         setIsSubmitting(false);
@@ -166,7 +151,6 @@ export default function FeedbackTab() {
                 <input
                   onClick={() => {
                     setKeepAnon(!keepAnon);
-                    console.log(keepAnon);
                   }}
                   id="comments"
                   aria-describedby="comments-description"
@@ -198,19 +182,19 @@ export default function FeedbackTab() {
                       aria-hidden="true"
                     />
                     <span className="text-sm italic text-gray-50 dark:text-gray-500 group-hover:text-blue-300">
-                      Attach a file
+                      Attach an image
                     </span>
                   </button>
 
                   {attachments.length > 0 && (
                     <>
                       <label className="block pt-3 text-sm text-gray-200 dark:text-gray-500 underline">
-                        Attachments:
+                        Images:
                       </label>
                       <div className="text-sm italic text-white dark:text-black">
                         <ul>
                           {attachments.map((file, index) => (
-                            <li key={index}>
+                            <li key={index} className="truncate w-48">
                               <button
                                 onClick={(event) =>
                                   removeAttachment(index, event)
@@ -219,7 +203,7 @@ export default function FeedbackTab() {
                               >
                                 X
                               </button>
-                              {truncateFileName(file.name, 20)}
+                              {file.name}
                             </li>
                           ))}
                         </ul>

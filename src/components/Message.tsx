@@ -106,7 +106,6 @@ export default function Message({ message, folderId }: MessageProps) {
   useEffect(() => {
     if (showReply) {
       if (replyRef.current) {
-        // console.log("scrolling into view");
         // Removed the following code so that on forward UI, the focus does not switch to editor when typing recipient address
         // Consequence: When you click on reply/replyAll/forward, the editor still scrolls into view but without cursor
         // if (editorRef.current) {

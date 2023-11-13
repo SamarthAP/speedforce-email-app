@@ -24,7 +24,7 @@ async function insertEmail(
 
 const manualInsertEmail = async () => {
   await insertEmail(
-    "dwipatel00@gmail.com",
+    "samarth@sigilinnovation.com",
     "google",
     "ya29.something",
     1688333423087 // new Date().getTime()
@@ -32,12 +32,12 @@ const manualInsertEmail = async () => {
 
   await db.selectedEmail.put({
     id: 1,
-    email: "dwipatel00@gmail.com",
+    email: "samarth@sigilinnovation.com",
     provider: "google",
   });
 
   await db.googleMetadata.put({
-    email: "dwipatel00@gmail.com",
+    email: "samarth@sigilinnovation.com",
     historyId: "0",
     threadsListNextPageTokens: [],
   });
