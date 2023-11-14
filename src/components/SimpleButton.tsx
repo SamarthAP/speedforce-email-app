@@ -2,7 +2,7 @@ import { classNames } from "../lib/util";
 import Spinner from "./Spinner";
 
 interface SimpleButtonProps {
-  onClick: () => void;
+  onClick: (event: any) => void;
   disabled?: boolean;
   loading: boolean;
   text: string;
