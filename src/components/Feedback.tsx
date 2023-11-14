@@ -112,7 +112,7 @@ export default function FeedbackTab() {
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-40">
           <div
-            className="modal-bg fixed inset-0 bg-white dark:bg-black opacity-60"
+            className="modal-bg fixed inset-0 bg-black opacity-60"
             onClick={closeModal}
           ></div>
           <form action="#" className="relative w-96">
@@ -130,7 +130,7 @@ export default function FeedbackTab() {
                 type="text"
                 name="title"
                 id="title"
-                className="block w-full p-3 text-lg font-medium text-white dark:text-gray-900 placeholder:text-gray-50 dark:placeholder:text-gray-400 focus:ring-0 bg-gray-700 dark:bg-slate-200"
+                className="block outline-none w-full p-3 text-lg font-medium text-white dark:text-gray-900 placeholder:text-gray-50 dark:placeholder:text-gray-400 focus:ring-0 bg-gray-800 dark:bg-slate-200"
                 placeholder="Title..."
               />
               <label htmlFor="description" className="sr-only">
@@ -141,12 +141,12 @@ export default function FeedbackTab() {
                 rows={4}
                 name="description"
                 id="description"
-                className="block w-full resize-none border-0 py-3 px-3 text-white dark:text-gray-900 placeholder:text-gray-50 dark:placeholder:text-gray-400 focus:ring-0 bg-gray-600 dark:bg-slate-100"
+                className="block outline-none w-full resize-none border-0 py-3 px-3 text-white dark:text-gray-900 placeholder:text-gray-50 dark:placeholder:text-gray-400 focus:ring-0 bg-gray-700 dark:bg-slate-100"
                 placeholder="Write a description..."
                 defaultValue={""}
               />
             </div>
-            <div className="pl-3 flex justify-start bg-gray-600 dark:bg-slate-100">
+            <div className="pl-3 flex justify-start bg-gray-700 dark:bg-slate-100">
               <div className="flex h-6 items-center">
                 <input
                   onClick={() => {
@@ -170,7 +170,7 @@ export default function FeedbackTab() {
             </div>
 
             <div className="relative">
-              <div className="flex items-center justify-between space-x-3 rounded-b-lg border-slate-600 dark:border-slate-200 bg-gray-600 dark:bg-slate-100 px-2 py-2 sm:px-3">
+              <div className="flex items-center justify-between space-x-3 rounded-b-lg border-slate-600 dark:border-slate-200 bg-gray-700 dark:bg-slate-100 px-2 py-2 sm:px-3">
                 <div className="flex flex-col">
                   <button
                     type="button"
