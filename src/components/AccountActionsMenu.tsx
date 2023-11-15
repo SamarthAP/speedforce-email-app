@@ -70,13 +70,16 @@ export default function AccountActions(props: AccountActionsProps) {
           leaveTo="transform scale-95 opacity-0"
         >
           <Menu.Items className="absolute right-0 shadow-2xl p-2 bg-white">
-            <div className="pl-1 pr-1 py-2 bg-white flex flex-row justify-between items-center">
-              <div className="flex flex-row">
-                <UserCircleIcon className="h-6 w-6 shrink-0 text-black mr-3" />
-                <div className="text-md mr-3">My Accounts</div>
+            <div className="bg-white flex flex-row justify-between items-center">
+              <div className="flex flex-row items-center">
+                <div className="px-2 py-2">
+                  <UserCircleIcon className="h-4 w-4 shrink-0 text-black" />
+                </div>
+
+                <div className="px-2 py-2 text-sm">My Accounts</div>
               </div>
               <Menu.Item>
-                <XMarkIcon className="h-7 w-7 shrink-0 text-black hover:bg-slate-100 rounded-full p-1 cursor-pointer" />
+                <XMarkIcon className="h-4 w-4 shrink-0 text-black hover:bg-slate-100 rounded-full cursor-pointer" />
               </Menu.Item>
             </div>
             <hr className="mb-2" />
@@ -99,7 +102,7 @@ export default function AccountActions(props: AccountActionsProps) {
                       <div className="text-sm">{email.email}</div>
                     </div>
                     {email.email === props.selectedEmail.email ? (
-                      <CheckIcon className="h-4 w-4 ml-2 shrink-0 text-black" />
+                      <CheckIcon className="h-4 w-4 shrink-0 text-black" />
                     ) : (
                       // Spacer
                       <div className="h-4 w-4 ml-2"></div>
