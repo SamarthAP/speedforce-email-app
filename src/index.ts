@@ -29,7 +29,7 @@ if (require("electron-squirrel-startup")) {
 
 if (isProd) {
   // basic flags
-  autoUpdater.autoDownload = false;
+  autoUpdater.autoDownload = true;
   autoUpdater.allowPrerelease = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
@@ -55,6 +55,7 @@ if (isProd) {
 
   autoUpdater.on("update-downloaded", () => {
     mainWindow?.webContents.send("update-downloaded");
+    void autoUpdater.quitAndInstall();
   });
 
   autoUpdater.on("error", (error) => {
