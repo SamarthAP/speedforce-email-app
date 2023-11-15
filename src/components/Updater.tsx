@@ -57,7 +57,6 @@ export default function Updater() {
     async function handler1() {
       dLog("update available");
       setUpdateAvailable(true);
-      downloadUpdate();
     }
 
     return window.electron.ipcRenderer.onUpdateAvailable(handler1);
@@ -76,7 +75,6 @@ export default function Updater() {
     async function handler3() {
       dLog("update downloaded");
       setUpdateDownloaded(true);
-      installUpdate();
     }
 
     return window.electron.ipcRenderer.onUpdateDownloaded(handler3);
