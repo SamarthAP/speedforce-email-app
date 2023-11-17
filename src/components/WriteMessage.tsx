@@ -9,6 +9,7 @@ import { dLog } from "../lib/noProd";
 import { PaperClipIcon, XCircleIcon } from "@heroicons/react/20/solid";
 import { classNames } from "../lib/util";
 import toast from "react-hot-toast";
+import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
 
 interface WriteMessageProps {
   setWriteEmailMode: (writeEmailMode: boolean) => void;
@@ -100,6 +101,18 @@ export function WriteMessage({ setWriteEmailMode }: WriteMessageProps) {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
+      <div className="flex px-4 pt-4">
+        <div
+          className="flex flex-row cursor-pointer items-center"
+          onClick={(e) => {
+            e.stopPropagation();
+            setWriteEmailMode(false);
+          }}
+        >
+          <ArrowSmallLeftIcon className="h-4 w-4 dark:text-zinc-400 text-slate-500" />
+          <p className="dark:text-zinc-400 text-slate-500 text-xs px-1">Back</p>
+        </div>
+      </div>
       <div className="dark:text-white p-4 w-full">New Message</div>
       <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll">
         <div className="border border-slate-200 dark:border-zinc-700">
