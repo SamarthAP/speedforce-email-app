@@ -27,6 +27,15 @@ function mapMimeTypeToColor(mimeType: string) {
   }
 }
 
+async function openDownloadsFolder(filename: string) {
+  const success = await window.electron.ipcRenderer.invoke(
+    "open-downloads-folder",
+    filename
+  );
+
+  return success;
+}
+
 interface AttachmentButtonProps {
   attachment: IAttachment;
   messageId: string;
@@ -38,15 +47,6 @@ export function AttachmentButton({
 }: AttachmentButtonProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   const [loading, setLoading] = useState(false);
-
-  async function openDownloadsFolder(filename: string) {
-    const success = await window.electron.ipcRenderer.invoke(
-      "open-downloads-folder",
-      filename
-    );
-
-    return success;
-  }
 
   return (
     <button
