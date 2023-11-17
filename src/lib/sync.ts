@@ -1068,6 +1068,15 @@ export async function trashThread(
   return { data: null, error: null };
 }
 
+export async function openDownloadsFolder() {
+  const success = await window.electron.ipcRenderer.invoke(
+    "open-downloads-folder"
+  );
+
+  dLog("open download path:", success);
+  return success;
+}
+
 export async function downloadAttachment(
   email: string,
   provider: "google" | "outlook",

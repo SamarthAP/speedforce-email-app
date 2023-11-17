@@ -258,6 +258,16 @@ ipcMain.handle("save-file", (_event, filename, data) => {
   }
 });
 
+ipcMain.handle("open-downloads-folder", async (_event) => {
+  try {
+    const downloadsPath = app.getPath("downloads");
+    await shell.openPath(downloadsPath);
+    return true;
+  } catch (e) {
+    return false;
+  }
+});
+
 ipcMain.handle("add-attachments", async (_event) => {
   if (!mainWindow) {
     return;

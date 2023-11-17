@@ -2,7 +2,7 @@ import { PaperClipIcon } from "@heroicons/react/20/solid";
 import { IAttachment } from "../lib/db";
 import { classNames } from "../lib/util";
 import toast from "react-hot-toast";
-import { downloadAttachment } from "../lib/sync";
+import { downloadAttachment, openDownloadsFolder } from "../lib/sync";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { useState } from "react";
 import Spinner from "./Spinner";
@@ -53,7 +53,15 @@ export function AttachmentButton({
         ).then((success) => {
           if (success) {
             toast.success(
-              `${attachment.filename} available in downloads folder`,
+              <div>
+                {`${attachment.filename} available in downloads folder `}
+                <span
+                  onClick={() => void openDownloadsFolder()}
+                  className="text-blue-500 cursor-pointer underline"
+                >
+                  here.
+                </span>
+              </div>,
               { duration: 4000 }
             );
           } else {

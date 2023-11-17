@@ -17,6 +17,7 @@ export type Channels =
   | "save-messages"
   | "sync-emails"
   | "save-file"
+  | "open-downloads-folder"
   | "update-available"
   | "update-not-available"
   | "download-progress"
