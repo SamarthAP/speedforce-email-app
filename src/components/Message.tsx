@@ -25,6 +25,7 @@ interface MessageProps {
 }
 
 export default function Message({ message, folderId }: MessageProps) {
+  console.log("rendering message", message.labelIds);
   const { selectedEmail } = useEmailPageOutletContext();
   const [showBody, setShowBody] = useState(true);
   const [showReply, setShowReply] = useState(false);
