@@ -259,6 +259,18 @@ ipcMain.handle("save-file", (_event, filename, data) => {
   }
 });
 
+ipcMain.handle("open-downloads-folder", (_event, filename: string) => {
+  try {
+    const downloadsPath = app.getPath("downloads");
+    const filePath = path.join(downloadsPath, filename);
+    shell.showItemInFolder(filePath);
+
+    return true;
+  } catch (e) {
+    return false;
+  }
+});
+
 ipcMain.handle("add-attachments", async (_event) => {
   if (!mainWindow) {
     return;

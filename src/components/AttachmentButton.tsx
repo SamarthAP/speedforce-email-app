@@ -39,6 +39,15 @@ export function AttachmentButton({
   const { selectedEmail } = useEmailPageOutletContext();
   const [loading, setLoading] = useState(false);
 
+  async function openDownloadsFolder(filename: string) {
+    const success = await window.electron.ipcRenderer.invoke(
+      "open-downloads-folder",
+      filename
+    );
+
+    return success;
+  }
+
   return (
     <button
       onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
@@ -53,7 +62,15 @@ export function AttachmentButton({
         ).then((success) => {
           if (success) {
             toast.success(
-              `${attachment.filename} available in downloads folder`,
+              <div>
+                {`${attachment.filename} available in downloads folder `}
+                <span
+                  onClick={() => void openDownloadsFolder(attachment.filename)}
+                  className="text-blue-500 cursor-pointer underline"
+                >
+                  here.
+                </span>
+              </div>,
               { duration: 4000 }
             );
           } else {
