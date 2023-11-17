@@ -2,7 +2,7 @@ import { PaperClipIcon } from "@heroicons/react/20/solid";
 import { IAttachment } from "../lib/db";
 import { classNames } from "../lib/util";
 import toast from "react-hot-toast";
-import { downloadAttachment, openDownloadsFolder } from "../lib/sync";
+import { downloadAttachment } from "../lib/sync";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { useState } from "react";
 import Spinner from "./Spinner";
@@ -39,6 +39,15 @@ export function AttachmentButton({
   const { selectedEmail } = useEmailPageOutletContext();
   const [loading, setLoading] = useState(false);
 
+  async function openDownloadsFolder(filename: string) {
+    const success = await window.electron.ipcRenderer.invoke(
+      "open-downloads-folder",
+      filename
+    );
+
+    return success;
+  }
+
   return (
     <button
       onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
@@ -56,7 +65,7 @@ export function AttachmentButton({
               <div>
                 {`${attachment.filename} available in downloads folder `}
                 <span
-                  onClick={() => void openDownloadsFolder()}
+                  onClick={() => void openDownloadsFolder(attachment.filename)}
                   className="text-blue-500 cursor-pointer underline"
                 >
                   here.
