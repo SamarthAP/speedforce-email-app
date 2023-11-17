@@ -25,7 +25,6 @@ interface MessageProps {
 }
 
 export default function Message({ message, folderId }: MessageProps) {
-  console.log("rendering message", message.labelIds);
   const { selectedEmail } = useEmailPageOutletContext();
   const [showBody, setShowBody] = useState(true);
   const [showReply, setShowReply] = useState(false);
@@ -93,7 +92,6 @@ export default function Message({ message, folderId }: MessageProps) {
     }
 
     if (error) {
-      console.log(error);
       toast("Error sending messsage", { icon: "❌", duration: 5000 });
     } else {
       await partialSync(selectedEmail.email, selectedEmail.provider, {
