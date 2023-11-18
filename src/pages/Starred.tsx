@@ -15,7 +15,11 @@ export default function Starred() {
     db.emailThreads
       .where("email")
       .equals(selectedEmail.email)
-      .and((thread) => thread.labelIds.includes("STARRED"))
+      .and(
+        (thread) =>
+          thread.labelIds.includes("STARRED") &&
+          !thread.labelIds.includes(FOLDER_IDS.TRASH)
+      )
       .reverse()
       .sortBy("date");
 

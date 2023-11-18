@@ -28,6 +28,8 @@ export function ThreadFeed({
     return db.emailThreads.get(selectedThread);
   }, [selectedThread]);
 
+  console.log("rendering thread feed", thread?.labelIds);
+
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Escape") {

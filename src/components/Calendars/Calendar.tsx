@@ -23,28 +23,29 @@ export default function Calendar() {
 
   return (
     <div className="text-center col-start-8 col-end-13 row-start-1">
-      {/* <div className="flex items-center text-gray-900">
+      <div className="flex items-center text-gray-900">
         <button
           onClick={() => offsetMonth(-1)}
           type="button"
-          className="-m-1.5 flex flex-none items-center justify-center p-1.5 text-slate-500 dark:text-zinc-500 hover:text-slate-400 dark:hover:text-zinc-400"
+          className="-m-1.5 flex flex-none items-center justify-center p-1.5 text-slate-500 dark:text-zinc-400 hover:text-slate-400 dark:hover:text-zinc-500"
         >
           <span className="sr-only">Previous month</span>
           <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
         </button>
-        <div className="flex-auto text-sm font-semibold">
-          {currentDate.toLocaleString("default", { month: "long" })}
+        <div className="flex-auto text-sm text-black dark:text-white font-semibold">
+          {currentDate.toLocaleString("default", { month: "long" })}{" "}
+          {currentDate.getFullYear()}
         </div>
         <button
           onClick={() => offsetMonth(1)}
           type="button"
-          className="-m-1.5 flex flex-none items-center justify-center p-1.5 text-slate-500 dark:text-zinc-500 hover:text-slate-400 dark:hover:text-zinc-400"
+          className="-m-1.5 flex flex-none items-center justify-center p-1.5 text-slate-500 dark:text-zinc-400 hover:text-slate-400 dark:hover:text-zinc-500"
         >
           <span className="sr-only">Next month</span>
           <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
         </button>
       </div>
-      <div className="mt-6 grid grid-cols-7 text-xs leading-6 text-gray-500">
+      <div className="mt-6 grid grid-cols-7 text-xs leading-6 text-slate-500 dark:text-zinc-400">
         <div>M</div>
         <div>T</div>
         <div>W</div>
@@ -53,21 +54,23 @@ export default function Calendar() {
         <div>S</div>
         <div>S</div>
       </div>
-      <div className="isolate mt-2 grid grid-cols-7 gap-px rounded-lg bg-gray-200 text-sm shadow ring-1 ring-gray-200">
+      <div className="isolate mt-2 grid grid-cols-7 gap-px rounded-lg bg-slate-200 dark:bg-zinc-700 text-sm shadow ring-1 ring-slate-200 dark:ring-zinc-700">
         {getCalendarDates(currentDate).map((day, dayIdx, days) => (
           <button
             key={dayIdx}
             type="button"
             className={classNames(
-              "py-1.5 hover:bg-gray-100 focus:z-10 text-xs",
-              day.isCurrentMonth ? "bg-white" : "bg-gray-50",
+              "py-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 focus:z-10 text-xs",
+              day.isCurrentMonth
+                ? "bg-white dark:bg-black"
+                : "bg-slate-50 dark:bg-zinc-950",
               day.isSelected || day.isToday ? "font-semibold" : "",
-              day.isSelected ? "text-white" : "",
+              day.isSelected ? "text-white dark:text-black" : "",
               !day.isSelected && day.isCurrentMonth && !day.isToday
-                ? "text-gray-900"
+                ? "text-black dark:text-white"
                 : "",
               !day.isSelected && !day.isCurrentMonth && !day.isToday
-                ? "text-gray-400"
+                ? "text-slate-400 dark:text-zinc-500"
                 : "",
               day.isToday && !day.isSelected ? "text-indigo-600" : "",
               dayIdx === 0 ? "rounded-tl-lg" : "",
@@ -88,7 +91,7 @@ export default function Calendar() {
             </time>
           </button>
         ))}
-      </div> */}
+      </div>
     </div>
   );
 }
