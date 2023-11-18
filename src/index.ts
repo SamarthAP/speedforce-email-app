@@ -118,6 +118,10 @@ ipcMain.handle("get-app-version", () => {
   return app.getVersion();
 });
 
+ipcMain.handle("get-os", () => {
+  return process.platform;
+});
+
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient("speedforce", process.execPath, [
