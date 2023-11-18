@@ -18,7 +18,11 @@ export default function SentItems() {
     db.emailThreads
       .where("email")
       .equals(selectedEmail.email)
-      .and((thread) => thread.labelIds.includes(FOLDER_IDS.SENT))
+      .and(
+        (thread) =>
+          thread.labelIds.includes(FOLDER_IDS.SENT) &&
+          !thread.labelIds.includes(FOLDER_IDS.TRASH)
+      )
       .reverse()
       .sortBy("date");
 

@@ -18,7 +18,11 @@ export default function Spam() {
     db.emailThreads
       .where("email")
       .equals(selectedEmail.email)
-      .and((thread) => thread.labelIds.includes(FOLDER_IDS.SPAM))
+      .and(
+        (thread) =>
+          thread.labelIds.includes(FOLDER_IDS.SPAM) &&
+          !thread.labelIds.includes(FOLDER_IDS.TRASH)
+      )
       .reverse()
       .sortBy("date");
 

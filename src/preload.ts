@@ -17,6 +17,7 @@ export type Channels =
   | "save-messages"
   | "sync-emails"
   | "save-file"
+  | "open-downloads-folder"
   | "update-available"
   | "update-not-available"
   | "download-progress"
@@ -25,7 +26,8 @@ export type Channels =
   | "download-update"
   | "install-update"
   | "get-app-version"
-  | "add-attachments";
+  | "add-attachments"
+  | "get-os";
 // Example use: window.electron.ipcRenderer.sendMessage("open-link-in-browser", url);
 
 const electronHandler = {

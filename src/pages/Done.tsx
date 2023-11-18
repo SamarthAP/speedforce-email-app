@@ -16,7 +16,11 @@ export default function Done() {
       return db.emailThreads
         .where("email")
         .equals(selectedEmail.email)
-        .and((thread) => !thread.labelIds.includes(FOLDER_IDS.INBOX))
+        .and(
+          (thread) =>
+            !thread.labelIds.includes(FOLDER_IDS.INBOX) &&
+            !thread.labelIds.includes(FOLDER_IDS.TRASH)
+        )
         .reverse()
         .sortBy("date");
     } else {

@@ -75,8 +75,20 @@ if (!container) throw new Error("No root element found");
 const root = createRoot(container); // createRoot(container!) if you use TypeScript
 document.body.style.overflow = "hidden";
 void (async () => {
+  const clientId = await window.electron.ipcRenderer.invoke(
+    "store-get",
+    "client.id"
+  );
+
+  const platform = await window.electron.ipcRenderer.invoke("get-os");
+
   const LDProvider = await asyncWithLDProvider({
     clientSideID: process.env.LAUNCHDARKLY_CLIENT_ID || "",
+    context: {
+      kind: "client",
+      key: clientId,
+      platform: platform,
+    },
   });
 
   root.render(
