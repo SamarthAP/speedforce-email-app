@@ -20,6 +20,7 @@ export function EmailSelectorInput({
   const [emailText, setEmailText] = useState("");
   const { selectedEmail } = useEmailPageOutletContext();
 
+  // Check if email is valid and not already in the send list
   const isValidEmail = (email: string) => {
     return (
       String(email)
@@ -30,6 +31,7 @@ export function EmailSelectorInput({
     );
   };
 
+  // Add email to send list (not from autocomplete, need to verify it is valid)
   const onManualAddEmail = () => {
     if (isValidEmail(emailText)) {
       setEmails([...emails, emailText]);
@@ -37,6 +39,7 @@ export function EmailSelectorInput({
     }
   };
 
+  // Add email to send list (from autocomplete)
   const onSearchSelect = (contact: IContact) => {
     setEmails([...emails, contact.contactEmailAddress]);
     setEmailText("");
