@@ -17,6 +17,7 @@ import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
 import toast from "react-hot-toast";
+import { EmailSelectorInput } from "./EmailSelectorInput";
 
 interface MessageProps {
   message: IMessage;
@@ -33,7 +34,7 @@ export default function Message({ message, folderId }: MessageProps) {
   const [editorMode, setEditorMode] = useState<
     "reply" | "replyAll" | "forward" | "none"
   >("none");
-  const [forwardTo, setForwardTo] = useState("");
+  const [forwardTo, setForwardTo] = useState<string[]>([]);
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
 
   const replyRef = createRef<HTMLDivElement>();
@@ -79,13 +80,11 @@ export default function Message({ message, folderId }: MessageProps) {
           html
         ));
       } else {
-        const toRecipients = forwardTo.split(/[ ,]+/);
-
         ({ error } = await forward(
           selectedEmail.email,
           selectedEmail.provider,
           message,
-          toRecipients,
+          forwardTo,
           html
         ));
       }
@@ -257,16 +256,10 @@ export default function Message({ message, folderId }: MessageProps) {
             </div>
           ) : editorMode === "forward" ? (
             <span className="w-full flex flex-row items-center">
-              <div className="text-sm dark:text-zinc-400 text-slate-500 mr-4 whitespace-nowrap">
-                Forward to
-              </div>
-              <input
-                onChange={(event) => setForwardTo(event.target.value)}
-                type="email"
-                name="forwardTo"
-                id="forwardTo"
-                className="w-full block bg-transparent border-0 pr-20 dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6 border-bottom"
-                placeholder="..."
+              <EmailSelectorInput
+                text="Forward To"
+                emails={forwardTo}
+                setEmails={setForwardTo}
               />
             </span>
           ) : null}

@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { fullSync, partialSync } from "./sync";
+import { fullSync, loadContacts, partialSync } from "./sync";
 import { db } from "./db";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -133,6 +133,15 @@ const TestSyncButtons = (props: TestSyncButtonsProps) => {
         }}
       >
         Save Messages
+      </button>
+      <button
+        type="button"
+        className="bg-slate-400 dark:bg-zinc-700 rounded-md py-1 px-2 mr-2 text-white shadow-lg text-xs"
+        onClick={() => {
+          void loadContacts(selectedEmail.email, selectedEmail.provider);
+        }}
+      >
+        Load Contacts
       </button>
     </div>
   );

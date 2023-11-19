@@ -1,23 +1,5 @@
 import { GMAIL_API_URL } from "../constants";
-
-interface HistoryListDataType {
-  history: {
-    id: string;
-    messages: {
-      id: string;
-      threadId: string;
-    }[];
-    messagesAdded?: {
-      message: {
-        id: string;
-        threadId: string;
-        labelIds: string[];
-      };
-    }[];
-    // TODO: messagesDeleted and other fields can go here in future
-  }[];
-  historyId: string;
-}
+import { HistoryListDataType } from "../../model/users.history";
 
 export const list = async (accessToken: string, startHistoryId: string) => {
   let data: HistoryListDataType | null = null;

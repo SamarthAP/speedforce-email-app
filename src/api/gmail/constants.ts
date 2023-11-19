@@ -2,6 +2,8 @@ import { FOLDER_IDS } from "../constants";
 import { BidirectionalMap } from "../model/bidirectionalMap";
 
 export const GMAIL_API_URL = "https://gmail.googleapis.com/gmail/v1/users/me";
+export const GMAIL_PEOPLE_API_URL =
+  "https://people.googleapis.com/v1/people/me";
 
 const gmailFolderIds = new BidirectionalMap<string, string>();
 gmailFolderIds.add(FOLDER_IDS.INBOX, "INBOX");
