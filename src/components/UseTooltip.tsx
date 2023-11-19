@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 interface TooltipData {
   showTooltip: boolean;
@@ -8,7 +8,10 @@ interface TooltipData {
 
 interface TooltipHook {
   tooltipData: TooltipData;
-  handleMouseEnter: (event: React.MouseEvent<HTMLElement>, message: string) => void;
+  handleMouseEnter: (
+    event: React.MouseEvent<HTMLElement>,
+    message: string
+  ) => void;
   handleMouseLeave: () => void;
 }
 
@@ -18,8 +21,12 @@ export const useTooltip = (): TooltipHook => {
     coords: undefined,
     message: "",
   });
+  const [tooltipTimer, setTooltipTimer] = useState<NodeJS.Timeout | null>();
 
-  const handleMouseEnter = (event: React.MouseEvent<HTMLElement>, message: string) => {
+  const handleMouseEnter = (
+    event: React.MouseEvent<HTMLElement>,
+    message: string
+  ) => {
     const rect = event.currentTarget.getBoundingClientRect();
     setTooltipData({
       showTooltip: true,
@@ -29,9 +36,20 @@ export const useTooltip = (): TooltipHook => {
       },
       message,
     });
+
+    const tooltipTimer = setTimeout(() => {
+      handleMouseLeave();
+    }, 2000);
+
+    setTooltipTimer(tooltipTimer);
   };
 
   const handleMouseLeave = () => {
+    // Clear the timer to prevent automatic hiding if the user moves the mouse out before the timer fires
+    if (tooltipTimer) {
+      clearTimeout(tooltipTimer);
+    }
+
     setTooltipData({
       ...tooltipData,
       showTooltip: false,

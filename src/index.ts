@@ -118,6 +118,10 @@ ipcMain.handle("get-app-version", () => {
   return app.getVersion();
 });
 
+ipcMain.handle("get-os", () => {
+  return process.platform;
+});
+
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient("speedforce", process.execPath, [
@@ -255,6 +259,18 @@ ipcMain.handle("save-file", (_event, filename, data) => {
     return true;
   } catch (e) {
     // console.log(e);
+    return false;
+  }
+});
+
+ipcMain.handle("open-downloads-folder", (_event, filename: string) => {
+  try {
+    const downloadsPath = app.getPath("downloads");
+    const filePath = path.join(downloadsPath, filename);
+    shell.showItemInFolder(filePath);
+
+    return true;
+  } catch (e) {
     return false;
   }
 });

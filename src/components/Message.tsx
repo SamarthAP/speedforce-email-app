@@ -91,7 +91,6 @@ export default function Message({ message, folderId }: MessageProps) {
     }
 
     if (error) {
-      console.log(error);
       toast("Error sending messsage", { icon: "❌", duration: 5000 });
     } else {
       await partialSync(selectedEmail.email, selectedEmail.provider, {

@@ -18,7 +18,11 @@ export default function Drafts() {
     db.emailThreads
       .where("email")
       .equals(selectedEmail.email)
-      .and((thread) => thread.labelIds.includes(FOLDER_IDS.DRAFTS))
+      .and(
+        (thread) =>
+          thread.labelIds.includes(FOLDER_IDS.DRAFTS) &&
+          !thread.labelIds.includes(FOLDER_IDS.TRASH)
+      )
       .reverse()
       .sortBy("date");
 

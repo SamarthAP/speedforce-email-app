@@ -193,12 +193,12 @@ export default function AppRouter({ session }: AppRouterProps) {
             >
               <Route index element={<Done />} />
             </Route>
-            {/* <Route
+            <Route
               path="/calendar"
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
               <Route index element={<WeekCalendarPage />} />
-            </Route> */}
+            </Route>
             <Route path="/page/addAccount" element={<AddAccount />} />
           </>
         )}
