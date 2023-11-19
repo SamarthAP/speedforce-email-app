@@ -110,6 +110,7 @@ export const dexieSchemas = {
         "[email+contactEmailAddress], contactName, isSavedContact, lastInteraction",
     },
     upgradeFnc: async (tx: Transaction) => {
+      dLog("Upgrading schema to version 4");
       return;
     },
   },

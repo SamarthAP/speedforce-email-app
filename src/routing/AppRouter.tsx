@@ -11,17 +11,14 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../lib/db";
 import EmailPage from "../pages/_emailPage";
 import WeekCalendarPage from "../pages/WeekCalendarPage";
-import WeekCalendar from "../components/Calendars/WeekCalendar";
 import { Session } from "@supabase/supabase-js";
 import useWebSocket from "react-use-websocket";
-import { SPEEDFORCE_WS_URL } from "../api/constants";
+import { SPEEDFORCE_WS_URL, FOLDER_IDS } from "../api/constants";
 import { dLog } from "../lib/noProd";
 import { useCallback, useEffect } from "react";
 import { getAccessToken } from "../api/accessToken";
 import { watch } from "../api/gmail/notifications/pushNotifications";
-import { NotificationMessageType } from "../api/model/notifications";
-import { partialSync } from "../lib/sync";
-import { FOLDER_IDS } from "../api/constants";
+import { loadContacts, partialSync } from "../lib/sync";
 import { handleMessage } from "../lib/wsHelpers";
 
 interface AppRouterProps {
@@ -139,6 +136,31 @@ export default function AppRouter({ session }: AppRouterProps) {
         }
       });
   }, [selectedEmail]);
+
+  useEffect(() => {
+    void window.electron.ipcRenderer
+      .invoke("store-get", "client.lastSyncContactsTime")
+      .then(async (time) => {
+        const lastSyncTime = time ? new Date(time) : new Date(0);
+        const now = new Date();
+        const diff = now.getTime() - lastSyncTime.getTime();
+        const days = diff / (1000 * 60 * 60 * 24);
+        console.log(lastSyncTime);
+        if (days > 3) {
+          const emails = await db.emails.toArray();
+
+          for (const email of emails) {
+            dLog("loading contacts for ", email.email);
+            await loadContacts(email.email, email.provider);
+          }
+
+          await window.electron.ipcRenderer.invoke("store-set", {
+            key: "client.lastSyncContactsTime",
+            value: now,
+          });
+        }
+      });
+  }, []);
 
   if (!loaded) {
     return <div className="h-screen w-screen"></div>;

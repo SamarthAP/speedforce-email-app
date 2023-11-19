@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckIcon, XCircleIcon } from "@heroicons/react/20/solid";
+import { XCircleIcon } from "@heroicons/react/20/solid";
 import { useLiveQuery } from "dexie-react-hooks";
 import { IContact, db } from "../lib/db";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
@@ -46,6 +46,7 @@ export function EmailSelectorInput({
     return db.contacts.where("email").equals(selectedEmail.email).toArray();
   }, []);
 
+  // TODO: build a sophisticated rank algo with recent interactions (non-contacts)
   const filteredContacts =
     emailText === "" || !userContactsList
       ? []

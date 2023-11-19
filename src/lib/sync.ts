@@ -1153,8 +1153,6 @@ export async function loadContacts(
         });
       }
     }
-
-    return { data: null, error: "Not implemented" };
   } else if (provider === "outlook") {
     const { data, error } = await mContactsList(accessToken);
 

@@ -200,6 +200,42 @@ export default function Message({ message, folderId }: MessageProps) {
         </div>
       </div>
 
+      {showReply && (
+        <div
+          className="p-4 mb-8 border-y border-t-slate-200 dark:border-t-zinc-700"
+          ref={replyRef}
+        >
+          {editorMode === "reply" ? (
+            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
+              Write reply to {message.from}
+            </div>
+          ) : editorMode === "replyAll" ? (
+            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
+              Write reply to all
+            </div>
+          ) : editorMode === "forward" ? (
+            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
+              <EmailSelectorInput
+                text="Fwd To"
+                emails={forwardTo}
+                setEmails={setForwardTo}
+              />
+            </div>
+          ) : // <span className="flex flex-row items-center">
+          // </span>
+          null}
+
+          <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
+
+          <SimpleButton
+            onClick={() => void handleSendReply()}
+            loading={sendingReply}
+            text="Send"
+            width="w-16"
+          />
+        </div>
+      )}
+
       <div className="flex px-4 pb-4">
         <button
           className={classNames(
@@ -239,40 +275,6 @@ export default function Message({ message, folderId }: MessageProps) {
           ))}
         </div>
       }
-
-      {showReply && (
-        <div
-          className="p-4 border-t border-t-slate-200 dark:border-t-zinc-700"
-          ref={replyRef}
-        >
-          {editorMode === "reply" ? (
-            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
-              Write reply to {message.from}
-            </div>
-          ) : editorMode === "replyAll" ? (
-            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
-              Write reply to all
-            </div>
-          ) : editorMode === "forward" ? (
-            <span className="w-full flex flex-row items-center">
-              <EmailSelectorInput
-                text="Forward To"
-                emails={forwardTo}
-                setEmails={setForwardTo}
-              />
-            </span>
-          ) : null}
-
-          <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
-
-          <SimpleButton
-            onClick={() => void handleSendReply()}
-            loading={sendingReply}
-            text="Send"
-            width="w-16"
-          />
-        </div>
-      )}
     </div>
   );
 }
