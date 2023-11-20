@@ -1,15 +1,17 @@
 export interface GmailContactListDataType {
-  connections: {
-    resourceName: string;
-    names: {
-      displayName: string;
-      familyName: string;
-      givenName: string;
-    }[];
-    emailAddresses: {
-      value: string;
-    }[];
-  }[];
+  connections:
+    | {
+        resourceName: string;
+        names: {
+          displayName: string;
+          familyName: string;
+          givenName: string;
+        }[];
+        emailAddresses: {
+          value: string;
+        }[];
+      }[]
+    | undefined;
 }
 
 export interface OutlookContactListDataType {

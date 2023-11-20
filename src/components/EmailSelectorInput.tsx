@@ -5,6 +5,7 @@ import { IContact, db } from "../lib/db";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { Combobox } from "@headlessui/react";
 import { classNames } from "../lib/util";
+import { string } from "zod";
 
 interface EmailSelectorInputProps {
   text: string;
@@ -19,16 +20,16 @@ export function EmailSelectorInput({
 }: EmailSelectorInputProps) {
   const [emailText, setEmailText] = useState("");
   const { selectedEmail } = useEmailPageOutletContext();
+  const emailSchema = string().email({ message: "Invalid email" });
 
   // Check if email is valid and not already in the send list
   const isValidEmail = (email: string) => {
-    return (
-      String(email)
-        .toLowerCase()
-        .match(
-          /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-        ) && !emails.includes(email)
-    );
+    try {
+      emailSchema.parse(email); // If email is invalid, this will throw an error
+      return !emails.includes(email);
+    } catch (error) {
+      return false;
+    }
   };
 
   // Add email to send list (not from autocomplete, need to verify it is valid)
@@ -94,7 +95,7 @@ export function EmailSelectorInput({
         <Combobox as="div" onChange={onSearchSelect}>
           <div className="relative mt-2">
             <Combobox.Input
-              className="block w-full border-0 dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
+              className="block w-full border-0 bg-transparent dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
               placeholder="..."
               onChange={(event) => {
                 setEmailText(event.target.value);

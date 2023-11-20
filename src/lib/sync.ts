@@ -1141,7 +1141,8 @@ export async function loadContacts(
       return { data: null, error };
     }
 
-    for (const contact of data.connections) {
+    const contacts = data.connections || [];
+    for (const contact of contacts) {
       const contactName = contact.names?.[0]?.displayName || "";
       for (const contactEmail of contact.emailAddresses) {
         emailContacts.push({
