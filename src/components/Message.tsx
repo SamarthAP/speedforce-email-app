@@ -1,4 +1,4 @@
-import { createRef, useEffect, useState } from "react";
+import { createRef, useState } from "react";
 import dayjs from "dayjs";
 import { IMessage } from "../lib/db";
 import { classNames, cleanHtmlString } from "../lib/util";
@@ -102,22 +102,6 @@ export default function Message({ message, folderId }: MessageProps) {
     setSendingReply(false);
   };
 
-  useEffect(() => {
-    if (showReply) {
-      if (replyRef.current) {
-        // Removed the following code so that on forward UI, the focus does not switch to editor when typing recipient address
-        // Consequence: When you click on reply/replyAll/forward, the editor still scrolls into view but without cursor
-        // if (editorRef.current) {
-        //   editorRef.current.focus();
-        // }
-        replyRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
-    }
-  }, [showReply, replyRef, editorRef]);
-
   return (
     <div className="w-full h-auto flex flex-col border border-slate-200 dark:border-zinc-700">
       <div
@@ -140,10 +124,6 @@ export default function Message({ message, folderId }: MessageProps) {
                   onClick={(e) => {
                     e.stopPropagation();
                     handleClickReply();
-                    replyRef.current?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "start",
-                    });
                   }}
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
