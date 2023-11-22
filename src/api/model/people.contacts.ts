@@ -1,17 +1,46 @@
 export interface GmailContactListDataType {
-  connections:
-    | {
-        resourceName: string;
-        names: {
-          displayName: string;
-          familyName: string;
-          givenName: string;
-        }[];
-        emailAddresses: {
-          value: string;
-        }[];
-      }[]
-    | undefined;
+  connections: GooglePersonDataType[] | undefined;
+  nextPageToken: string | undefined;
+  nextSyncToken: string | undefined;
+  totalPeople: number | undefined;
+  totalItems: number | undefined;
+}
+
+export interface GmailListDiscoveryPeopleDataType {
+  people: GooglePersonDataType[] | undefined;
+  nextPageToken: string | undefined;
+  nextSyncToken: string | undefined;
+}
+
+export interface GooglePersonDataType {
+  resourceName: string;
+  etag: string;
+  names: {
+    metadata: {
+      primary: boolean;
+      source: {
+        type: string;
+        id: string;
+      };
+    };
+    displayName: string;
+    familyName: string; // last name
+    givenName: string; // first name
+    displayNameLastFirst: string;
+    unstructuredName: string;
+  }[];
+  emailAddresses: {
+    metadata: {
+      verified: boolean;
+      sourcePrimary: boolean;
+      primary: boolean;
+      source: {
+        type: string;
+        id: string;
+      };
+    };
+    value: string; // the email
+  }[];
 }
 
 export interface OutlookContactListDataType {

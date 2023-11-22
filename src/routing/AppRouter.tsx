@@ -145,7 +145,7 @@ export default function AppRouter({ session }: AppRouterProps) {
         const now = new Date();
         const diff = now.getTime() - lastSyncTime.getTime();
         const days = diff / (1000 * 60 * 60 * 24);
-        console.log(lastSyncTime);
+
         if (days > 3) {
           const emails = await db.emails.toArray();
 

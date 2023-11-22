@@ -15,7 +15,10 @@ import {
   getAttachment as gAttachmentGet,
 } from "../api/gmail/users/messages";
 import { list as gHistoryList } from "../api/gmail/users/history";
-import { list as gContactList } from "../api/gmail/people/contact";
+import {
+  list as gContactList,
+  listDirectoryPeople,
+} from "../api/gmail/people/contact";
 import { getToRecipients, buildForwardedHTML } from "../api/gmail/helpers";
 
 import {
@@ -1136,14 +1139,30 @@ export async function loadContacts(
   const emailContacts: IContact[] = [];
 
   if (provider === "google") {
-    const { data, error } = await gContactList(accessToken);
+    const contactListData = await gContactList(accessToken);
+    const ldpData = await listDirectoryPeople(accessToken);
 
-    if (error || !data) {
-      dLog("Error loading contacts");
-      return { data: null, error };
+    const contacts = [];
+
+    dLog("ldpData.data", ldpData.data);
+    dLog("ldpData.error", ldpData.error);
+
+    if (contactListData.error || !contactListData.data) {
+      dLog("Error loading gmail contactList contacts");
     }
 
-    const contacts = data.connections || [];
+    if (ldpData.error || !ldpData.data) {
+      dLog("Error loading gmail listDiscoveryPeople contacts");
+    }
+
+    if (contactListData.data && contactListData.data.connections) {
+      contacts.push(...contactListData.data.connections);
+    }
+
+    if (ldpData.data && ldpData.data.people) {
+      contacts.push(...ldpData.data.people);
+    }
+
     for (const contact of contacts) {
       const contactName = contact.names?.[0]?.displayName || "";
       for (const contactEmail of contact.emailAddresses) {
