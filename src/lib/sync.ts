@@ -833,7 +833,9 @@ export async function sendReply(
   if (provider === "google") {
     const from = email;
     const to =
-      getMessageHeader(message.headers, "From").match(/<([^>]+)>/)?.[1] ||
+      getMessageHeader(message.headers, "From").match(
+        /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g
+      )?.[0] ||
       getMessageHeader(message.headers, "To") ||
       "";
     const subject = getMessageHeader(message.headers, "Subject");
