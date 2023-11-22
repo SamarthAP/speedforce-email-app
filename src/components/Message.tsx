@@ -180,7 +180,7 @@ export default function Message({ message, folderId }: MessageProps) {
         </div>
       </div>
 
-      {showReply && (
+      {showReply && showBody && (
         <div
           className="p-4 mb-8 border-y border-t-slate-200 dark:border-t-zinc-700"
           ref={replyRef}
