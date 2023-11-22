@@ -1,4 +1,4 @@
-import { OUTLOOK_API_URL, OUTLOOK_FOLDER_IDS_MAP } from "../constants";
+import { OUTLOOK_API_URL } from "../constants";
 import {
   OutlookThreadsListDataType,
   IThreadFilter,
@@ -121,42 +121,6 @@ export const forward = async (
       }),
     }
   );
-
-  // Returns 202 Accepted with no response body if successful
-  if (!response.ok) {
-    throw Error("Error replying to thread");
-  }
-};
-
-export const sendEmail = async (
-  accessToken: string,
-  to: string,
-  subject: string,
-  messageContent: string
-) => {
-  const response = await fetch(`${OUTLOOK_API_URL}/sendmail`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    method: "POST",
-    body: JSON.stringify({
-      message: {
-        subject: subject,
-        body: {
-          contentType: "html",
-          content: messageContent,
-        },
-        toRecipients: [
-          {
-            emailAddress: {
-              address: to,
-            },
-          },
-        ],
-      },
-    }),
-  });
 
   // Returns 202 Accepted with no response body if successful
   if (!response.ok) {

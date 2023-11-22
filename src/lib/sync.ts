@@ -23,13 +23,14 @@ import {
   list as mThreadList,
   listNextPage as mThreadListNextPage,
   markRead as mThreadMarkRead,
-  sendEmail as mSendEmail,
   forward as mForward,
   deleteMessage as mDeleteMessage,
   moveMessage as mMoveMessage,
   starMessage as mStarMessage,
 } from "../api/outlook/users/threads";
 import {
+  sendEmail as mSendEmail,
+  sendEmailWithAttachments as mSendEmailWithAttachments,
   sendReply as mSendReply,
   sendReplyAll as mSendReplyAll,
 } from "../api/outlook/users/message";
@@ -978,10 +979,20 @@ export async function sendEmailWithAttachments(
       attachments
     );
   } else if (provider === "outlook") {
-    // TODO: implement
-    return { data: null, error: "Not implemented" };
+    try {
+      await mSendEmailWithAttachments(
+        accessToken,
+        to,
+        subject,
+        html,
+        attachments
+      );
+
+      return { data: null, error: null };
+    } catch (e) {
+      return { data: null, error: "Error sending reply" };
+    }
   }
-  return { data: null, error: "Not implemented" };
 }
 
 export async function deleteThread(
