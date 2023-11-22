@@ -15,6 +15,7 @@ import {
   getAttachment as gAttachmentGet,
 } from "../api/gmail/users/messages";
 import { list as gHistoryList } from "../api/gmail/users/history";
+import { list as gContactList } from "../api/gmail/people/contact";
 import { getToRecipients, buildForwardedHTML } from "../api/gmail/helpers";
 
 import {
@@ -36,6 +37,7 @@ import {
   list as mAttachmentList,
   get as mAttachmentGet,
 } from "../api/outlook/users/attachment";
+import { list as mContactsList } from "../api/outlook/people/contacts";
 import {
   buildMessageHeadersOutlook,
   buildMessageLabelIdsOutlook,
@@ -46,7 +48,7 @@ import {
 } from "../api/outlook/helpers";
 
 import { getAccessToken } from "../api/accessToken";
-import { IAttachment, IEmailThread, IMessage, db } from "./db";
+import { IAttachment, IContact, IEmailThread, IMessage, db } from "./db";
 import {
   getGoogleMetaData,
   getOutlookMetaData,
@@ -54,7 +56,7 @@ import {
   setHistoryId,
 } from "./dexie/helpers";
 import { getMessageHeader, upsertLabelIds } from "./util";
-import _, { first } from "lodash";
+import _ from "lodash";
 import { dLog } from "./noProd";
 import {
   IThreadFilter,
@@ -1122,4 +1124,57 @@ export async function downloadAttachment(
   }
 
   return false;
+}
+
+export async function loadContacts(
+  email: string,
+  provider: "google" | "outlook"
+) {
+  const accessToken = await getAccessToken(email);
+  const emailContacts: IContact[] = [];
+
+  if (provider === "google") {
+    const { data, error } = await gContactList(accessToken);
+
+    if (error || !data) {
+      dLog("Error loading contacts");
+      return { data: null, error };
+    }
+
+    const contacts = data.connections || [];
+    for (const contact of contacts) {
+      const contactName = contact.names?.[0]?.displayName || "";
+      for (const contactEmail of contact.emailAddresses) {
+        emailContacts.push({
+          email: email,
+          contactName: contactName,
+          contactEmailAddress: contactEmail.value,
+          isSavedContact: true,
+          lastInteraction: 0,
+        });
+      }
+    }
+  } else if (provider === "outlook") {
+    const { data, error } = await mContactsList(accessToken);
+
+    if (error || !data) {
+      dLog("Error loading contacts");
+      return { data: null, error };
+    }
+
+    for (const contact of data) {
+      for (const contactEmail of contact.emailAddresses) {
+        emailContacts.push({
+          email: email,
+          contactName: contact.displayName,
+          contactEmailAddress: contactEmail.address,
+          isSavedContact: true,
+          lastInteraction: 0,
+        });
+      }
+    }
+  }
+
+  await db.contacts.bulkPut(emailContacts);
+  return { data: null, error: null };
 }

@@ -17,6 +17,7 @@ import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
 import toast from "react-hot-toast";
+import { EmailSelectorInput } from "./EmailSelectorInput";
 
 interface MessageProps {
   message: IMessage;
@@ -33,7 +34,7 @@ export default function Message({ message, folderId }: MessageProps) {
   const [editorMode, setEditorMode] = useState<
     "reply" | "replyAll" | "forward" | "none"
   >("none");
-  const [forwardTo, setForwardTo] = useState("");
+  const [forwardTo, setForwardTo] = useState<string[]>([]);
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
 
   const replyRef = createRef<HTMLDivElement>();
@@ -79,13 +80,11 @@ export default function Message({ message, folderId }: MessageProps) {
           html
         ));
       } else {
-        const toRecipients = forwardTo.split(/[ ,]+/);
-
         ({ error } = await forward(
           selectedEmail.email,
           selectedEmail.provider,
           message,
-          toRecipients,
+          forwardTo,
           html
         ));
       }
@@ -201,6 +200,42 @@ export default function Message({ message, folderId }: MessageProps) {
         </div>
       </div>
 
+      {showReply && (
+        <div
+          className="p-4 mb-8 border-y border-t-slate-200 dark:border-t-zinc-700"
+          ref={replyRef}
+        >
+          {editorMode === "reply" ? (
+            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
+              Write reply to {message.from}
+            </div>
+          ) : editorMode === "replyAll" ? (
+            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
+              Write reply to all
+            </div>
+          ) : editorMode === "forward" ? (
+            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
+              <EmailSelectorInput
+                text="Fwd To"
+                emails={forwardTo}
+                setEmails={setForwardTo}
+              />
+            </div>
+          ) : // <span className="flex flex-row items-center">
+          // </span>
+          null}
+
+          <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
+
+          <SimpleButton
+            onClick={() => void handleSendReply()}
+            loading={sendingReply}
+            text="Send"
+            width="w-16"
+          />
+        </div>
+      )}
+
       <div className="flex px-4 pb-4">
         <button
           className={classNames(
@@ -240,46 +275,6 @@ export default function Message({ message, folderId }: MessageProps) {
           ))}
         </div>
       }
-
-      {showReply && (
-        <div
-          className="p-4 border-t border-t-slate-200 dark:border-t-zinc-700"
-          ref={replyRef}
-        >
-          {editorMode === "reply" ? (
-            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
-              Write reply to {message.from}
-            </div>
-          ) : editorMode === "replyAll" ? (
-            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
-              Write reply to all
-            </div>
-          ) : editorMode === "forward" ? (
-            <span className="w-full flex flex-row items-center">
-              <div className="text-sm dark:text-zinc-400 text-slate-500 mr-4 whitespace-nowrap">
-                Forward to
-              </div>
-              <input
-                onChange={(event) => setForwardTo(event.target.value)}
-                type="email"
-                name="forwardTo"
-                id="forwardTo"
-                className="w-full block bg-transparent border-0 pr-20 dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6 border-bottom"
-                placeholder="..."
-              />
-            </span>
-          ) : null}
-
-          <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
-
-          <SimpleButton
-            onClick={() => void handleSendReply()}
-            loading={sendingReply}
-            text="Send"
-            width="w-16"
-          />
-        </div>
-      )}
     </div>
   );
 }

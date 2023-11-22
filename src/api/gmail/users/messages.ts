@@ -1,4 +1,3 @@
-import { unescape } from "lodash";
 import { dLog } from "../../../lib/noProd";
 import { GMAIL_API_URL } from "../constants";
 import { Base64 } from "js-base64";

@@ -9,6 +9,7 @@ import { dLog } from "../lib/noProd";
 import { PaperClipIcon, XCircleIcon } from "@heroicons/react/20/solid";
 import { classNames } from "../lib/util";
 import toast from "react-hot-toast";
+import { EmailSelectorInput } from "./EmailSelectorInput";
 import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
 
 interface WriteMessageProps {
@@ -27,7 +28,7 @@ export function WriteMessage({ setWriteEmailMode }: WriteMessageProps) {
   const editorRef = createRef<Editor>();
   const editorComponentRef = createRef<EditorComponentRef>();
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [to, setTo] = useState("");
+  const [to, setTo] = useState<string[]>([]);
   const [subject, setSubject] = useState("");
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
 
@@ -65,7 +66,7 @@ export function WriteMessage({ setWriteEmailMode }: WriteMessageProps) {
         const { error } = await sendEmailWithAttachments(
           selectedEmail.email,
           selectedEmail.provider,
-          to,
+          to.join(","),
           subject,
           html,
           attachments
@@ -80,7 +81,7 @@ export function WriteMessage({ setWriteEmailMode }: WriteMessageProps) {
         const { error } = await sendEmail(
           selectedEmail.email,
           selectedEmail.provider,
-          to,
+          to.join(","),
           subject,
           html
         );
@@ -116,20 +117,7 @@ export function WriteMessage({ setWriteEmailMode }: WriteMessageProps) {
       <div className="dark:text-white p-4 w-full">New Message</div>
       <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll">
         <div className="border border-slate-200 dark:border-zinc-700">
-          <div className="flex py-2">
-            {/* Input */}
-            <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center justify-end">
-              To
-            </div>
-            <input
-              onChange={(event) => setTo(event.target.value)}
-              type="email"
-              name="to"
-              id="to"
-              className="w-full block bg-transparent border-0 pl-10 pr-20 dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
-              placeholder="..."
-            />
-          </div>
+          <EmailSelectorInput text="To" emails={to} setEmails={setTo} />
           <div className="flex pb-2 border-b border-b-slate-200 dark:border-b-zinc-700">
             {/* Input */}
             <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center justify-end">
