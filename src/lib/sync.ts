@@ -18,6 +18,7 @@ import { list as gHistoryList } from "../api/gmail/users/history";
 import {
   list as gContactList,
   listDirectoryPeople,
+  listOtherContacts,
 } from "../api/gmail/people/contact";
 import { getToRecipients, buildForwardedHTML } from "../api/gmail/helpers";
 
@@ -1136,16 +1137,15 @@ export async function loadContacts(
   provider: "google" | "outlook"
 ) {
   const accessToken = await getAccessToken(email);
-  const emailContacts: IContact[] = [];
+  // so we don't have duplicates when loading contacts from multiple sources
+  const emailContactsMap = new Map<string, IContact>();
 
   if (provider === "google") {
     const contactListData = await gContactList(accessToken);
     const ldpData = await listDirectoryPeople(accessToken);
+    const otherContactsData = await listOtherContacts(accessToken);
 
     const contacts = [];
-
-    dLog("ldpData.data", ldpData.data);
-    dLog("ldpData.error", ldpData.error);
 
     if (contactListData.error || !contactListData.data) {
       dLog("Error loading gmail contactList contacts");
@@ -1153,6 +1153,10 @@ export async function loadContacts(
 
     if (ldpData.error || !ldpData.data) {
       dLog("Error loading gmail listDiscoveryPeople contacts");
+    }
+
+    if (otherContactsData.error || !otherContactsData.data) {
+      dLog("Error loading gmail listOtherContacts contacts");
     }
 
     if (contactListData.data && contactListData.data.connections) {
@@ -1163,16 +1167,22 @@ export async function loadContacts(
       contacts.push(...ldpData.data.people);
     }
 
+    if (otherContactsData.data && otherContactsData.data.otherContacts) {
+      contacts.push(...otherContactsData.data.otherContacts);
+    }
+
     for (const contact of contacts) {
       const contactName = contact.names?.[0]?.displayName || "";
       for (const contactEmail of contact.emailAddresses) {
-        emailContacts.push({
-          email: email,
-          contactName: contactName,
-          contactEmailAddress: contactEmail.value,
-          isSavedContact: true,
-          lastInteraction: 0,
-        });
+        if (!emailContactsMap.has(contactEmail.value)) {
+          emailContactsMap.set(contactEmail.value, {
+            email: email,
+            contactName: contactName,
+            contactEmailAddress: contactEmail.value,
+            isSavedContact: true,
+            lastInteraction: 0,
+          });
+        }
       }
     }
   } else if (provider === "outlook") {
@@ -1185,17 +1195,19 @@ export async function loadContacts(
 
     for (const contact of data) {
       for (const contactEmail of contact.emailAddresses) {
-        emailContacts.push({
-          email: email,
-          contactName: contact.displayName,
-          contactEmailAddress: contactEmail.address,
-          isSavedContact: true,
-          lastInteraction: 0,
-        });
+        if (!emailContactsMap.has(contactEmail.address)) {
+          emailContactsMap.set(contactEmail.address, {
+            email: email,
+            contactName: contact.displayName,
+            contactEmailAddress: contactEmail.address,
+            isSavedContact: true,
+            lastInteraction: 0,
+          });
+        }
       }
     }
   }
 
-  await db.contacts.bulkPut(emailContacts);
+  await db.contacts.bulkPut(Array.from(emailContactsMap.values()));
   return { data: null, error: null };
 }

@@ -12,6 +12,13 @@ export interface GmailListDiscoveryPeopleDataType {
   nextSyncToken: string | undefined;
 }
 
+export interface GmailListOtherContactsDataType {
+  otherContacts: GooglePersonDataType[] | undefined;
+  nextPageToken: string | undefined;
+  nextSyncToken: string | undefined;
+  totalSize: number | undefined;
+}
+
 export interface GooglePersonDataType {
   resourceName: string;
   etag: string;
