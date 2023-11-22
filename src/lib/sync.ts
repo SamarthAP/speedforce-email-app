@@ -952,7 +952,7 @@ export async function sendEmail(
 
       return { data: null, error: null };
     } catch (e) {
-      return { data: null, error: "Error sending reply" };
+      return { data: null, error: "Error sending email" };
     }
   }
 
@@ -990,7 +990,7 @@ export async function sendEmailWithAttachments(
 
       return { data: null, error: null };
     } catch (e) {
-      return { data: null, error: "Error sending reply" };
+      return { data: null, error: "Error sending email" };
     }
   }
 }
