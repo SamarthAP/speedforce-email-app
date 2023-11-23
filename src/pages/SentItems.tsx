@@ -3,6 +3,7 @@ import { FOLDER_IDS } from "../api/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
+import { ClientInboxTabType } from "../api/model/client.inbox";
 
 // TODO: May be able to abstract this away as well
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now
@@ -26,15 +27,17 @@ export default function SentItems() {
       .reverse()
       .sortBy("date");
 
-  return (
-    <ThreadView
-      folderId={FOLDER_IDS.SENT}
-      title="Sent"
-      gmailFetchQuery={gmailFetchQuery}
-      outlookFetchQuery={outlookFetchQuery}
-      filterThreadsFnc={filterThreadsFnc}
-      canArchiveThread
-      canTrashThread
-    />
-  );
+  const tabs: ClientInboxTabType[] = [
+    {
+      title: "Sent",
+      folderId: FOLDER_IDS.SENT,
+      gmailQuery: gmailFetchQuery,
+      outlookQuery: outlookFetchQuery,
+      filterThreadsFnc: filterThreadsFnc,
+      canArchiveThread: true,
+      canTrashThread: true,
+    },
+  ];
+
+  return <ThreadView tabs={tabs} />;
 }

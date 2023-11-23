@@ -3,32 +3,60 @@ import { FOLDER_IDS } from "../api/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
+import { ClientInboxTabType } from "../api/model/client.inbox";
 
 export default function Home() {
-  const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
+  const gmailFetchQueryImportant = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
     FOLDER_IDS.INBOX
   )}`;
-  const outlookFetchQuery = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
+  const outlookFetchQueryImportant = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
     FOLDER_IDS.INBOX
   )}/messages?$select=id,conversationId,createdDateTime&$top=20`;
 
-  const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
+  const filterThreadsFncImportant = (selectedEmail: ISelectedEmail) =>
     db.emailThreads
       .where("email")
       .equals(selectedEmail.email)
-      .and((thread) => thread.labelIds.includes(FOLDER_IDS.INBOX))
+      .and(
+        (thread) =>
+          thread.labelIds.includes(FOLDER_IDS.INBOX) &&
+          thread.labelIds.includes("IMPORTANT")
+      )
       .reverse()
       .sortBy("date");
 
-  return (
-    <ThreadView
-      folderId={FOLDER_IDS.INBOX}
-      title="Important"
-      gmailFetchQuery={gmailFetchQuery}
-      outlookFetchQuery={outlookFetchQuery}
-      filterThreadsFnc={filterThreadsFnc}
-      canArchiveThread
-      canTrashThread
-    />
-  );
+  const filterThreadsFncOther = (selectedEmail: ISelectedEmail) =>
+    db.emailThreads
+      .where("email")
+      .equals(selectedEmail.email)
+      .and(
+        (thread) =>
+          thread.labelIds.includes(FOLDER_IDS.INBOX) &&
+          !thread.labelIds.includes("IMPORTANT")
+      )
+      .reverse()
+      .sortBy("date");
+
+  const tabs: ClientInboxTabType[] = [
+    {
+      title: "Important",
+      folderId: FOLDER_IDS.INBOX,
+      gmailQuery: gmailFetchQueryImportant,
+      outlookQuery: outlookFetchQueryImportant,
+      filterThreadsFnc: filterThreadsFncImportant,
+      canArchiveThread: true,
+      canTrashThread: true,
+    },
+    {
+      title: "Other",
+      folderId: FOLDER_IDS.INBOX,
+      gmailQuery: gmailFetchQueryImportant,
+      outlookQuery: outlookFetchQueryImportant,
+      filterThreadsFnc: filterThreadsFncOther,
+      canArchiveThread: true,
+      canTrashThread: true,
+    },
+  ];
+
+  return <ThreadView tabs={tabs} />;
 }
