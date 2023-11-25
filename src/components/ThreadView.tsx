@@ -150,24 +150,22 @@ export default function ThreadView({ tabs }: ThreadViewProps) {
       <Sidebar />
       <div className="w-full flex flex-col overflow-hidden">
         <div className="flex flex-row items-center justify-between">
-          <div className="hidden sm:block">
-            <nav className="-mb-px flex items-center" aria-label="Tabs">
-              {tabs.map((tab) => (
-                <h2
-                  key={tab.title}
-                  onClick={() => setSelectedTab(tab)}
-                  className={classNames(
-                    "select-none ml-4 tracking-wide my-4 text-lg px-2 py-1 rounded-md cursor-pointer",
-                    tab.title === selectedTab.title
-                      ? "font-medium text-black dark:text-white"
-                      : "text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-100 dark:hover:bg-gray-700"
-                  )}
-                >
-                  {tab.title}
-                </h2>
-              ))}
-            </nav>
-          </div>
+          <nav className="flex items-center pl-6" aria-label="Tabs">
+            {tabs.map((tab) => (
+              <h2
+                key={tab.title}
+                onClick={() => setSelectedTab(tab)}
+                className={classNames(
+                  "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
+                  tab.title === selectedTab.title
+                    ? "font-medium text-black dark:text-white"
+                    : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-500 dark:hover:text-slate-100 dark:hover:bg-zinc-700"
+                )}
+              >
+                {tab.title}
+              </h2>
+            ))}
+          </nav>
           <div className="flex items-center">
             <button
               className="mr-3"
@@ -179,7 +177,7 @@ export default function ThreadView({ tabs }: ThreadViewProps) {
                 setWriteEmailMode(true);
               }}
             >
-              <PencilSquareIcon className="h-5 w-5 mb-2 shrink-0 text-black dark:text-white" />
+              <PencilSquareIcon className="h-5 w-5 shrink-0 text-black dark:text-white" />
             </button>
             <button
               className="mr-3"
@@ -191,7 +189,7 @@ export default function ThreadView({ tabs }: ThreadViewProps) {
             >
               <ArrowPathIcon
                 className={classNames(
-                  "h-5 w-5 mb-2 shrink-0 text-black dark:text-white",
+                  "h-5 w-5 shrink-0 text-black dark:text-white",
                   refreshing ? "animate-spin" : ""
                 )}
               />
