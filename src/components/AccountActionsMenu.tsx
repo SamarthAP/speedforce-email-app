@@ -49,7 +49,7 @@ export default function AccountActions(props: AccountActionsProps) {
   };
 
   return (
-    <>
+    <div className="relative flex flex-col items-center">
       <Menu>
         <Menu.Button
           className="mr-3"
@@ -190,6 +190,6 @@ export default function AccountActions(props: AccountActionsProps) {
           </div>
         </Dialog>
       </Transition.Root>
-    </>
+    </div>
   );
 }
