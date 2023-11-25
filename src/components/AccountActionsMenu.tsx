@@ -49,9 +49,10 @@ export default function AccountActions(props: AccountActionsProps) {
   };
 
   return (
-    <div className="relative">
+    <div className="relative flex flex-col items-center">
       <Menu>
         <Menu.Button
+          className="mr-3"
           onMouseEnter={(event: React.MouseEvent<HTMLElement>) => {
             props.handleMouseEnter(event, "Account Actions");
           }}

@@ -246,8 +246,6 @@ async function handleNewThreadsOutlook(
   threadsIds: string[],
   filter: IThreadFilter
 ) {
-  // const promises = threadsIds.map((threadId) =>
-
   try {
     // Outlook throttle limit is 4 concurrent requests
     const threads = await batchGetThreads(accessToken, threadsIds, 4);
@@ -257,6 +255,7 @@ async function handleNewThreadsOutlook(
     for (const thread of threads) {
       let unread = false;
       let isStarred = false;
+      let isImportant = false;
       let labelIds: string[] = [];
       for (const message of thread.value) {
         if (!message.isRead) {
@@ -265,10 +264,14 @@ async function handleNewThreadsOutlook(
         if (message.flag && message.flag.flagStatus === "flagged") {
           isStarred = true;
         }
+        if (message.inferenceClassification.toLowerCase() === "focused") {
+          isImportant = true;
+        }
       }
 
       if (isStarred) labelIds = upsertLabelIds(labelIds, "STARRED");
       if (unread) labelIds = upsertLabelIds(labelIds, "UNREAD");
+      if (isImportant) labelIds = upsertLabelIds(labelIds, "IMPORTANT");
 
       for (const message of thread.value) {
         let textData = "";
