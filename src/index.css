@@ -9,3 +9,16 @@
 .no-text-select {
   -webkit-user-select: none; /* only need webkit because electron runs on chromium */
 }
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.fadeIn-animation {
+  animation: fadeIn 1s;
+}

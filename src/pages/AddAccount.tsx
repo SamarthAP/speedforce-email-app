@@ -124,6 +124,8 @@ export default function AddAccount() {
                 threadsListNextPageTokens: [],
               });
             }
+
+            // NOTE: inboxZeroMetadata is set in the inboxZeroSetup page
           }
         }
       } catch (e) {
