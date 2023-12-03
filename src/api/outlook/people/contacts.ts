@@ -6,7 +6,7 @@ export const list = async (accessToken: string) => {
   let error: string | null = null;
 
   const res = await fetch(
-    `${OUTLOOK_API_URL}/contacts?$select=id,givenName,surname,displayName,emailAddresses`,
+    `${OUTLOOK_API_URL}/me/contacts?$select=id,givenName,surname,displayName,emailAddresses`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

@@ -9,7 +9,7 @@ export const get = async (
 ) => {
   const fields = fieldSet.join(",").trim();
   const response = await fetch(
-    `${OUTLOOK_API_URL}/messages/${messageId}?$select=${fields}'`,
+    `${OUTLOOK_API_URL}/me/messages/${messageId}?$select=${fields}'`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -31,7 +31,7 @@ export const sendEmail = async (
   subject: string,
   messageContent: string
 ) => {
-  const response = await fetch(`${OUTLOOK_API_URL}/sendmail`, {
+  const response = await fetch(`${OUTLOOK_API_URL}/me/sendmail`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
@@ -68,7 +68,7 @@ export const sendEmailWithAttachments = async (
   messageContent: string,
   attachments: NewAttachment[]
 ) => {
-  const response = await fetch(`${OUTLOOK_API_URL}/sendmail`, {
+  const response = await fetch(`${OUTLOOK_API_URL}/me/sendmail`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
@@ -114,7 +114,7 @@ export const sendReply = async (
   messageContent: string
 ) => {
   const response = await fetch(
-    `${OUTLOOK_API_URL}/messages/${messageId}/reply`,
+    `${OUTLOOK_API_URL}/me/messages/${messageId}/reply`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -146,7 +146,7 @@ export const sendReplyAll = async (
   messageContent: string
 ) => {
   const response = await fetch(
-    `${OUTLOOK_API_URL}/messages/${messageId}/replyAll`,
+    `${OUTLOOK_API_URL}/me/messages/${messageId}/replyAll`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

@@ -1,9 +1,7 @@
 import { WatchResponseType } from "../../model/notifications";
 import { getAccessToken } from "../../accessToken";
 
-export const watch = async (email: string) => {
-  const accessToken = await getAccessToken(email);
-
+export const watch = async (accessToken: string, email: string) => {
   let data: WatchResponseType | null = null;
   let error: string | null = null;
 
