@@ -38,7 +38,7 @@ export default function AppRouter({ session }: AppRouterProps) {
   );
   const inboxZeroMetadata = useLiveQuery(
     () => db.inboxZeroMetadata.get(selectedEmail?.email || ""),
-    [selectedEmail]
+    [selectedEmail, selectedEmail?.email]
   );
 
   // TODO: could update dependencies to include the other data that is awaited
