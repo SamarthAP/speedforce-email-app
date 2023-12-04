@@ -5,7 +5,6 @@ import { ISelectedEmail, db } from "../lib/db";
 import { classNames } from "../lib/util";
 import { useState } from "react";
 import { dLog } from "../lib/noProd";
-import { useNavigate } from "react-router-dom";
 
 const panelStyles = classNames(
   "rounded-lg px-2 py-2 text-center dark:text-white",
@@ -42,7 +41,6 @@ interface InboxZeroSetupPageProps {
 export default function InboxZeroSetup({
   selectedEmail,
 }: InboxZeroSetupPageProps) {
-  const navigate = useNavigate();
   const [selectedTabIndex, setSelectedTabIndex] = useState<number>(0);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -65,13 +63,11 @@ export default function InboxZeroSetup({
                 key={tab}
                 className={({ selected }) => {
                   return classNames(
-                    classNames(
-                      "w-full rounded-md py-0.5 text-xs font-medium leading-5",
-                      "focus:outline-none",
-                      selected
-                        ? "bg-white dark:bg-zinc-900 text-black dark:text-white shadow"
-                        : "text-slate-700 dark:text-zinc-200 hover:bg-slate-300 dark:hover:bg-zinc-600"
-                    )
+                    "w-full rounded-md py-0.5 text-xs font-medium leading-5",
+                    "focus:outline-none",
+                    selected
+                      ? "bg-white dark:bg-zinc-900 text-black dark:text-white shadow"
+                      : "text-slate-700 dark:text-zinc-200 hover:bg-slate-300 dark:hover:bg-zinc-600"
                   );
                 }}
               >
