@@ -85,6 +85,11 @@ export interface IContact {
   lastInteraction: number; // Prioiritize contacts with recent interactions?
 }
 
+export interface IInboxZeroMetadata {
+  email: string;
+  inboxZeroStartDate: number;
+}
+
 export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
@@ -94,6 +99,7 @@ export class SubClassedDexie extends Dexie {
   messages!: Table<IMessage, string>;
   outlookFolders!: Table<IOutlookFolder, string>;
   contacts!: Table<IContact, string>;
+  inboxZeroMetadata!: Table<IInboxZeroMetadata, string>;
 
   constructor() {
     super("SpeedforceDB");
@@ -109,6 +115,9 @@ export class SubClassedDexie extends Dexie {
     this.version(4)
       .stores(dexieSchemas[4].schema)
       .upgrade(dexieSchemas[4].upgradeFnc);
+    this.version(5)
+      .stores(dexieSchemas[5].schema)
+      .upgrade(dexieSchemas[5].upgradeFnc);
   }
 }
 
