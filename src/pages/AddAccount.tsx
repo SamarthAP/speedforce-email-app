@@ -23,8 +23,10 @@ async function insertEmail(
 }
 
 const manualInsertEmail = async () => {
+  const email = "samarth@sigilinnovation.com";
+
   await insertEmail(
-    "samarth@sigilinnovation.com",
+    email,
     "google",
     "ya29.something",
     1688333423087 // new Date().getTime()
@@ -32,12 +34,12 @@ const manualInsertEmail = async () => {
 
   await db.selectedEmail.put({
     id: 1,
-    email: "samarth@sigilinnovation.com",
+    email: email,
     provider: "google",
   });
 
   await db.googleMetadata.put({
-    email: "samarth@sigilinnovation.com",
+    email: email,
     historyId: "0",
     threadsListNextPageTokens: [],
   });
@@ -124,6 +126,8 @@ export default function AddAccount() {
                 threadsListNextPageTokens: [],
               });
             }
+
+            // NOTE: inboxZeroMetadata is set in the inboxZeroSetup page
           }
         }
       } catch (e) {

@@ -19,6 +19,7 @@ import { useCallback, useEffect } from "react";
 import { getAccessToken } from "../api/accessToken";
 import { loadContacts, partialSync, watchSubscription } from "../lib/sync";
 import { handleMessage } from "../lib/wsHelpers";
+import InboxZeroSetup from "../pages/InboxZeroSetup";
 
 interface AppRouterProps {
   session: Session;
@@ -33,6 +34,10 @@ export default function AppRouter({ session }: AppRouterProps) {
       db.selectedEmail.get(1).then((selectedEmail) => [selectedEmail, true]),
     [],
     []
+  );
+  const inboxZeroMetadata = useLiveQuery(
+    () => db.inboxZeroMetadata.get(selectedEmail?.email || ""),
+    [selectedEmail, selectedEmail?.email]
   );
 
   // TODO: could update dependencies to include the other data that is awaited
@@ -168,11 +173,19 @@ export default function AppRouter({ session }: AppRouterProps) {
     return <div className="h-screen w-screen"></div>;
   }
 
+  // add initialEntries={["/page/inboxZeroSetup"]} to Router to force a specific route
   return (
     <Router>
       <Routes>
         {!selectedEmail ? (
           <Route path="/" element={<AddAccount />} />
+        ) : selectedEmail && !inboxZeroMetadata ? (
+          <>
+            <Route
+              path="/"
+              element={<InboxZeroSetup selectedEmail={selectedEmail} />}
+            />
+          </>
         ) : (
           <>
             <Route
@@ -224,6 +237,10 @@ export default function AppRouter({ session }: AppRouterProps) {
               <Route index element={<WeekCalendarPage />} />
             </Route>
             <Route path="/page/addAccount" element={<AddAccount />} />
+            <Route
+              path="/page/inboxZeroSetup"
+              element={<InboxZeroSetup selectedEmail={selectedEmail} />}
+            />
           </>
         )}
       </Routes>
