@@ -1,6 +1,6 @@
 import { OUTLOOK_API_URL } from "../constants";
 import { OutlookSubscriptionType } from "../../model/notifications";
-import { SPEEDFORCE_API_URL } from "../../constants";
+import { SPEEDFORCE_WS_HTTP_URL } from "../../constants";
 import { getOutlookSubscriptionExpirationDateTime } from "../helpers";
 
 export const list = async (accessToken: string) => {
@@ -37,7 +37,7 @@ export const create = async (accessToken: string, email: string) => {
     },
     body: JSON.stringify({
       changeType: "created",
-      notificationUrl: `${SPEEDFORCE_API_URL}/rt/subscription`,
+      notificationUrl: `${SPEEDFORCE_WS_HTTP_URL}/rt/subscription/${email}`,
       resource: `me/messages`,
       expirationDateTime: expirationDateTime,
       clientState: "OutlookNotification",
