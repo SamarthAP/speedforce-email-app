@@ -1241,6 +1241,7 @@ export async function watchSubscription(
   if (provider === "google") {
     return watchGmail(accessToken, email);
   } else if (provider === "outlook") {
+    // Get list of subscriptions
     const { data, error } = await mSubscriptionsList(accessToken);
 
     if (error || data === null) {
@@ -1248,7 +1249,7 @@ export async function watchSubscription(
       return { data: null, error };
     }
 
-    console.log(data);
+    // Filter for inbox subscriptions that are still active
     const activeSubscriptions = data.filter(
       (s) =>
         s.expirationDateTime > new Date().toISOString() &&

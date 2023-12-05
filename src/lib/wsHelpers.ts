@@ -18,7 +18,6 @@ export async function handleMessage(event: MessageEvent) {
       });
     }
   } else {
-    // TODO: handle outlook notifications
     const metadata = await db.outlookMetadata
       .where("email")
       .equals(data.messageData.email)
