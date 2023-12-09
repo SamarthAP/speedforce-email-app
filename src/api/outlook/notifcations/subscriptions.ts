@@ -45,7 +45,6 @@ export const create = async (accessToken: string, email: string) => {
     }),
   });
 
-  console.log(res);
   if (!res.ok) {
     error = "Error creating subscription";
   } else {
