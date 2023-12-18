@@ -20,6 +20,8 @@ import { getAccessToken } from "../api/accessToken";
 import { loadContacts, partialSync, watchSubscription } from "../lib/sync";
 import { handleMessage } from "../lib/wsHelpers";
 import InboxZeroSetup from "../pages/InboxZeroSetup";
+import SearchThreads from "../pages/SearchThreads";
+import Search from "../pages/Search";
 
 interface AppRouterProps {
   session: Session;
@@ -229,6 +231,12 @@ export default function AppRouter({ session }: AppRouterProps) {
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
               <Route index element={<Done />} />
+            </Route>
+            <Route
+              path="/search"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<Search />} />
             </Route>
             <Route
               path="/calendar"

@@ -2,6 +2,10 @@ import { Base64 } from "js-base64";
 import DomPurify from "dompurify";
 import { db } from "./db";
 import { dLog } from "./noProd";
+import { FOLDER_IDS } from "../api/constants";
+import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
+import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
+import { BidirectionalMap } from "../api/model/bidirectionalMap";
 
 export function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -151,4 +155,62 @@ export async function updateLabelIdsForEmailThread(
 
 export function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function getLabelIdFromSearchFolder(
+  provider: "google" | "outlook",
+  folder: string
+) {
+  const map: BidirectionalMap<string, string> =
+    provider === "google" ? GMAIL_FOLDER_IDS_MAP : OUTLOOK_FOLDER_IDS_MAP;
+
+  console.log("folder", folder);
+  switch (folder) {
+    case "inbox":
+      return map.getValue(FOLDER_IDS.INBOX) || "";
+    case "sent":
+      return map.getValue(FOLDER_IDS.SENT) || "";
+    case "drafts":
+      return map.getValue(FOLDER_IDS.DRAFTS) || "";
+    case "archive":
+      return map.getValue(FOLDER_IDS.DONE) || "";
+    case "trash":
+      return map.getValue(FOLDER_IDS.TRASH) || "";
+    default:
+      return map.getValue(FOLDER_IDS.INBOX) || "";
+  }
+}
+
+export function buildSearchQuery(
+  provider: "google" | "outlook",
+  searchItems: string[]
+) {
+  if (provider === "google") {
+    // TODO: implement
+    return ``;
+  } else if (provider === "outlook") {
+    let folderId: string = "";
+    let filters: string[] = [];
+    for (const item of searchItems) {
+      if (item.startsWith("in:")) {
+        // Set the folder id of the search query, default to /messages
+        folderId = `mailFolders/${getLabelIdFromSearchFolder(
+          provider,
+          item.slice(3)
+        )}/`;
+      } else if (item.startsWith("from:") || item.startsWith("to:")) {
+        // To/from filters can be pushed as plain strings "to:query" or "from:query"
+        filters.push(item);
+      } else {
+        // If action not recognized, push as a plain string
+        filters.push(item);
+      }
+    }
+
+    return `${folderId}messages?$select=id,conversationId,createdDateTime&$top=20${
+      filters.length > 0 ? '&$search="' + filters.join(" AND ") + '"' : ""
+    }`;
+  }
+
+  return "";
 }

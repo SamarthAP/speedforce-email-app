@@ -90,6 +90,12 @@ export interface IInboxZeroMetadata {
   inboxZeroStartDate: number;
 }
 
+export interface ISearchQuery {
+  query: string;
+  lastInteraction: number;
+  numInteractions: number; // TODO: consider using this to prioritize search results
+}
+
 export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
@@ -100,6 +106,7 @@ export class SubClassedDexie extends Dexie {
   outlookFolders!: Table<IOutlookFolder, string>;
   contacts!: Table<IContact, string>;
   inboxZeroMetadata!: Table<IInboxZeroMetadata, string>;
+  searchQueries!: Table<ISearchQuery, string>;
 
   constructor() {
     super("SpeedforceDB");

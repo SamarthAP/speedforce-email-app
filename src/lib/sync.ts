@@ -67,7 +67,7 @@ import {
   setPageToken,
   setHistoryId,
 } from "./dexie/helpers";
-import { getMessageHeader, upsertLabelIds } from "./util";
+import { buildSearchQuery, getMessageHeader, upsertLabelIds } from "./util";
 import _ from "lodash";
 import { dLog } from "./noProd";
 import {
@@ -362,10 +362,11 @@ async function handleNewThreadsOutlook(
 
     await db.emailThreads.bulkPut(parsedThreads);
     await db.messages.bulkPut(parsedMessages);
+    return parsedThreads;
   } catch (e) {
     dLog("Could not sync mailbox");
     dLog(e);
-    return;
+    return [];
   }
 }
 
@@ -488,10 +489,7 @@ async function partialSyncOutlook(email: string, filter: IThreadFilter) {
   let error: string | null = null;
 
   // Fetch the top 20 threads
-  ({ data, error } = await mThreadList(accessToken, {
-    ...filter,
-    outlookQuery: "messages?$select=id,conversationId,createdDateTime&$top=20",
-  }));
+  ({ data, error } = await mThreadList(accessToken, filter));
 
   if (error || !data) {
     dLog("Error syncing mailbox");
@@ -1270,4 +1268,51 @@ export async function watchSubscription(
   }
 
   return { data: null, error: "Not implemented" };
+}
+
+export async function search(
+  email: string,
+  provider: "google" | "outlook",
+  searchItems: string[]
+) {
+  const accessToken = await getAccessToken(email);
+
+  // TODO: delete after inbox zero, since folderId will be deprecated
+  const searchQuery = buildSearchQuery(provider, searchItems);
+  const filter: IThreadFilter = {
+    folderId: FOLDER_IDS.INBOX,
+    gmailQuery: searchQuery,
+    outlookQuery: searchQuery,
+  };
+
+  console.log(searchItems);
+  console.log(filter);
+
+  if (provider === "google") {
+    // TODO: implement
+  } else if (provider === "outlook") {
+    const { data, error } = await mThreadList(accessToken, filter);
+
+    console.log(data);
+    if (error || !data) {
+      dLog("Error searching mailbox");
+      return { data: [], error };
+    }
+
+    const threadIds = _.uniq(data.value.map((thread) => thread.conversationId));
+
+    let parsedThreads: IEmailThread[] = [];
+    // if (threadIds.length > 0) {
+    //   parsedThreads = await handleNewThreadsOutlook(
+    //     accessToken,
+    //     email,
+    //     threadIds,
+    //     filter
+    //   );
+    // }
+
+    return { data: parsedThreads, error: null };
+  }
+
+  return { data: [], error: null };
 }

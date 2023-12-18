@@ -12,7 +12,9 @@ export const list = async (accessToken: string, filter: IThreadFilter) => {
 
   try {
     const res: Response = await fetch(
-      `${OUTLOOK_API_URL}/me/${filter.outlookQuery}`,
+      `${OUTLOOK_API_URL}/me/${
+        filter.outlookQuery ? filter.outlookQuery : "messages"
+      }`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
