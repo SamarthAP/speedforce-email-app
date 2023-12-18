@@ -17,8 +17,7 @@ import { SPEEDFORCE_WS_URL, FOLDER_IDS } from "../api/constants";
 import { dLog } from "../lib/noProd";
 import { useCallback, useEffect } from "react";
 import { getAccessToken } from "../api/accessToken";
-import { watch } from "../api/gmail/notifications/pushNotifications";
-import { loadContacts, partialSync } from "../lib/sync";
+import { loadContacts, partialSync, watchSubscription } from "../lib/sync";
 import { handleMessage } from "../lib/wsHelpers";
 import InboxZeroSetup from "../pages/InboxZeroSetup";
 
@@ -72,7 +71,7 @@ export default function AppRouter({ session }: AppRouterProps) {
   useEffect(() => {
     // send watch command, should prob do for all emails that we want to watch
     if (selectedEmail) {
-      void watch(selectedEmail.email);
+      void watchSubscription(selectedEmail.email, selectedEmail.provider);
     }
   }, [session, selectedEmail]);
 
@@ -125,7 +124,10 @@ export default function AppRouter({ session }: AppRouterProps) {
         if (days > 3 && selectedEmail) {
           dLog("on render sync");
 
-          const { data, error } = await watch(selectedEmail.email);
+          const { data, error } = await watchSubscription(
+            selectedEmail.email,
+            selectedEmail.provider
+          );
           if (error || !data) {
             dLog(error);
             return;

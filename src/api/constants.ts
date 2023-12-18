@@ -8,6 +8,11 @@ export const SPEEDFORCE_WS_URL =
     ? "wss://ws.speedforce.me"
     : "wss://preprod.ws.speedforce.me";
 
+export const SPEEDFORCE_WS_HTTP_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://ws.speedforce.me"
+    : "https://preprod.ws.speedforce.me";
+
 export const FOLDER_IDS = {
   INBOX: "ID_INBOX",
   SENT: "ID_SENT",

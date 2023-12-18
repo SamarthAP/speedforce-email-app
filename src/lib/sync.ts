@@ -20,6 +20,7 @@ import {
   listDirectoryPeople,
   listOtherContacts,
 } from "../api/gmail/people/contact";
+import { watch as watchGmail } from "../api/gmail/notifications/pushNotifications";
 import { getToRecipients, buildForwardedHTML } from "../api/gmail/helpers";
 
 import {
@@ -44,12 +45,18 @@ import {
 } from "../api/outlook/users/attachment";
 import { list as mContactsList } from "../api/outlook/people/contacts";
 import {
+  list as mSubscriptionsList,
+  create as mSubscriptionsCreate,
+  updateExpirationDateTime as mSubscriptionsUpdateExpirationDateTime,
+} from "../api/outlook/notifcations/subscriptions";
+import {
   buildMessageHeadersOutlook,
   buildMessageLabelIdsOutlook,
   addLabelIdsOutlook,
   removeLabelIdsOutlook,
   getFolderNameFromIdOutlook,
   getOutlookHistoryIdFromDateTime,
+  getOutlookSubscriptionExpirationDateTime,
 } from "../api/outlook/helpers";
 
 import { getAccessToken } from "../api/accessToken";
@@ -1224,4 +1231,43 @@ export async function loadContacts(
 
   await db.contacts.bulkPut(Array.from(emailContactsMap.values()));
   return { data: null, error: null };
+}
+
+export async function watchSubscription(
+  email: string,
+  provider: "google" | "outlook"
+) {
+  const accessToken = await getAccessToken(email);
+  if (provider === "google") {
+    return watchGmail(accessToken, email);
+  } else if (provider === "outlook") {
+    // Get list of subscriptions
+    const { data, error } = await mSubscriptionsList(accessToken);
+
+    if (error || data === null) {
+      dLog("Error getting subscriptions");
+      return { data: null, error };
+    }
+
+    // Filter for inbox subscriptions that are still active
+    const activeSubscriptions = data.filter(
+      (s) =>
+        s.expirationDateTime > new Date().toISOString() &&
+        s.resource === "me/messages"
+    );
+    if (activeSubscriptions.length > 0) {
+      // Update expiration date time to 3 days from now
+      const newExpirationDateTime = getOutlookSubscriptionExpirationDateTime();
+      return await mSubscriptionsUpdateExpirationDateTime(
+        accessToken,
+        activeSubscriptions[0].id,
+        newExpirationDateTime
+      );
+    } else {
+      // Create new subscription
+      return await mSubscriptionsCreate(accessToken, email);
+    }
+  }
+
+  return { data: null, error: "Not implemented" };
 }

@@ -117,3 +117,9 @@ export function isOutlookNextPageTokenNewer(
 export function getOutlookHistoryIdFromDateTime(dateTime: string) {
   return new Date(dateTime).getTime() / 1000;
 }
+
+export function getOutlookSubscriptionExpirationDateTime() {
+  const expirationDateTime = new Date();
+  expirationDateTime.setUTCDate(expirationDateTime.getUTCDate() + 3);
+  return expirationDateTime.toISOString();
+}

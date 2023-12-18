@@ -1,7 +1,7 @@
 import { FOLDER_IDS } from "../constants";
 import { BidirectionalMap } from "../model/bidirectionalMap";
 
-export const OUTLOOK_API_URL = "https://graph.microsoft.com/v1.0/me";
+export const OUTLOOK_API_URL = "https://graph.microsoft.com/v1.0";
 
 const outlookFolderIds = new BidirectionalMap<string, string>();
 outlookFolderIds.add(FOLDER_IDS.INBOX, "Inbox");
