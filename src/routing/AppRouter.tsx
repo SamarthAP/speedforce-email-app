@@ -112,15 +112,16 @@ export default function AppRouter({ session }: AppRouterProps) {
     return window.electron.ipcRenderer.onSyncEmails(handler);
   }, [selectedEmail]);
 
-  // syncs on render if last sync was more than 10 mins ago
+  // watchs subscriptions and syncs on render if last sync was more than 3 days ago
   useEffect(() => {
     void window.electron.ipcRenderer
       .invoke("store-get", "client.lastWatchTime")
-      .then(async (time) => {
-        const lastSyncTime = time ? new Date(time) : new Date(0);
+      .then(async (time: string) => {
+        const lastSyncTime = time ? new Date(parseInt(time)) : new Date(0);
         const now = new Date();
         const diff = now.getTime() - lastSyncTime.getTime();
         const days = diff / (1000 * 60 * 60 * 24);
+
         if (days > 3 && selectedEmail) {
           dLog("on render sync");
 
@@ -136,10 +137,12 @@ export default function AppRouter({ session }: AppRouterProps) {
           await partialSync(selectedEmail.email, selectedEmail.provider, {
             folderId: FOLDER_IDS.INBOX,
           });
-          await window.electron.ipcRenderer.invoke("store-set", {
-            key: "client.lastWatchTime",
-            value: now,
-          });
+
+          await window.electron.ipcRenderer.invoke(
+            "store-set",
+            "client.lastWatchTime",
+            now.getTime().toString()
+          );
         }
       });
   }, [selectedEmail]);
@@ -147,8 +150,8 @@ export default function AppRouter({ session }: AppRouterProps) {
   useEffect(() => {
     void window.electron.ipcRenderer
       .invoke("store-get", "client.lastSyncContactsTime")
-      .then(async (time) => {
-        const lastSyncTime = time ? new Date(time) : new Date(0);
+      .then(async (time: string) => {
+        const lastSyncTime = time ? new Date(parseInt(time)) : new Date(0);
         const now = new Date();
         const diff = now.getTime() - lastSyncTime.getTime();
         const days = diff / (1000 * 60 * 60 * 24);
@@ -161,10 +164,11 @@ export default function AppRouter({ session }: AppRouterProps) {
             await loadContacts(email.email, email.provider);
           }
 
-          await window.electron.ipcRenderer.invoke("store-set", {
-            key: "client.lastSyncContactsTime",
-            value: now,
-          });
+          await window.electron.ipcRenderer.invoke(
+            "store-set",
+            "client.lastSyncContactsTime",
+            now.getTime().toString()
+          );
         }
       });
   }, []);
