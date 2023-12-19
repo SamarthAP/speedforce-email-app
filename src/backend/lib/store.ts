@@ -2,7 +2,8 @@ import ElectronStore from "electron-store";
 
 interface ClientType {
   id: string;
-  lastSyncTime: number;
+  lastWatchTime: string; // Unix timestamp
+  lastSyncContactsTime: string; // Unix timestamp
 }
 
 interface StoreType {
