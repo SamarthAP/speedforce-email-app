@@ -90,6 +90,12 @@ export interface IInboxZeroMetadata {
   inboxZeroStartDate: number;
 }
 
+export interface IDailyImageMetadata {
+  id: number; // So we can select only one image
+  date: string; // YYYY-MM-DD
+  url: string;
+}
+
 export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
@@ -100,6 +106,7 @@ export class SubClassedDexie extends Dexie {
   outlookFolders!: Table<IOutlookFolder, string>;
   contacts!: Table<IContact, string>;
   inboxZeroMetadata!: Table<IInboxZeroMetadata, string>;
+  dailyImageMetadata!: Table<IDailyImageMetadata, number>;
 
   constructor() {
     super("SpeedforceDB");

@@ -373,6 +373,7 @@ async function fullSyncGoogle(email: string, filter: IThreadFilter) {
   const accessToken = await getAccessToken(email);
 
   // get a list of thread ids
+  // TODO: if we get a page token bc there are more than 100 emails, we need to get the next page until we get all the emails
   const tList = await gThreadList(accessToken, filter);
 
   if (tList.error || !tList.data) {
@@ -801,16 +802,6 @@ export async function archiveThread(
       });
 
       await Promise.all(promises);
-      const res = await addLabelIds(accessToken, threadId, ["ARCHIVE"]);
-
-      if (res.error || !res.data) {
-        dLog("Error adding DONE label to thread:");
-        dLog(res.error);
-        return { data: null, error };
-      } else {
-        dLog("Added DONE label to thread:");
-        dLog(res.data);
-      }
     }
   } else if (provider === "outlook") {
     const messages = await db.messages
@@ -1009,6 +1000,8 @@ export async function sendEmailWithAttachments(
       return { data: null, error: "Error sending email" };
     }
   }
+
+  return { data: null, error: "Error sending email" };
 }
 
 export async function deleteThread(

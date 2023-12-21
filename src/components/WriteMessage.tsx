@@ -12,6 +12,20 @@ import toast from "react-hot-toast";
 import { EmailSelectorInput } from "./EmailSelectorInput";
 import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
 
+const options = {
+  blockStyleFn: (block: any) => {
+    const type = block.getType();
+    if (type === "unstyled") {
+      return {
+        style: {
+          // Set margins to 0 for paragraphs (otherwise gmail/other email clients add their own margins and other stuff)
+          margin: "0",
+        },
+      };
+    }
+  },
+};
+
 interface WriteMessageProps {
   setWriteEmailMode: (writeEmailMode: boolean) => void;
 }
@@ -60,7 +74,7 @@ export function WriteMessage({ setWriteEmailMode }: WriteMessageProps) {
     if (editorComponentRef.current) {
       const editorState = editorComponentRef.current.getEditorState();
       const context = editorState.getCurrentContent();
-      const html = stateToHTML(context);
+      const html = stateToHTML(context, options);
 
       if (attachments.length > 0) {
         const { error } = await sendEmailWithAttachments(
