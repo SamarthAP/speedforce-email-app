@@ -8,7 +8,7 @@ export const list = async (accessToken: string, messageId: string) => {
 
   try {
     const res: Response = await fetch(
-      `${OUTLOOK_API_URL}/messages/${messageId}/attachments`,
+      `${OUTLOOK_API_URL}/me/messages/${messageId}/attachments`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -40,7 +40,7 @@ export const get = async (
 
   try {
     const res: Response = await fetch(
-      `${OUTLOOK_API_URL}/messages/${messageId}/attachments/${attachmentId}`,
+      `${OUTLOOK_API_URL}/me/messages/${messageId}/attachments/${attachmentId}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,

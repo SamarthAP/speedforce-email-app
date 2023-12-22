@@ -148,3 +148,7 @@ export async function updateLabelIdsForEmailThread(
 
   await db.emailThreads.update(threadId, { labelIds });
 }
+
+export function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

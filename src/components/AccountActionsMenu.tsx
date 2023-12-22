@@ -12,6 +12,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 import { clearEmailFromDb } from "../lib/dexie/helpers";
 import toast from "react-hot-toast";
+import { classNames } from "../lib/util";
+import { useInboxZeroBackgroundContext } from "../contexts/InboxZeroBackgroundContext";
 
 interface AccountActionsProps {
   selectedEmail: ISelectedEmail;
@@ -25,12 +27,13 @@ interface AccountActionsProps {
 
 export default function AccountActions(props: AccountActionsProps) {
   const navigate = useNavigate();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [signOutEmail, setSignOutEmail] = useState<string>("");
+  const { isBackgroundOn } = useInboxZeroBackgroundContext();
 
   const signedInEmails = useLiveQuery(() => {
     return db.emails.orderBy("email").toArray();
   }, []);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [signOutEmail, setSignOutEmail] = useState<string>("");
 
   const handleClickSignOut = async (email: string) => {
     setSignOutEmail(email);
@@ -49,9 +52,10 @@ export default function AccountActions(props: AccountActionsProps) {
   };
 
   return (
-    <div className="relative">
+    <div className="flex flex-col items-center">
       <Menu>
         <Menu.Button
+          className="mr-3"
           onMouseEnter={(event: React.MouseEvent<HTMLElement>) => {
             props.handleMouseEnter(event, "Account Actions");
           }}
@@ -59,7 +63,12 @@ export default function AccountActions(props: AccountActionsProps) {
             props.handleMouseLeave();
           }}
         >
-          <UserCircleIcon className="h-6 w-6 mr-3 shrink-0 text-black dark:text-white" />
+          <UserCircleIcon
+            className={classNames(
+              "h-5 w-5 shrink-0",
+              isBackgroundOn ? "text-white" : "text-black dark:text-white"
+            )}
+          />
         </Menu.Button>
         <Transition
           enter="transition duration-100 ease-out"

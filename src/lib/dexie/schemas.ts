@@ -88,4 +88,59 @@ export const dexieSchemas = {
       cleanIndexedDb();
     },
   },
+
+  /*
+  Schema Version 4:
+  Oldest Compatible App Version 0.0.10
+  Change description:
+    - Add contacts table - quick lookup for search suggestions
+  */
+  4: {
+    schema: {
+      emails: "email, provider, accessToken, expiresAt",
+      selectedEmail: "id, email, provider",
+      emailThreads:
+        "id, historyId, email, from, subject, snippet, date, unread, *labelIds, hasAttachments",
+      googleMetadata: "email, historyId, *threadsListNextPageTokens",
+      outlookMetadata: "email, historyId, *threadsListNextPageTokens",
+      messages:
+        "id, threadId, *labelIds, from, *toRecipients, snippet, headers, textData, htmlData, date, *attachments",
+      outlookFolders: "id, displayName",
+      contacts:
+        "[email+contactEmailAddress], contactName, isSavedContact, lastInteraction",
+    },
+    upgradeFnc: async (tx: Transaction) => {
+      dLog("Upgrading schema to version 4");
+      return;
+    },
+  },
+  /*
+  Schema Version 5:
+  Oldest Compatible App Version 0.0.11
+  Change description:
+    - Add InboxZeroMetadata table
+  */
+  5: {
+    schema: {
+      emails: "email, provider, accessToken, expiresAt",
+      selectedEmail: "id, email, provider",
+      emailThreads:
+        "id, historyId, email, from, subject, snippet, date, unread, *labelIds, hasAttachments",
+      googleMetadata: "email, historyId, *threadsListNextPageTokens",
+      outlookMetadata: "email, historyId, *threadsListNextPageTokens",
+      messages:
+        "id, threadId, *labelIds, from, *toRecipients, snippet, headers, textData, htmlData, date, *attachments",
+      outlookFolders: "id, displayName",
+      contacts:
+        "[email+contactEmailAddress], contactName, isSavedContact, lastInteraction",
+      inboxZeroMetadata: "email, inboxZeroStartDate",
+      dailyImageMetadata: "id, date, url",
+    },
+    upgradeFnc: async (tx: Transaction) => {
+      dLog("Upgrading schema to version 5");
+
+      // clear database since we are introducing inbox zero
+      cleanIndexedDb();
+    },
+  },
 };

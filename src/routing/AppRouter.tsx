@@ -11,18 +11,16 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../lib/db";
 import EmailPage from "../pages/_emailPage";
 import WeekCalendarPage from "../pages/WeekCalendarPage";
-import WeekCalendar from "../components/Calendars/WeekCalendar";
 import { Session } from "@supabase/supabase-js";
 import useWebSocket from "react-use-websocket";
-import { SPEEDFORCE_WS_URL } from "../api/constants";
+import { SPEEDFORCE_WS_URL, FOLDER_IDS } from "../api/constants";
 import { dLog } from "../lib/noProd";
 import { useCallback, useEffect } from "react";
 import { getAccessToken } from "../api/accessToken";
-import { watch } from "../api/gmail/notifications/pushNotifications";
-import { NotificationMessageType } from "../api/model/notifications";
-import { partialSync } from "../lib/sync";
-import { FOLDER_IDS } from "../api/constants";
+import { loadContacts, partialSync, watchSubscription } from "../lib/sync";
 import { handleMessage } from "../lib/wsHelpers";
+import InboxZeroSetup from "../pages/InboxZeroSetup";
+import { getDailyImage } from "../api/inboxZero";
 
 interface AppRouterProps {
   session: Session;
@@ -37,6 +35,10 @@ export default function AppRouter({ session }: AppRouterProps) {
       db.selectedEmail.get(1).then((selectedEmail) => [selectedEmail, true]),
     [],
     []
+  );
+  const inboxZeroMetadata = useLiveQuery(
+    () => db.inboxZeroMetadata.get(selectedEmail?.email || ""),
+    [selectedEmail, selectedEmail?.email]
   );
 
   // TODO: could update dependencies to include the other data that is awaited
@@ -70,7 +72,7 @@ export default function AppRouter({ session }: AppRouterProps) {
   useEffect(() => {
     // send watch command, should prob do for all emails that we want to watch
     if (selectedEmail) {
-      void watch(selectedEmail.email);
+      void watchSubscription(selectedEmail.email, selectedEmail.provider);
     }
   }, [session, selectedEmail]);
 
@@ -85,6 +87,7 @@ export default function AppRouter({ session }: AppRouterProps) {
       dLog("Websocket connection closed");
     },
     onMessage: (event) => {
+      dLog("new ws message");
       async function handle() {
         if (isPendingPartialSync) return;
         isPendingPartialSync = true;
@@ -111,19 +114,23 @@ export default function AppRouter({ session }: AppRouterProps) {
     return window.electron.ipcRenderer.onSyncEmails(handler);
   }, [selectedEmail]);
 
-  // syncs on render if last sync was more than 10 mins ago
+  // watchs subscriptions and syncs on render if last sync was more than 3 days ago
   useEffect(() => {
     void window.electron.ipcRenderer
       .invoke("store-get", "client.lastWatchTime")
-      .then(async (time) => {
-        const lastSyncTime = time ? new Date(time) : new Date(0);
+      .then(async (time: string) => {
+        const lastSyncTime = time ? new Date(parseInt(time)) : new Date(0);
         const now = new Date();
         const diff = now.getTime() - lastSyncTime.getTime();
         const days = diff / (1000 * 60 * 60 * 24);
+
         if (days > 3 && selectedEmail) {
           dLog("on render sync");
 
-          const { data, error } = await watch(selectedEmail.email);
+          const { data, error } = await watchSubscription(
+            selectedEmail.email,
+            selectedEmail.provider
+          );
           if (error || !data) {
             dLog(error);
             return;
@@ -132,30 +139,116 @@ export default function AppRouter({ session }: AppRouterProps) {
           await partialSync(selectedEmail.email, selectedEmail.provider, {
             folderId: FOLDER_IDS.INBOX,
           });
-          await window.electron.ipcRenderer.invoke("store-set", {
-            key: "client.lastWatchTime",
-            value: now,
-          });
+
+          await window.electron.ipcRenderer.invoke(
+            "store-set",
+            "client.lastWatchTime",
+            now.getTime().toString()
+          );
         }
       });
   }, [selectedEmail]);
+
+  useEffect(() => {
+    void window.electron.ipcRenderer
+      .invoke("store-get", "client.lastSyncContactsTime")
+      .then(async (time: string) => {
+        const lastSyncTime = time ? new Date(parseInt(time)) : new Date(0);
+        const now = new Date();
+        const diff = now.getTime() - lastSyncTime.getTime();
+        const days = diff / (1000 * 60 * 60 * 24);
+
+        if (days > 3) {
+          const emails = await db.emails.toArray();
+
+          for (const email of emails) {
+            dLog("loading contacts for ", email.email);
+            await loadContacts(email.email, email.provider);
+          }
+
+          await window.electron.ipcRenderer.invoke(
+            "store-set",
+            "client.lastSyncContactsTime",
+            now.getTime().toString()
+          );
+        }
+      });
+  }, []);
+
+  useEffect(() => {
+    // NOTE: checks if today's image already exists in dexie, if so, dont fetch
+    async function getInboxZeroImage() {
+      const date = new Date().toISOString().split("T")[0];
+      const dailyImageMetadata = await db.dailyImageMetadata.get(1);
+
+      if (dailyImageMetadata && dailyImageMetadata.date === date) {
+        dLog("daily image data already exists");
+        return {
+          dailyImageMetadata: {
+            date: dailyImageMetadata.date,
+            url: dailyImageMetadata.url,
+          },
+          dataAlreadyExists: true,
+        };
+      }
+
+      const { data, error } = await getDailyImage();
+
+      if (error || !data) {
+        dLog(error);
+        return {
+          dailyImageMetadata: {
+            date: "",
+            url: "",
+          },
+          dataAlreadyExists: false,
+        };
+      } else {
+        return { dailyImageMetadata: data, dataAlreadyExists: false };
+      }
+    }
+
+    getInboxZeroImage()
+      .then(({ dailyImageMetadata, dataAlreadyExists }) => {
+        if (dataAlreadyExists) return;
+
+        void db.dailyImageMetadata.put({
+          id: 1,
+          ...dailyImageMetadata,
+        });
+      })
+      .catch((err) => {
+        dLog(err);
+      });
+  }, []);
 
   if (!loaded) {
     return <div className="h-screen w-screen"></div>;
   }
 
+  // add initialEntries={["/page/inboxZeroSetup"]} to Router to force a specific route
   return (
     <Router>
       <Routes>
         {!selectedEmail ? (
           <Route path="/" element={<AddAccount />} />
+        ) : selectedEmail && !inboxZeroMetadata ? (
+          <>
+            <Route
+              path="/"
+              element={<InboxZeroSetup selectedEmail={selectedEmail} />}
+            />
+          </>
         ) : (
           <>
             <Route
               path="/"
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
-              <Route index element={<Home />} />
+              <Route
+                index
+                element={<Home inboxZeroMetadata={inboxZeroMetadata} />}
+              />
             </Route>
             <Route
               path="/sent"
@@ -200,6 +293,10 @@ export default function AppRouter({ session }: AppRouterProps) {
               <Route index element={<WeekCalendarPage />} />
             </Route>
             <Route path="/page/addAccount" element={<AddAccount />} />
+            <Route
+              path="/page/inboxZeroSetup"
+              element={<InboxZeroSetup selectedEmail={selectedEmail} />}
+            />
           </>
         )}
       </Routes>

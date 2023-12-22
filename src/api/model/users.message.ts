@@ -11,6 +11,9 @@ export interface OutlookMessageDataType {
   sentDateTime: string;
   receivedDateTime: string;
   isRead: boolean;
+  isReadReceiptRequested: boolean;
+  isDeliveryReceiptRequested: boolean;
+  inferenceClassification: string;
   changeKey: string;
   categories: string[];
   hasAttachments: boolean;

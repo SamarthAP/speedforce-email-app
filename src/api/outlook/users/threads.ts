@@ -1,4 +1,4 @@
-import { OUTLOOK_API_URL, OUTLOOK_FOLDER_IDS_MAP } from "../constants";
+import { OUTLOOK_API_URL } from "../constants";
 import {
   OutlookThreadsListDataType,
   IThreadFilter,
@@ -12,7 +12,7 @@ export const list = async (accessToken: string, filter: IThreadFilter) => {
 
   try {
     const res: Response = await fetch(
-      `${OUTLOOK_API_URL}/${filter.outlookQuery}`,
+      `${OUTLOOK_API_URL}/me/${filter.outlookQuery}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -80,7 +80,7 @@ export const listNextPage = async (
 // calling function can Promise.all() them or handle them in whatever way it wants
 export const get = async (accessToken: string, threadId: string) => {
   const response = await fetch(
-    `${OUTLOOK_API_URL}/messages?$filter=conversationId eq '${threadId}'`,
+    `${OUTLOOK_API_URL}/me/messages?$filter=conversationId eq '${threadId}'`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -102,7 +102,7 @@ export const forward = async (
   toRecipients: string[]
 ) => {
   const response = await fetch(
-    `${OUTLOOK_API_URL}/messages/${messageId}/forward`,
+    `${OUTLOOK_API_URL}/me/messages/${messageId}/forward`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -128,44 +128,8 @@ export const forward = async (
   }
 };
 
-export const sendEmail = async (
-  accessToken: string,
-  to: string,
-  subject: string,
-  messageContent: string
-) => {
-  const response = await fetch(`${OUTLOOK_API_URL}/sendmail`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    method: "POST",
-    body: JSON.stringify({
-      message: {
-        subject: subject,
-        body: {
-          contentType: "html",
-          content: messageContent,
-        },
-        toRecipients: [
-          {
-            emailAddress: {
-              address: to,
-            },
-          },
-        ],
-      },
-    }),
-  });
-
-  // Returns 202 Accepted with no response body if successful
-  if (!response.ok) {
-    throw Error("Error replying to thread");
-  }
-};
-
 export const markRead = async (accessToken: string, threadId: string) => {
-  const response = await fetch(`${OUTLOOK_API_URL}/messages/${threadId}`, {
+  const response = await fetch(`${OUTLOOK_API_URL}/me/messages/${threadId}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
@@ -183,7 +147,7 @@ export const markRead = async (accessToken: string, threadId: string) => {
 };
 
 export const deleteMessage = async (accessToken: string, messageId: string) => {
-  const response = await fetch(`${OUTLOOK_API_URL}/messages/${messageId}`, {
+  const response = await fetch(`${OUTLOOK_API_URL}/me/messages/${messageId}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -201,7 +165,7 @@ export const moveMessage = async (
   destinationFolder: string
 ) => {
   const response = await fetch(
-    `${OUTLOOK_API_URL}/messages/${messageId}/move`,
+    `${OUTLOOK_API_URL}/me/messages/${messageId}/move`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -222,7 +186,7 @@ export const starMessage = async (
   messageId: string,
   isStarred: boolean
 ) => {
-  const response = await fetch(`${OUTLOOK_API_URL}/messages/${messageId}`, {
+  const response = await fetch(`${OUTLOOK_API_URL}/me/messages/${messageId}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",

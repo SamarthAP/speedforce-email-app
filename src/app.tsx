@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ThemeContext } from "./contexts/ThemeContext";
 import AppRouter from "./routing/AppRouter";
@@ -92,8 +92,10 @@ void (async () => {
   });
 
   root.render(
-    <LDProvider>
-      <App />
-    </LDProvider>
+    <React.StrictMode>
+      <LDProvider>
+        <App />
+      </LDProvider>
+    </React.StrictMode>
   );
 })();

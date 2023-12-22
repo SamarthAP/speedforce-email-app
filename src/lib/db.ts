@@ -77,6 +77,25 @@ export interface IOutlookFolder {
   displayName: string;
 }
 
+export interface IContact {
+  email: string;
+  contactName: string;
+  contactEmailAddress: string;
+  isSavedContact: boolean; // Store user's recent interactions with emails from unknown contacts
+  lastInteraction: number; // Prioiritize contacts with recent interactions?
+}
+
+export interface IInboxZeroMetadata {
+  email: string;
+  inboxZeroStartDate: number;
+}
+
+export interface IDailyImageMetadata {
+  id: number; // So we can select only one image
+  date: string; // YYYY-MM-DD
+  url: string;
+}
+
 export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
@@ -85,6 +104,9 @@ export class SubClassedDexie extends Dexie {
   outlookMetadata!: Table<IOutlookMetadata, string>;
   messages!: Table<IMessage, string>;
   outlookFolders!: Table<IOutlookFolder, string>;
+  contacts!: Table<IContact, string>;
+  inboxZeroMetadata!: Table<IInboxZeroMetadata, string>;
+  dailyImageMetadata!: Table<IDailyImageMetadata, number>;
 
   constructor() {
     super("SpeedforceDB");
@@ -97,6 +119,12 @@ export class SubClassedDexie extends Dexie {
     this.version(3)
       .stores(dexieSchemas[3].schema)
       .upgrade(dexieSchemas[3].upgradeFnc);
+    this.version(4)
+      .stores(dexieSchemas[4].schema)
+      .upgrade(dexieSchemas[4].upgradeFnc);
+    this.version(5)
+      .stores(dexieSchemas[5].schema)
+      .upgrade(dexieSchemas[5].upgradeFnc);
   }
 }
 

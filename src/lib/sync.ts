@@ -15,6 +15,12 @@ import {
   getAttachment as gAttachmentGet,
 } from "../api/gmail/users/messages";
 import { list as gHistoryList } from "../api/gmail/users/history";
+import {
+  list as gContactList,
+  listDirectoryPeople,
+  listOtherContacts,
+} from "../api/gmail/people/contact";
+import { watch as watchGmail } from "../api/gmail/notifications/pushNotifications";
 import { getToRecipients, buildForwardedHTML } from "../api/gmail/helpers";
 
 import {
@@ -22,13 +28,14 @@ import {
   list as mThreadList,
   listNextPage as mThreadListNextPage,
   markRead as mThreadMarkRead,
-  sendEmail as mSendEmail,
   forward as mForward,
   deleteMessage as mDeleteMessage,
   moveMessage as mMoveMessage,
   starMessage as mStarMessage,
 } from "../api/outlook/users/threads";
 import {
+  sendEmail as mSendEmail,
+  sendEmailWithAttachments as mSendEmailWithAttachments,
   sendReply as mSendReply,
   sendReplyAll as mSendReplyAll,
 } from "../api/outlook/users/message";
@@ -36,6 +43,12 @@ import {
   list as mAttachmentList,
   get as mAttachmentGet,
 } from "../api/outlook/users/attachment";
+import { list as mContactsList } from "../api/outlook/people/contacts";
+import {
+  list as mSubscriptionsList,
+  create as mSubscriptionsCreate,
+  updateExpirationDateTime as mSubscriptionsUpdateExpirationDateTime,
+} from "../api/outlook/notifcations/subscriptions";
 import {
   buildMessageHeadersOutlook,
   buildMessageLabelIdsOutlook,
@@ -43,10 +56,11 @@ import {
   removeLabelIdsOutlook,
   getFolderNameFromIdOutlook,
   getOutlookHistoryIdFromDateTime,
+  getOutlookSubscriptionExpirationDateTime,
 } from "../api/outlook/helpers";
 
 import { getAccessToken } from "../api/accessToken";
-import { IAttachment, IEmailThread, IMessage, db } from "./db";
+import { IAttachment, IContact, IEmailThread, IMessage, db } from "./db";
 import {
   getGoogleMetaData,
   getOutlookMetaData,
@@ -54,7 +68,7 @@ import {
   setHistoryId,
 } from "./dexie/helpers";
 import { getMessageHeader, upsertLabelIds } from "./util";
-import _, { first } from "lodash";
+import _ from "lodash";
 import { dLog } from "./noProd";
 import {
   IThreadFilter,
@@ -239,8 +253,6 @@ async function handleNewThreadsOutlook(
   threadsIds: string[],
   filter: IThreadFilter
 ) {
-  // const promises = threadsIds.map((threadId) =>
-
   try {
     // Outlook throttle limit is 4 concurrent requests
     const threads = await batchGetThreads(accessToken, threadsIds, 4);
@@ -250,6 +262,7 @@ async function handleNewThreadsOutlook(
     for (const thread of threads) {
       let unread = false;
       let isStarred = false;
+      let isImportant = false;
       let labelIds: string[] = [];
       for (const message of thread.value) {
         if (!message.isRead) {
@@ -258,10 +271,14 @@ async function handleNewThreadsOutlook(
         if (message.flag && message.flag.flagStatus === "flagged") {
           isStarred = true;
         }
+        if (message.inferenceClassification.toLowerCase() === "focused") {
+          isImportant = true;
+        }
       }
 
       if (isStarred) labelIds = upsertLabelIds(labelIds, "STARRED");
       if (unread) labelIds = upsertLabelIds(labelIds, "UNREAD");
+      if (isImportant) labelIds = upsertLabelIds(labelIds, "IMPORTANT");
 
       for (const message of thread.value) {
         let textData = "";
@@ -356,6 +373,7 @@ async function fullSyncGoogle(email: string, filter: IThreadFilter) {
   const accessToken = await getAccessToken(email);
 
   // get a list of thread ids
+  // TODO: if we get a page token bc there are more than 100 emails, we need to get the next page until we get all the emails
   const tList = await gThreadList(accessToken, filter);
 
   if (tList.error || !tList.data) {
@@ -784,16 +802,6 @@ export async function archiveThread(
       });
 
       await Promise.all(promises);
-      const res = await addLabelIds(accessToken, threadId, ["ARCHIVE"]);
-
-      if (res.error || !res.data) {
-        dLog("Error adding DONE label to thread:");
-        dLog(res.error);
-        return { data: null, error };
-      } else {
-        dLog("Added DONE label to thread:");
-        dLog(res.data);
-      }
     }
   } else if (provider === "outlook") {
     const messages = await db.messages
@@ -817,7 +825,6 @@ export async function archiveThread(
     }
   }
 
-  toast("Marked as done");
   return { data: null, error: null };
 }
 
@@ -831,7 +838,9 @@ export async function sendReply(
   if (provider === "google") {
     const from = email;
     const to =
-      getMessageHeader(message.headers, "From").match(/<([^>]+)>/)?.[1] ||
+      getMessageHeader(message.headers, "From").match(
+        /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g
+      )?.[0] ||
       getMessageHeader(message.headers, "To") ||
       "";
     const subject = getMessageHeader(message.headers, "Subject");
@@ -949,7 +958,7 @@ export async function sendEmail(
 
       return { data: null, error: null };
     } catch (e) {
-      return { data: null, error: "Error sending reply" };
+      return { data: null, error: "Error sending email" };
     }
   }
 
@@ -976,10 +985,22 @@ export async function sendEmailWithAttachments(
       attachments
     );
   } else if (provider === "outlook") {
-    // TODO: implement
-    return { data: null, error: "Not implemented" };
+    try {
+      await mSendEmailWithAttachments(
+        accessToken,
+        to,
+        subject,
+        html,
+        attachments
+      );
+
+      return { data: null, error: null };
+    } catch (e) {
+      return { data: null, error: "Error sending email" };
+    }
   }
-  return { data: null, error: "Not implemented" };
+
+  return { data: null, error: "Error sending email" };
 }
 
 export async function deleteThread(
@@ -1122,4 +1143,123 @@ export async function downloadAttachment(
   }
 
   return false;
+}
+
+export async function loadContacts(
+  email: string,
+  provider: "google" | "outlook"
+) {
+  const accessToken = await getAccessToken(email);
+  // so we don't have duplicates when loading contacts from multiple sources
+  const emailContactsMap = new Map<string, IContact>();
+
+  if (provider === "google") {
+    const contactListData = await gContactList(accessToken);
+    const ldpData = await listDirectoryPeople(accessToken);
+    const otherContactsData = await listOtherContacts(accessToken);
+
+    const contacts = [];
+
+    if (contactListData.error || !contactListData.data) {
+      dLog("Error loading gmail contactList contacts");
+    }
+
+    if (ldpData.error || !ldpData.data) {
+      dLog("Error loading gmail listDiscoveryPeople contacts");
+    }
+
+    if (otherContactsData.error || !otherContactsData.data) {
+      dLog("Error loading gmail listOtherContacts contacts");
+    }
+
+    if (contactListData.data && contactListData.data.connections) {
+      contacts.push(...contactListData.data.connections);
+    }
+
+    if (ldpData.data && ldpData.data.people) {
+      contacts.push(...ldpData.data.people);
+    }
+
+    if (otherContactsData.data && otherContactsData.data.otherContacts) {
+      contacts.push(...otherContactsData.data.otherContacts);
+    }
+
+    for (const contact of contacts) {
+      const contactName = contact.names?.[0]?.displayName || "";
+      for (const contactEmail of contact.emailAddresses) {
+        if (!emailContactsMap.has(contactEmail.value)) {
+          emailContactsMap.set(contactEmail.value, {
+            email: email,
+            contactName: contactName,
+            contactEmailAddress: contactEmail.value,
+            isSavedContact: true,
+            lastInteraction: 0,
+          });
+        }
+      }
+    }
+  } else if (provider === "outlook") {
+    const { data, error } = await mContactsList(accessToken);
+
+    if (error || !data) {
+      dLog("Error loading contacts");
+      return { data: null, error };
+    }
+
+    for (const contact of data) {
+      for (const contactEmail of contact.emailAddresses) {
+        if (!emailContactsMap.has(contactEmail.address)) {
+          emailContactsMap.set(contactEmail.address, {
+            email: email,
+            contactName: contact.displayName,
+            contactEmailAddress: contactEmail.address,
+            isSavedContact: true,
+            lastInteraction: 0,
+          });
+        }
+      }
+    }
+  }
+
+  await db.contacts.bulkPut(Array.from(emailContactsMap.values()));
+  return { data: null, error: null };
+}
+
+export async function watchSubscription(
+  email: string,
+  provider: "google" | "outlook"
+) {
+  const accessToken = await getAccessToken(email);
+  if (provider === "google") {
+    return watchGmail(accessToken, email);
+  } else if (provider === "outlook") {
+    // Get list of subscriptions
+    const { data, error } = await mSubscriptionsList(accessToken);
+
+    if (error || data === null) {
+      dLog("Error getting subscriptions");
+      return { data: null, error };
+    }
+
+    // Filter for inbox subscriptions that are still active
+    const activeSubscriptions = data.filter(
+      (s) =>
+        s.expirationDateTime > new Date().toISOString() &&
+        s.resource === "me/messages"
+    );
+    if (activeSubscriptions.length > 0) {
+      // Update expiration date time to 3 days from now
+      const newExpirationDateTime = getOutlookSubscriptionExpirationDateTime();
+      return await mSubscriptionsUpdateExpirationDateTime(
+        accessToken,
+        activeSubscriptions[0].id,
+        newExpirationDateTime
+      );
+    } else {
+      // Create new subscription
+      return await mSubscriptionsCreate(accessToken, email);
+    }
+  }
+
+  return { data: null, error: "Not implemented" };
 }

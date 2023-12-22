@@ -28,11 +28,38 @@ export const useTooltip = (): TooltipHook => {
     message: string
   ) => {
     const rect = event.currentTarget.getBoundingClientRect();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    const tooltip = document.createElement("div");
+    tooltip.textContent = message;
+    tooltip.style.position = "absolute";
+    tooltip.style.visibility = "hidden";
+    document.body.appendChild(tooltip);
+
+    const tooltipWidth = tooltip.clientWidth;
+    const tooltipHeight = tooltip.clientHeight;
+
+    document.body.removeChild(tooltip);
+
+    let left = rect.x + rect.width / 2;
+    let top = rect.y + rect.height;
+
+    if (left + tooltipWidth / 2 > windowWidth) {
+      left = windowWidth - tooltipWidth / 2;
+    } else if (left - tooltipWidth / 2 < 0) {
+      left = tooltipWidth / 2;
+    }
+
+    if (top + tooltipHeight > windowHeight) {
+      top = rect.y - tooltipHeight;
+    }
+
     setTooltipData({
       showTooltip: true,
       coords: {
-        left: `${rect.x + rect.width / 2}px`,
-        top: `${rect.y + rect.height}px`,
+        left: `${left}px`,
+        top: `${top}px`,
       },
       message,
     });

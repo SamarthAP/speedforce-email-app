@@ -2,33 +2,74 @@ import ThreadView from "../components/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
-import { ISelectedEmail, db } from "../lib/db";
+import { IInboxZeroMetadata, ISelectedEmail, db } from "../lib/db";
+import { ClientInboxTabType } from "../api/model/client.inbox";
 
-export default function Home() {
-  const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
-    FOLDER_IDS.INBOX
-  )}`;
-  const outlookFetchQuery = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
-    FOLDER_IDS.INBOX
-  )}/messages?$select=id,conversationId,createdDateTime&$top=20`;
+const gmailFetchQueryImportant = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
+  FOLDER_IDS.INBOX
+)}`;
+const outlookFetchQueryImportant = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
+  FOLDER_IDS.INBOX
+)}/messages?$select=id,conversationId,createdDateTime&$top=20`;
 
-  const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
+function getYesterdayDate() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return yesterday.getTime();
+}
+
+interface HomeProps {
+  inboxZeroMetadata: IInboxZeroMetadata | undefined;
+}
+
+export default function Home({ inboxZeroMetadata }: HomeProps) {
+  const filterThreadsFncImportant = (selectedEmail: ISelectedEmail) =>
     db.emailThreads
       .where("email")
       .equals(selectedEmail.email)
-      .and((thread) => thread.labelIds.includes(FOLDER_IDS.INBOX))
+      .and(
+        (thread) =>
+          thread.labelIds.includes(FOLDER_IDS.INBOX) &&
+          thread.labelIds.includes("IMPORTANT") &&
+          thread.date >=
+            (inboxZeroMetadata?.inboxZeroStartDate || getYesterdayDate()) // NOTE: default to yesterday if no inbox zero start date
+      )
       .reverse()
       .sortBy("date");
 
-  return (
-    <ThreadView
-      folderId={FOLDER_IDS.INBOX}
-      title="Important"
-      gmailFetchQuery={gmailFetchQuery}
-      outlookFetchQuery={outlookFetchQuery}
-      filterThreadsFnc={filterThreadsFnc}
-      canArchiveThread
-      canTrashThread
-    />
-  );
+  const filterThreadsFncOther = (selectedEmail: ISelectedEmail) =>
+    db.emailThreads
+      .where("email")
+      .equals(selectedEmail.email)
+      .and(
+        (thread) =>
+          thread.labelIds.includes(FOLDER_IDS.INBOX) &&
+          !thread.labelIds.includes("IMPORTANT") &&
+          thread.date >=
+            (inboxZeroMetadata?.inboxZeroStartDate || getYesterdayDate()) // NOTE: default to yesterday if no inbox zero start date
+      )
+      .reverse()
+      .sortBy("date");
+
+  const tabs: ClientInboxTabType[] = [
+    {
+      title: "Important",
+      folderId: FOLDER_IDS.INBOX,
+      gmailQuery: gmailFetchQueryImportant,
+      outlookQuery: outlookFetchQueryImportant,
+      filterThreadsFnc: filterThreadsFncImportant,
+      canArchiveThread: true,
+      canTrashThread: true,
+    },
+    {
+      title: "Other",
+      folderId: FOLDER_IDS.INBOX,
+      gmailQuery: gmailFetchQueryImportant,
+      outlookQuery: outlookFetchQueryImportant,
+      filterThreadsFnc: filterThreadsFncOther,
+      canArchiveThread: true,
+      canTrashThread: true,
+    },
+  ];
+  return <ThreadView tabs={tabs} wrapperType="HOME" />;
 }

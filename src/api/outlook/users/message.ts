@@ -1,5 +1,6 @@
 import { OUTLOOK_API_URL } from "../constants";
 import { OutlookMessageDataType } from "../../model/users.message";
+import { NewAttachment } from "../../../components/WriteMessage";
 
 export const get = async (
   accessToken: string,
@@ -8,7 +9,7 @@ export const get = async (
 ) => {
   const fields = fieldSet.join(",").trim();
   const response = await fetch(
-    `${OUTLOOK_API_URL}/messages/${messageId}?$select=${fields}'`,
+    `${OUTLOOK_API_URL}/me/messages/${messageId}?$select=${fields}'`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -24,6 +25,88 @@ export const get = async (
   return data;
 };
 
+export const sendEmail = async (
+  accessToken: string,
+  to: string,
+  subject: string,
+  messageContent: string
+) => {
+  const response = await fetch(`${OUTLOOK_API_URL}/me/sendmail`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+    body: JSON.stringify({
+      message: {
+        subject: subject,
+        body: {
+          contentType: "html",
+          content: messageContent,
+        },
+        toRecipients: [
+          {
+            emailAddress: {
+              address: to,
+            },
+          },
+        ],
+      },
+    }),
+  });
+
+  // Returns 202 Accepted with no response body if successful
+  if (!response.ok) {
+    throw Error("Error replying to thread");
+  }
+};
+
+export const sendEmailWithAttachments = async (
+  accessToken: string,
+  to: string,
+  subject: string,
+  messageContent: string,
+  attachments: NewAttachment[]
+) => {
+  const response = await fetch(`${OUTLOOK_API_URL}/me/sendmail`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+    body: JSON.stringify({
+      message: {
+        subject: subject,
+        body: {
+          contentType: "html",
+          content: messageContent,
+        },
+        toRecipients: [
+          {
+            emailAddress: {
+              address: to,
+            },
+          },
+        ],
+        attachments: attachments.map((attachment) => {
+          return {
+            "@odata.type": "#microsoft.graph.fileAttachment",
+            name: attachment.filename,
+            contentType: attachment.mimeType,
+            contentBytes: attachment.data,
+            size: attachment.size,
+          };
+        }),
+      },
+    }),
+  });
+
+  // Returns 202 Accepted with no response body if successful
+  if (!response.ok) {
+    throw Error("Error replying to thread");
+  }
+};
+
 export const sendReply = async (
   accessToken: string,
   subject: string,
@@ -31,7 +114,7 @@ export const sendReply = async (
   messageContent: string
 ) => {
   const response = await fetch(
-    `${OUTLOOK_API_URL}/messages/${messageId}/reply`,
+    `${OUTLOOK_API_URL}/me/messages/${messageId}/reply`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -63,7 +146,7 @@ export const sendReplyAll = async (
   messageContent: string
 ) => {
   const response = await fetch(
-    `${OUTLOOK_API_URL}/messages/${messageId}/replyAll`,
+    `${OUTLOOK_API_URL}/me/messages/${messageId}/replyAll`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

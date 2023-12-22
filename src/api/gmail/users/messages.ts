@@ -1,4 +1,4 @@
-import { unescape } from "lodash";
+import { NewAttachment } from "../../../components/WriteMessage";
 import { dLog } from "../../../lib/noProd";
 import { GMAIL_API_URL } from "../constants";
 import { Base64 } from "js-base64";
@@ -92,7 +92,7 @@ export const sendEmailWithAttachments = async (
   to: string,
   subject: string,
   messageContent: string,
-  attachments: any[]
+  attachments: NewAttachment[]
 ) => {
   let data: any | null = null; // TODO: define type
   let error: string | null = null;
