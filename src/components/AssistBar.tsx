@@ -11,6 +11,7 @@ import {
 import toast from "react-hot-toast";
 import { dLog } from "../lib/noProd";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
+import { useInboxZeroBackgroundContext } from "../contexts/InboxZeroBackgroundContext";
 
 function copyToClipboard(text: string) {
   // document.execCommand("copy"); is not supported anymore
@@ -38,6 +39,7 @@ export default function AssistBar({
   setSelectedThread,
 }: IAssistBarProps) {
   const { selectedEmail } = useEmailPageOutletContext();
+  const { isBackgroundOn } = useInboxZeroBackgroundContext();
 
   const emailThreads = useLiveQuery(
     () =>
@@ -78,6 +80,10 @@ export default function AssistBar({
     if (matches) {
       verificationCode = matches[0];
     }
+  }
+
+  if (isBackgroundOn) {
+    return null;
   }
 
   return (

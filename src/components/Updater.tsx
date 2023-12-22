@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { classNames } from "../lib/util";
 import { dLog } from "../lib/noProd";
+import { useInboxZeroBackgroundContext } from "../contexts/InboxZeroBackgroundContext";
 
 function createButtonConfig(
   updateAvailable: boolean,
@@ -52,6 +53,7 @@ export default function Updater() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [updateDownloaded, setUpdateDownloaded] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const { isBackgroundOn } = useInboxZeroBackgroundContext();
 
   useEffect(() => {
     async function handler1() {
@@ -105,6 +107,10 @@ export default function Updater() {
     updateDownloaded,
     downloadProgress
   );
+
+  if (isBackgroundOn) {
+    return <div className="flex gap-x-2"></div>;
+  }
 
   return (
     <div className="flex gap-x-2">

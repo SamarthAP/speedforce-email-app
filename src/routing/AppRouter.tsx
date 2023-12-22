@@ -20,6 +20,7 @@ import { getAccessToken } from "../api/accessToken";
 import { loadContacts, partialSync, watchSubscription } from "../lib/sync";
 import { handleMessage } from "../lib/wsHelpers";
 import InboxZeroSetup from "../pages/InboxZeroSetup";
+import { getDailyImage } from "../api/inboxZero";
 
 interface AppRouterProps {
   session: Session;
@@ -86,6 +87,7 @@ export default function AppRouter({ session }: AppRouterProps) {
       dLog("Websocket connection closed");
     },
     onMessage: (event) => {
+      dLog("new ws message");
       async function handle() {
         if (isPendingPartialSync) return;
         isPendingPartialSync = true;
@@ -173,6 +175,53 @@ export default function AppRouter({ session }: AppRouterProps) {
       });
   }, []);
 
+  useEffect(() => {
+    // NOTE: checks if today's image already exists in dexie, if so, dont fetch
+    async function getInboxZeroImage() {
+      const date = new Date().toISOString().split("T")[0];
+      const dailyImageMetadata = await db.dailyImageMetadata.get(1);
+
+      if (dailyImageMetadata && dailyImageMetadata.date === date) {
+        dLog("daily image data already exists");
+        return {
+          dailyImageMetadata: {
+            date: dailyImageMetadata.date,
+            url: dailyImageMetadata.url,
+          },
+          dataAlreadyExists: true,
+        };
+      }
+
+      const { data, error } = await getDailyImage();
+
+      if (error || !data) {
+        dLog(error);
+        return {
+          dailyImageMetadata: {
+            date: "",
+            url: "",
+          },
+          dataAlreadyExists: false,
+        };
+      } else {
+        return { dailyImageMetadata: data, dataAlreadyExists: false };
+      }
+    }
+
+    getInboxZeroImage()
+      .then(({ dailyImageMetadata, dataAlreadyExists }) => {
+        if (dataAlreadyExists) return;
+
+        void db.dailyImageMetadata.put({
+          id: 1,
+          ...dailyImageMetadata,
+        });
+      })
+      .catch((err) => {
+        dLog(err);
+      });
+  }, []);
+
   if (!loaded) {
     return <div className="h-screen w-screen"></div>;
   }
@@ -196,7 +245,10 @@ export default function AppRouter({ session }: AppRouterProps) {
               path="/"
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
-              <Route index element={<Home />} />
+              <Route
+                index
+                element={<Home inboxZeroMetadata={inboxZeroMetadata} />}
+              />
             </Route>
             <Route
               path="/sent"
