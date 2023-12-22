@@ -164,7 +164,6 @@ export function getLabelIdFromSearchFolder(
   const map: BidirectionalMap<string, string> =
     provider === "google" ? GMAIL_FOLDER_IDS_MAP : OUTLOOK_FOLDER_IDS_MAP;
 
-  console.log("folder", folder);
   switch (folder) {
     case "inbox":
       return map.getValue(FOLDER_IDS.INBOX) || "";
@@ -176,8 +175,32 @@ export function getLabelIdFromSearchFolder(
       return map.getValue(FOLDER_IDS.DONE) || "";
     case "trash":
       return map.getValue(FOLDER_IDS.TRASH) || "";
+    case "starred":
+      return map.getValue(FOLDER_IDS.STARRED) || "";
     default:
       return map.getValue(FOLDER_IDS.INBOX) || "";
+  }
+}
+
+export function getFolderIdFromSearchFolder(
+  provider: "google" | "outlook",
+  folder: string
+) {
+  switch (folder) {
+    case "inbox":
+      return FOLDER_IDS.INBOX;
+    case "sent":
+      return FOLDER_IDS.SENT;
+    case "drafts":
+      return FOLDER_IDS.DRAFTS;
+    case "archive":
+      return FOLDER_IDS.DONE;
+    case "trash":
+      return FOLDER_IDS.TRASH;
+    case "starred":
+      return FOLDER_IDS.STARRED;
+    default:
+      return FOLDER_IDS.INBOX;
   }
 }
 
@@ -191,13 +214,24 @@ export function buildSearchQuery(
   } else if (provider === "outlook") {
     let folderId: string = "";
     let filters: string[] = [];
+    let queryParams: Map<string, string[]> = new Map();
+
     for (const item of searchItems) {
       if (item.startsWith("in:")) {
+        const folder = item.slice(3);
         // Set the folder id of the search query, default to /messages
-        folderId = `mailFolders/${getLabelIdFromSearchFolder(
-          provider,
-          item.slice(3)
-        )}/`;
+        if (folder === "starred") {
+          const filterParam = queryParams.get("$filter") || [];
+          queryParams.set(
+            "$filter",
+            filterParam.concat("flag/flagStatus eq 'flagged'")
+          );
+        } else {
+          folderId = `mailFolders/${getLabelIdFromSearchFolder(
+            provider,
+            folder
+          )}/`;
+        }
       } else if (item.startsWith("from:") || item.startsWith("to:")) {
         // To/from filters can be pushed as plain strings "to:query" or "from:query"
         filters.push(item);
@@ -207,7 +241,12 @@ export function buildSearchQuery(
       }
     }
 
-    return `${folderId}messages?$select=id,conversationId,createdDateTime&$top=20${
+    let queryString = "";
+    queryParams.forEach((value, key) => {
+      queryString += `&${key}=${value.join(" and ")}`;
+    });
+
+    return `${folderId}messages?$select=id,conversationId,createdDateTime&$top=20${queryString}${
       filters.length > 0 ? '&$search="' + filters.join(" AND ") + '"' : ""
     }`;
   }

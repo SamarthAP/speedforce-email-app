@@ -1285,15 +1285,11 @@ export async function search(
     outlookQuery: searchQuery,
   };
 
-  console.log(searchItems);
-  console.log(filter);
-
   if (provider === "google") {
     // TODO: implement
   } else if (provider === "outlook") {
     const { data, error } = await mThreadList(accessToken, filter);
 
-    console.log(data);
     if (error || !data) {
       dLog("Error searching mailbox");
       return { data: [], error };
@@ -1302,14 +1298,14 @@ export async function search(
     const threadIds = _.uniq(data.value.map((thread) => thread.conversationId));
 
     let parsedThreads: IEmailThread[] = [];
-    // if (threadIds.length > 0) {
-    //   parsedThreads = await handleNewThreadsOutlook(
-    //     accessToken,
-    //     email,
-    //     threadIds,
-    //     filter
-    //   );
-    // }
+    if (threadIds.length > 0) {
+      parsedThreads = await handleNewThreadsOutlook(
+        accessToken,
+        email,
+        threadIds,
+        filter
+      );
+    }
 
     return { data: parsedThreads, error: null };
   }

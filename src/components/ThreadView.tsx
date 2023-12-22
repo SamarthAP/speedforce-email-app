@@ -1,6 +1,6 @@
 import ThreadList from "../components/ThreadList";
 import Sidebar from "../components/Sidebar";
-import { IEmail, IEmailThread, ISelectedEmail, db } from "../lib/db";
+import { IEmail, IEmailThread, db } from "../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import React, { useEffect, useRef, useState } from "react";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
@@ -18,22 +18,28 @@ import { classNames } from "../lib/util";
 import { ClientInboxTabType } from "../api/model/client.inbox";
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import { useNavigate } from "react-router-dom";
+import SearchBar from "./SearchBar";
 
 const MAX_RENDER_COUNT = 5;
 const MIN_REFRESH_DELAY_MS = 1000;
 
 interface ThreadViewProps {
   tabs: ClientInboxTabType[];
+  searchItems?: string[];
+  setSearchItems?: (searchItems: string[]) => void;
 }
 
-export default function ThreadView({ tabs }: ThreadViewProps) {
+export default function ThreadView({
+  tabs,
+  searchItems,
+  setSearchItems,
+}: ThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   const [selectedTab, setSelectedTab] = useState<ClientInboxTabType>(tabs[0]);
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
   const [selectedThread, setSelectedThread] = useState<string>("");
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const [writeEmailMode, setWriteEmailMode] = useState<boolean>(false);
-  const [searchMode, setSearchMode] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
@@ -56,10 +62,31 @@ export default function ThreadView({ tabs }: ThreadViewProps) {
     }
   }, [selectedThread, scrollPosition]);
 
+  const threadIds = useLiveQuery(() => {
+    return db.emailThreads
+      .where("email")
+      .equals(selectedEmail.email)
+      .primaryKeys();
+  });
+
+  const messages = useLiveQuery(() => {
+    return db.messages
+      .where("threadId")
+      .anyOf(threadIds || [])
+      .toArray();
+  }, [threadIds]);
+
   const threads = useLiveQuery(
     () => {
       if (selectedTab.filterThreadsFnc)
         return selectedTab.filterThreadsFnc(selectedEmail);
+
+      if (selectedTab.filterThreadsSearchFnc)
+        return selectedTab.filterThreadsSearchFnc(
+          selectedEmail,
+          searchItems || [],
+          messages || []
+        );
 
       const emailThreads = db.emailThreads
         .where("email")
@@ -70,13 +97,17 @@ export default function ThreadView({ tabs }: ThreadViewProps) {
 
       return emailThreads;
     },
-    [selectedEmail, selectedTab],
+    [selectedEmail, selectedTab, searchItems],
     [] // default value
   );
 
   useEffect(() => {
     // Do not fetch on first render in any scenario. Cap the number of renders to prevent infinite loops on empty folders
-    if (renderCounter.current > 1 && renderCounter.current < MAX_RENDER_COUNT) {
+    if (
+      !selectedTab.isSearchMode &&
+      renderCounter.current > 1 &&
+      renderCounter.current < MAX_RENDER_COUNT
+    ) {
       // If there are no threads in the db, do a full sync
       // TODO: Do a partial sync periodically to check for new threads (when not empty)
       if (threads?.length === 0) {
@@ -113,8 +144,7 @@ export default function ThreadView({ tabs }: ThreadViewProps) {
   };
 
   const handleSearchClick = () => {
-    // navigate("/search");
-    setSearchMode(true);
+    navigate("/search");
   };
 
   if (writeEmailMode) {
@@ -160,10 +190,9 @@ export default function ThreadView({ tabs }: ThreadViewProps) {
       <div className="w-full flex flex-col overflow-hidden">
         <div className="flex flex-row items-center justify-between">
           <nav className="flex items-center pl-6" aria-label="Tabs">
-            {searchMode ? (
+            {selectedTab.isSearchMode ? (
               <h2
                 key="Search"
-                onClick={() => setSearchMode(false)}
                 className={classNames(
                   "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
                   "font-medium text-black dark:text-white"
@@ -188,56 +217,63 @@ export default function ThreadView({ tabs }: ThreadViewProps) {
               ))
             )}
           </nav>
-          <div className="flex items-center">
-            <button
-              className="mr-3"
-              onMouseEnter={(event) => {
-                handleMouseEnter(event, "Compose");
-              }}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => {
-                setWriteEmailMode(true);
-              }}
-            >
-              <PencilSquareIcon className="h-5 w-5 shrink-0 text-black dark:text-white" />
-            </button>
-            <button
-              className="mr-3"
-              onMouseEnter={(event) => {
-                handleMouseEnter(event, "Refresh");
-              }}
-              onMouseLeave={handleMouseLeave}
-              onClick={refreshing ? void 0 : handleRefreshClick}
-            >
-              <ArrowPathIcon
-                className={classNames(
-                  "h-5 w-5 shrink-0 text-black dark:text-white",
-                  refreshing ? "animate-spin" : ""
-                )}
+          {selectedTab.isSearchMode ? (
+            <SearchBar
+              searchItems={searchItems || []}
+              setSearchItems={setSearchItems || (() => void 0)}
+            />
+          ) : (
+            <div className="flex items-center">
+              <button
+                className="mr-3"
+                onMouseEnter={(event) => {
+                  handleMouseEnter(event, "Compose");
+                }}
+                onMouseLeave={handleMouseLeave}
+                onClick={() => {
+                  setWriteEmailMode(true);
+                }}
+              >
+                <PencilSquareIcon className="h-5 w-5 shrink-0 text-black dark:text-white" />
+              </button>
+              <button
+                className="mr-3"
+                onMouseEnter={(event) => {
+                  handleMouseEnter(event, "Refresh");
+                }}
+                onMouseLeave={handleMouseLeave}
+                onClick={refreshing ? void 0 : handleRefreshClick}
+              >
+                <ArrowPathIcon
+                  className={classNames(
+                    "h-5 w-5 shrink-0 text-black dark:text-white",
+                    refreshing ? "animate-spin" : ""
+                  )}
+                />
+              </button>
+              <button
+                className="mr-3"
+                onMouseEnter={(event) => {
+                  handleMouseEnter(event, "Search");
+                }}
+                onMouseLeave={handleMouseLeave}
+                onClick={handleSearchClick}
+              >
+                <MagnifyingGlassIcon className="h-5 w-5 shrink-0 text-black dark:text-white" />
+              </button>
+              <AccountActionsMenu
+                selectedEmail={selectedEmail}
+                setSelectedEmail={(email) => void setSelectedEmail(email)}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
               />
-            </button>
-            <button
-              className="mr-3"
-              onMouseEnter={(event) => {
-                handleMouseEnter(event, "Search");
-              }}
-              onMouseLeave={handleMouseLeave}
-              onClick={handleSearchClick}
-            >
-              <MagnifyingGlassIcon className="h-5 w-5 shrink-0 text-black dark:text-white" />
-            </button>
-            <AccountActionsMenu
-              selectedEmail={selectedEmail}
-              setSelectedEmail={(email) => void setSelectedEmail(email)}
-              handleMouseEnter={handleMouseEnter}
-              handleMouseLeave={handleMouseLeave}
-            />
-            <TooltipPopover
-              message={tooltipData.message}
-              showTooltip={tooltipData.showTooltip}
-              coords={tooltipData.coords}
-            />
-          </div>
+              <TooltipPopover
+                message={tooltipData.message}
+                showTooltip={tooltipData.showTooltip}
+                coords={tooltipData.coords}
+              />
+            </div>
+          )}
         </div>
         {process.env.NODE_ENV !== "production" ? (
           <TestSyncButtons
