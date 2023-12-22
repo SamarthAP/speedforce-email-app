@@ -8,4 +8,5 @@ export interface ClientInboxTabType {
   outlookQuery?: string;
   canArchiveThread?: boolean;
   canTrashThread?: boolean;
+  canDeletePermanentlyThread?: true;
 }

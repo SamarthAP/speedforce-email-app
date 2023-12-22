@@ -14,6 +14,10 @@ npm run make # builds for current OS
 ```
 
 ```
+npm run make -- --arch=arm64,x64
+```
+
+```
 npm run make -- --arch=universal --platform=darwin # single build that works on intel and apple silicon, but doubles size
 ```
 

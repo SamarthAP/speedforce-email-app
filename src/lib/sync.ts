@@ -825,7 +825,6 @@ export async function archiveThread(
     }
   }
 
-  toast("Marked as done");
   return { data: null, error: null };
 }
 
