@@ -122,6 +122,69 @@ ipcMain.handle("get-os", () => {
   return process.platform;
 });
 
+ipcMain.handle("download-daily-image", async (_event, accessToken, date) => {
+  let imageDownloadUrl = "";
+
+  const authHeader = {
+    Authorization: `Bearer ${accessToken}`,
+  };
+
+  const res: Response = await fetch(
+    "https://api.speedforce.me/inboxZero/getDailyImage?date=" + date,
+    {
+      method: "GET",
+      headers: {
+        ...authHeader,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    imageDownloadUrl = "";
+  } else {
+    const responseData = await res.json();
+    imageDownloadUrl = responseData[0].image_url;
+  }
+
+  if (!imageDownloadUrl) {
+    return false;
+  }
+
+  const imageRes: Response = await fetch(imageDownloadUrl, {
+    method: "GET",
+  });
+
+  if (!imageRes.ok) {
+    return "";
+  }
+  // image name without query string
+  const imageName = imageDownloadUrl.split("?")[0].split("/").pop();
+  if (!imageName) {
+    return "";
+  }
+
+  // const imagePath = path.join(
+  //   app.getPath("userData"),
+  //   "dailyImages",
+  //   imageName
+  // );
+  // console.log("imagePath");
+  // console.log(imagePath);
+
+  const arrayBuffer = await imageRes.arrayBuffer();
+  // const stream = fs.createWriteStream(imagePath);
+
+  // stream.write(Buffer.from(arrayBuffer));
+  // stream.end();
+
+  // convert to base64
+  const imageBase64 = Buffer.from(arrayBuffer).toString("base64");
+  // get file extension
+  const fileExtension = path.extname(imageName);
+
+  return `data:image/${fileExtension};base64,${imageBase64}`;
+});
+
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient("speedforce", process.execPath, [
