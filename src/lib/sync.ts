@@ -1286,7 +1286,20 @@ export async function search(
   };
 
   if (provider === "google") {
-    // TODO: implement
+    const tList = await gThreadList(accessToken, filter);
+
+    if (tList.error || !tList.data) {
+      // TODO: send error syncing mailbox
+      return;
+    }
+
+    const threadIds = tList.data.threads
+      ? tList.data.threads.map((thread) => thread.id)
+      : [];
+
+    if (threadIds.length > 0) {
+      await handleNewThreadsGoogle(accessToken, email, threadIds);
+    }
   } else if (provider === "outlook") {
     const { data, error } = await mThreadList(accessToken, filter);
 

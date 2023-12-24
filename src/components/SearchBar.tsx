@@ -80,6 +80,7 @@ export default function SearchBar({
       setSearchItems(searchItems.slice(0, searchItems.length - 1));
     }
   };
+
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Escape") {

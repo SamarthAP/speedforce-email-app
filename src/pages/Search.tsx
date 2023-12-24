@@ -1,6 +1,4 @@
 import ThreadView from "../components/ThreadView";
-import { FOLDER_IDS } from "../api/constants";
-
 import { IMessage, ISelectedEmail, db } from "../lib/db";
 import { ClientInboxTabType } from "../api/model/client.inbox";
 import { useState } from "react";
@@ -67,17 +65,16 @@ export default function Search() {
 
             if (!toThreads?.includes(thread.id)) return false;
           } else {
-            // TODO: this super slow
-            // const threadIds = decodedMessages
-            //   ?.filter(
-            //     (message) =>
-            //       message.threadId === thread.id &&
-            //       message.htmlData.includes(searchItem.toLocaleLowerCase())
-            //   )
-            //   .map((message) => message.threadId);
+            const threadIds = messages
+              ?.filter(
+                (message) =>
+                  message.threadId === thread.id &&
+                  message.htmlData.includes(searchItem.toLocaleLowerCase())
+              )
+              .map((message) => message.threadId);
 
             if (
-              // !threadIds?.includes(thread.id) &&
+              !threadIds?.includes(thread.id) &&
               !thread.from
                 .toLocaleLowerCase()
                 .includes(searchItem.toLocaleLowerCase()) &&

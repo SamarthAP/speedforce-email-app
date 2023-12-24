@@ -209,12 +209,25 @@ export function buildSearchQuery(
   searchItems: string[]
 ) {
   if (provider === "google") {
-    // TODO: implement
-    return ``;
+    let filters: string[] = [];
+
+    for (const item of searchItems) {
+      if (item.startsWith("in:")) {
+        filters.push(item);
+      } else if (item.startsWith("from:") || item.startsWith("to:")) {
+        // To/from filters can be pushed as plain strings "to:query" or "from:query"
+        filters.push(item);
+      } else {
+        // If action not recognized, push as a plain string
+        filters.push(item);
+      }
+    }
+
+    return `&includeSpamTrash=true&q=${filters.join(" ")}`;
   } else if (provider === "outlook") {
     let folderId: string = "";
     let filters: string[] = [];
-    let queryParams: Map<string, string[]> = new Map();
+    let queryParams: Map<string, string[]> = new Map(); // Misc query params
 
     for (const item of searchItems) {
       if (item.startsWith("in:")) {

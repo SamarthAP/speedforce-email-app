@@ -14,7 +14,7 @@ import { WriteMessage } from "../components/WriteMessage";
 import SelectedThreadBar from "./SelectedThreadBar";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
-import { classNames } from "../lib/util";
+import { classNames, cleanHtmlString } from "../lib/util";
 import { ClientInboxTabType } from "../api/model/client.inbox";
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import { useNavigate } from "react-router-dom";
@@ -69,11 +69,19 @@ export default function ThreadView({
       .primaryKeys();
   });
 
-  const messages = useLiveQuery(() => {
-    return db.messages
+  const messages = useLiveQuery(async () => {
+    const messages = await db.messages
       .where("threadId")
       .anyOf(threadIds || [])
       .toArray();
+
+    return messages.map((message) => ({
+      ...message,
+      htmlData: cleanHtmlString(
+        message.htmlData,
+        selectedEmail.provider === "google"
+      ),
+    }));
   }, [threadIds]);
 
   const threads = useLiveQuery(
