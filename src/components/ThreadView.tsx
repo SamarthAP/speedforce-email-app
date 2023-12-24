@@ -226,10 +226,7 @@ export default function ThreadView({
             )}
           </nav>
           {selectedTab.isSearchMode ? (
-            <SearchBar
-              searchItems={searchItems || []}
-              setSearchItems={setSearchItems || (() => void 0)}
-            />
+            <SearchBar setSearchItems={setSearchItems || (() => void 0)} />
           ) : (
             <div className="flex items-center">
               <button

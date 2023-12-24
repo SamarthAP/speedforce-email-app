@@ -4,20 +4,17 @@ import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { search } from "../lib/sync";
 import { classNames } from "../lib/util";
 import { XCircleIcon } from "@heroicons/react/20/solid";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Combobox } from "@headlessui/react";
 import { useNavigate } from "react-router-dom";
 
 interface SearchBarProps {
-  searchItems: string[];
   setSearchItems: (searchItems: string[]) => void;
   // setSearchMode: (searchMode: boolean) => void;
 }
 
-export default function SearchBar({
-  searchItems,
-  setSearchItems,
-}: SearchBarProps) {
-  // const [searchItems, setSearchItems] = useState<string[]>([]);
+export default function SearchBar({ setSearchItems }: SearchBarProps) {
+  const [localSearchItems, setLocalSearchItems] = useState<string[]>([]);
   const [searchText, setSearchText] = useState<string>("");
   const { selectedEmail } = useEmailPageOutletContext();
   const navigate = useNavigate();
@@ -33,51 +30,49 @@ export default function SearchBar({
     // "has:attachment",
   ];
 
-  const isValidSearchText = (text: string) => {
-    if (text !== "") return true;
-  };
-
   const onSearchTextChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     event.preventDefault();
     const value = event.currentTarget.value;
     setSearchText(value);
-    // if (value.includes(",") || value.includes(" ")) {
-    //   event.preventDefault();
-    // } else {
-    //   if (value === "") {
-    //     // Delay to allow seamless deletion of emails
-    //     // If user deletes the last character of their input, the previous email should not be deleted (only if they backspace on an empty input)
-    //     // 100ms is long enough for synchronous deletion 99% of the time (ensure onKeyUp fires before onChange) while being imperceptible to the user
-    //     // Without this delay, random chance that deleting the last character will also delete the previous email
-    //     await delay(100);
-    //   }
-
-    //   setSearchText(value);
-    // }
   };
 
   const onSearchSelect = (item: string) => {
-    setSearchItems([...searchItems, item]);
+    setLocalSearchItems([...localSearchItems, item]);
     setSearchText("");
   };
 
-  const onKeyUp = async (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      const newSearchItems = [...searchItems, searchText];
-      setSearchItems(newSearchItems);
+  const triggerSearch = async () => {
+    let newSearchItems = [...localSearchItems];
+    if (searchText !== "") {
+      newSearchItems.push(searchText);
       setSearchText("");
+    }
 
-      void search(selectedEmail.email, selectedEmail.provider, newSearchItems);
+    setSearchItems(newSearchItems);
+    setLocalSearchItems(newSearchItems);
+
+    void search(selectedEmail.email, selectedEmail.provider, newSearchItems);
+  };
+
+  const onKeyUp = async (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === " " && searchText.includes(":")) {
+      const newSearchItems = [...localSearchItems, searchText];
+      setLocalSearchItems(newSearchItems);
+      setSearchText("");
+    } else if (event.key === "Enter") {
+      triggerSearch();
     } else if (
       event.key === "Backspace" &&
       searchText === "" &&
-      searchItems.length > 0
+      localSearchItems.length > 0
     ) {
       // Remove last email from send list
       // Must fire before onChange updates emailText
-      setSearchItems(searchItems.slice(0, searchItems.length - 1));
+      setLocalSearchItems(
+        localSearchItems.slice(0, localSearchItems.length - 1)
+      );
     }
   };
 
@@ -97,9 +92,9 @@ export default function SearchBar({
   });
 
   return (
-    <div className="flex w-full items-center">
+    <div className="flex w-full items-center mr-8">
       <div className="flex flex-row flex-wrap w-full">
-        {searchItems.map((item, idx) => (
+        {localSearchItems.map((item, idx) => (
           <div
             key={idx}
             className="flex items-center mr-1.5 my-0.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-2 py-1 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 cursor-default"
@@ -107,7 +102,9 @@ export default function SearchBar({
             <span>{item}</span>
             <button
               onClick={() =>
-                setSearchItems(searchItems.filter((_, i) => i !== idx))
+                setLocalSearchItems(
+                  localSearchItems.filter((_, i) => i !== idx)
+                )
               }
               type="button"
               className="focus:outline-none"
@@ -159,6 +156,9 @@ export default function SearchBar({
           )}
         </Combobox>
       </div>
+      <button onClick={() => void triggerSearch()}>
+        <MagnifyingGlassIcon className="w-5 h-5" />
+      </button>
     </div>
   );
 }
