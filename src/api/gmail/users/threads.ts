@@ -16,7 +16,7 @@ export const list = async (accessToken: string, filter: IThreadFilter) => {
   try {
     // &q=from:hello@digest.producthunt.com for testing
     const res: Response = await fetch(
-      `${GMAIL_API_URL}/threads?maxResults=20${filter.gmailQuery}`,
+      `${GMAIL_API_URL}/threads?maxResults=100${filter.gmailQuery}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -52,8 +52,8 @@ export const listNextPage = async (
 
   const fetchURL =
     filter && label
-      ? `${GMAIL_API_URL}/threads?maxResults=20&labelIds=${label}&pageToken=${nextPageToken}`
-      : `${GMAIL_API_URL}/threads?maxResults=20&pageToken=${nextPageToken}`;
+      ? `${GMAIL_API_URL}/threads?maxResults=100&labelIds=${label}&pageToken=${nextPageToken}`
+      : `${GMAIL_API_URL}/threads?maxResults=100&pageToken=${nextPageToken}`;
 
   try {
     const res: Response = await fetch(fetchURL, {

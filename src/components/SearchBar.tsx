@@ -7,6 +7,8 @@ import { XCircleIcon } from "@heroicons/react/20/solid";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Combobox } from "@headlessui/react";
 import { useNavigate } from "react-router-dom";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "../lib/db";
 
 interface SearchBarProps {
   setSearchItems: (searchItems: string[]) => void;
@@ -19,16 +21,26 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   const navigate = useNavigate();
 
-  const filteredItems: string[] = [
-    // "in:sent",
-    // "in:inbox",
-    // "in:trash",
-    // "in:spam",
-    // "in:archive",
-    // "in:all",
-    // "in:starred",
-    // "has:attachment",
-  ];
+  // const searchQueries = useLiveQuery(() => {
+  //   return db.searchHistory
+  //     .where("email")
+  //     .equals(selectedEmail.email)
+  //     .reverse()
+  //     .sortBy("lastInteraction");
+  // });
+
+  const filteredItems: string[] =
+    // searchQueries?.map((q) => q.searchItems.join(" ")) ||
+    [
+      // "in:sent",
+      // "in:inbox",
+      // "in:trash",
+      // "in:spam",
+      // "in:archive",
+      // "in:all",
+      // "in:starred",
+      // "has:attachment",
+    ];
 
   const onSearchTextChange = async (
     event: React.ChangeEvent<HTMLInputElement>

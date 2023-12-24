@@ -266,3 +266,30 @@ export function buildSearchQuery(
 
   return "";
 }
+
+export async function saveSearchQuery(email: string, searchItems: string[]) {
+  const searchQuery = await db.searchHistory
+    .where("email")
+    .equals(email)
+    .and((query) => query.searchItems == searchItems)
+    .first();
+  dLog("saving search query");
+  await db.searchHistory.put({
+    email,
+    searchItems,
+    lastInteraction: new Date().getTime(),
+    numInteractions: searchQuery ? searchQuery.numInteractions + 1 : 1,
+  });
+}
+
+export async function getRecentSearchQueries(email: string) {
+  const searchQueries = await db.searchHistory
+    .where("email")
+    .equals(email)
+    .reverse()
+    .sortBy("lastInteraction");
+
+  console.log(searchQueries);
+
+  // return searchQueries.map((query) => query.searchItems);
+}

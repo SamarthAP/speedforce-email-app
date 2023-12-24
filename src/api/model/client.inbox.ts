@@ -14,4 +14,5 @@ export interface ClientInboxTabType {
   canArchiveThread?: boolean;
   canTrashThread?: boolean;
   isSearchMode?: boolean;
+  canDeletePermanentlyThread?: true;
 }

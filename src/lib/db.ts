@@ -91,9 +91,16 @@ export interface IInboxZeroMetadata {
 }
 
 export interface ISearchQuery {
-  query: string;
+  email: string;
+  searchItems: string[];
   lastInteraction: number;
   numInteractions: number; // TODO: consider using this to prioritize search results
+}
+
+export interface IDailyImageMetadata {
+  id: number; // So we can select only one image
+  date: string; // YYYY-MM-DD
+  url: string;
 }
 
 export class SubClassedDexie extends Dexie {
@@ -106,7 +113,8 @@ export class SubClassedDexie extends Dexie {
   outlookFolders!: Table<IOutlookFolder, string>;
   contacts!: Table<IContact, string>;
   inboxZeroMetadata!: Table<IInboxZeroMetadata, string>;
-  searchQueries!: Table<ISearchQuery, string>;
+  dailyImageMetadata!: Table<IDailyImageMetadata, number>;
+  searchHistory!: Table<ISearchQuery, string>;
 
   constructor() {
     super("SpeedforceDB");
