@@ -20,7 +20,6 @@ import { getAccessToken } from "../api/accessToken";
 import { loadContacts, partialSync, watchSubscription } from "../lib/sync";
 import { handleMessage } from "../lib/wsHelpers";
 import InboxZeroSetup from "../pages/InboxZeroSetup";
-import { getDailyImage } from "../api/inboxZero";
 
 interface AppRouterProps {
   session: Session;
@@ -156,9 +155,9 @@ export default function AppRouter({ session }: AppRouterProps) {
         const lastSyncTime = time ? new Date(parseInt(time)) : new Date(0);
         const now = new Date();
         const diff = now.getTime() - lastSyncTime.getTime();
-        const days = diff / (1000 * 60 * 60 * 24);
+        const n_half_hours = diff / (1000 * 60 * 30); // divide by 30 mins
 
-        if (days > 3) {
+        if (n_half_hours > 1) {
           const emails = await db.emails.toArray();
 
           for (const email of emails) {
@@ -191,11 +190,18 @@ export default function AppRouter({ session }: AppRouterProps) {
           dataAlreadyExists: true,
         };
       }
+      dLog("fetching daily image data");
 
-      const { data, error } = await getDailyImage();
+      const accessToken = session.access_token;
 
-      if (error || !data) {
-        dLog(error);
+      const encodedImage = await window.electron.ipcRenderer.invoke(
+        "download-daily-image",
+        accessToken,
+        date
+      );
+
+      if (!encodedImage) {
+        dLog("Couln't get encoded image");
         return {
           dailyImageMetadata: {
             date: "",
@@ -204,7 +210,13 @@ export default function AppRouter({ session }: AppRouterProps) {
           dataAlreadyExists: false,
         };
       } else {
-        return { dailyImageMetadata: data, dataAlreadyExists: false };
+        return {
+          dailyImageMetadata: {
+            date,
+            url: encodedImage,
+          },
+          dataAlreadyExists: false,
+        };
       }
     }
 
@@ -220,7 +232,7 @@ export default function AppRouter({ session }: AppRouterProps) {
       .catch((err) => {
         dLog(err);
       });
-  }, []);
+  }, [selectedEmail, session]);
 
   if (!loaded) {
     return <div className="h-screen w-screen"></div>;
