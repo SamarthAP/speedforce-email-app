@@ -268,28 +268,27 @@ export function buildSearchQuery(
 }
 
 export async function saveSearchQuery(email: string, searchItems: string[]) {
+  const parsedQuery = searchItems.join(" ");
   const searchQuery = await db.searchHistory
     .where("email")
     .equals(email)
-    .and((query) => query.searchItems == searchItems)
+    .and((query) => query.searchQuery == parsedQuery)
     .first();
   dLog("saving search query");
   await db.searchHistory.put({
     email,
-    searchItems,
+    searchQuery: parsedQuery,
     lastInteraction: new Date().getTime(),
     numInteractions: searchQuery ? searchQuery.numInteractions + 1 : 1,
   });
 }
 
-export async function getRecentSearchQueries(email: string) {
-  const searchQueries = await db.searchHistory
-    .where("email")
-    .equals(email)
-    .reverse()
-    .sortBy("lastInteraction");
-
-  console.log(searchQueries);
-
-  // return searchQueries.map((query) => query.searchItems);
+export function parseSearchQuery(searchQuery: string) {
+  // TODO: improve to accomodate edge cases
+  return searchQuery
+    ? searchQuery
+        .split(" ")
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0)
+    : [];
 }

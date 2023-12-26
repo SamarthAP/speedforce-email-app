@@ -1282,7 +1282,7 @@ export async function search(
     outlookQuery: searchQuery,
   };
 
-  // void saveSearchQuery(email, searchItems);
+  void saveSearchQuery(email, searchItems);
 
   if (provider === "google") {
     const tList = await gThreadList(accessToken, filter);

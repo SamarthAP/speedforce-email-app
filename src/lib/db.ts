@@ -92,7 +92,7 @@ export interface IInboxZeroMetadata {
 
 export interface ISearchQuery {
   email: string;
-  searchItems: string[];
+  searchQuery: string;
   lastInteraction: number;
   numInteractions: number; // TODO: consider using this to prioritize search results
 }
@@ -133,6 +133,9 @@ export class SubClassedDexie extends Dexie {
     this.version(5)
       .stores(dexieSchemas[5].schema)
       .upgrade(dexieSchemas[5].upgradeFnc);
+    this.version(6)
+      .stores(dexieSchemas[6].schema)
+      .upgrade(dexieSchemas[6].upgradeFnc);
   }
 }
 

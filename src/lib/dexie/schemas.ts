@@ -165,7 +165,7 @@ export const dexieSchemas = {
       contacts:
         "[email+contactEmailAddress], contactName, isSavedContact, lastInteraction",
       inboxZeroMetadata: "email, inboxZeroStartDate",
-      searchHistory: "email, query",
+      searchHistory: "[email+searchQuery]",
     },
     upgradeFnc: async (tx: Transaction) => {
       dLog("Upgrading schema to version 6");
