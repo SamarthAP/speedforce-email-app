@@ -6,7 +6,6 @@ import { DocumentDuplicateIcon } from "@heroicons/react/20/solid";
 import { classNames } from "../lib/util";
 import toast from "react-hot-toast";
 import { dLog } from "../lib/noProd";
-import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { useInboxZeroBackgroundContext } from "../contexts/InboxZeroBackgroundContext";
 
 function copyToClipboard(text: string) {
@@ -34,7 +33,6 @@ export default function AssistBar({
   thread,
   setSelectedThread,
 }: IAssistBarProps) {
-  const { selectedEmail } = useEmailPageOutletContext();
   const { isBackgroundOn } = useInboxZeroBackgroundContext();
 
   const emailThreads = useLiveQuery(

@@ -73,6 +73,7 @@ export default function ThreadView({
       .primaryKeys();
   });
 
+  // Message list used for search
   const messages = useLiveQuery(async () => {
     return db.messages
       .where("threadId")

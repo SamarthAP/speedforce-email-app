@@ -202,7 +202,7 @@ export function buildSearchQuery(
   searchItems: string[]
 ) {
   if (provider === "google") {
-    let filters: string[] = [];
+    const filters: string[] = [];
 
     for (const item of searchItems) {
       if (item.startsWith("in:")) {
@@ -218,9 +218,9 @@ export function buildSearchQuery(
 
     return `&includeSpamTrash=true&q=${filters.join(" ")}`;
   } else if (provider === "outlook") {
-    let folderId: string = "";
-    let filters: string[] = [];
-    let queryParams: Map<string, string[]> = new Map(); // Misc query params
+    let folderId = "";
+    const filters: string[] = [];
+    const queryParams: Map<string, string[]> = new Map(); // Misc query params
 
     for (const item of searchItems) {
       if (item.startsWith("in:")) {

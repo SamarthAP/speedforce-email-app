@@ -10,13 +10,13 @@ import { db } from "../lib/db";
 
 interface SearchBarProps {
   setSearchItems: (searchItems: string[]) => void;
-  // setSearchMode: (searchMode: boolean) => void;
 }
 
 export default function SearchBar({ setSearchItems }: SearchBarProps) {
   const [searchText, setSearchText] = useState<string>("");
   const { selectedEmail } = useEmailPageOutletContext();
 
+  // Pull search history from indexeddb
   const searchQueries = useLiveQuery(() => {
     return db.searchHistory
       .where("email")
@@ -44,11 +44,13 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
     setSearchText(value);
   };
 
+  // handler for dropdown select
   const onSearchSelect = async (item: string) => {
-    triggerSearch(item);
+    void triggerSearch(item);
     setSearchText(item);
   };
 
+  // search handler
   const triggerSearch = async (searchQuery: string) => {
     const searchItems = parseSearchQuery(searchQuery);
     if (searchItems.length === 0) return;
@@ -58,28 +60,16 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
   };
 
   const onKeyUp = async (event: React.KeyboardEvent<HTMLInputElement>) => {
-    // Improve this logic to accomodate for "test in:sent" case
     if (event.key === "Enter") {
-      triggerSearch(searchText);
+      void triggerSearch(searchText);
     }
-
-    // else if (
-    //   event.key === "Backspace" &&
-    //   searchText === "" &&
-    //   localSearchItems.length > 0
-    // ) {
-    //   // Remove last email from send list
-    //   // Must fire before onChange updates emailText
-    //   setLocalSearchItems(
-    //     localSearchItems.slice(0, localSearchItems.length - 1)
-    //   );
-    // }
   };
 
   const comboInputRef = useRef<HTMLInputElement>(null);
   const comboButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    // focus on textinput on first render
     if (comboInputRef.current && comboButtonRef.current) {
       comboInputRef.current.focus();
       comboButtonRef.current.click();
@@ -92,7 +82,7 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
         <Combobox
           as="div"
           className="flex items-center"
-          onChange={onSearchSelect}
+          onChange={() => void onSearchSelect}
         >
           <Combobox.Button ref={comboButtonRef}>
             <Combobox.Input
@@ -101,7 +91,7 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
               pattern=""
               value={searchText}
               onChange={(event) => void onSearchTextChange(event)}
-              onKeyUp={onKeyUp}
+              onKeyUp={(event) => void onKeyUp(event)}
               ref={comboInputRef}
             />
           </Combobox.Button>
@@ -118,7 +108,7 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
             >
               <div className="flex">
                 <span className="font-semibold whitespace-nowrap">
-                  Search results for "{searchText}"
+                  Search results for &ldquo;{searchText}&rdquo;
                 </span>
               </div>
             </Combobox.Option>
@@ -150,7 +140,7 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
           )} */}
         </Combobox>
       </div>
-      <button onClick={() => void triggerSearch()}>
+      <button onClick={() => void triggerSearch(searchText)}>
         <MagnifyingGlassIcon className="w-5 h-5" />
       </button>
     </div>

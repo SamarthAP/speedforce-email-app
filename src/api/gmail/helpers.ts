@@ -1,9 +1,5 @@
 import { IMessage } from "../../lib/db";
-import {
-  decodeGoogleMessageData,
-  getMessageHeader,
-  formatDateForForwardTemplate,
-} from "../../lib/util";
+import { getMessageHeader, formatDateForForwardTemplate } from "../../lib/util";
 import _ from "lodash";
 
 export function getToRecipients(message: IMessage, email: string): string[] {

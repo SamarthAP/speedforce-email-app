@@ -147,10 +147,11 @@ export const dexieSchemas = {
   },
 
   /*
-  Schema Version 5:
+  Schema Version 6:
   Oldest Compatible App Version 0.0.11
   Change description:
-    - Add InboxZeroMetadata table
+    - Add search history table
+    - Script to decode google message data for search performance
   */
   6: {
     schema: {
@@ -171,34 +172,30 @@ export const dexieSchemas = {
     upgradeFnc: async (tx: Transaction) => {
       dLog("Upgrading schema to version 6");
 
+      // Used to distinguish between google and outlook messages
       const isHex = (str: string) => {
         return /^[0-9A-Fa-f]*$/.test(str);
       };
 
       // decode google message data
-      tx.table("messages")
+      return tx
+        .table("messages")
         .toCollection()
         .modify((message) => {
-          console.log(message.threadId);
           if (message.threadId && isHex(message.threadId)) {
-            if (message.htmlData) {
-              console.log(
-                "decoding google message html data for: ",
-                message.id
-              );
-              message.htmlData = decodeGoogleMessageData(message.htmlData);
-            }
+            try {
+              if (message.htmlData) {
+                message.htmlData = decodeGoogleMessageData(message.htmlData);
+              }
 
-            if (message.textData) {
-              console.log(
-                "decoding google message text data for: ",
-                message.id
-              );
-              message.textData = decodeGoogleMessageData(message.textData);
+              if (message.textData) {
+                message.textData = decodeGoogleMessageData(message.textData);
+              }
+            } catch (e) {
+              dLog("Error decoding google message data", e);
             }
           }
         });
-      // No upgrade function needed - just add searchHistory table
     },
   },
 };
