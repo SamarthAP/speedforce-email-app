@@ -14,7 +14,7 @@ import { WriteMessage } from "../components/WriteMessage";
 import SelectedThreadBar from "./SelectedThreadBar";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
-import { classNames, cleanHtmlString } from "../lib/util";
+import { classNames } from "../lib/util";
 import { ClientInboxTabType } from "../api/model/client.inbox";
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import { useNavigate } from "react-router-dom";
@@ -74,18 +74,10 @@ export default function ThreadView({
   });
 
   const messages = useLiveQuery(async () => {
-    const messages = await db.messages
+    return db.messages
       .where("threadId")
       .anyOf(threadIds || [])
       .toArray();
-
-    return messages.map((message) => ({
-      ...message,
-      htmlData: cleanHtmlString(
-        message.htmlData,
-        selectedEmail.provider === "google"
-      ),
-    }));
   }, [threadIds]);
 
   const threadsList = useLiveQuery(
@@ -137,6 +129,23 @@ export default function ThreadView({
 
     return threads;
   }, [threadsList]);
+
+  useEffect(() => {
+    // If search mode, listen for escape key to exit search mode
+    if (selectedTab.isSearchMode) {
+      const handleKeyPress = (event: KeyboardEvent) => {
+        if (event.key === "Escape" && !writeEmailMode) {
+          navigate(-1);
+        }
+      };
+
+      window.addEventListener("keydown", handleKeyPress);
+
+      return () => {
+        window.removeEventListener("keydown", handleKeyPress);
+      };
+    }
+  });
 
   useEffect(() => {
     if (wrapperType && wrapperType === "HOME" && !writeEmailMode) {

@@ -42,7 +42,7 @@ export function addTabbedMessageToForwardedHTML(
   }
 
   const formattedDate = formatDateForForwardTemplate(new Date(date));
-  const htmlData = decodeGoogleMessageData(message.htmlData);
+  const htmlData = message.htmlData;
 
   return {
     beforeString: `${beforeString}

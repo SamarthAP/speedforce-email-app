@@ -21,7 +21,6 @@ import { loadContacts, partialSync, watchSubscription } from "../lib/sync";
 import { handleMessage } from "../lib/wsHelpers";
 import InboxZeroSetup from "../pages/InboxZeroSetup";
 import Search from "../pages/Search";
-import { getDailyImage } from "../api/inboxZero";
 
 interface AppRouterProps {
   session: Session;

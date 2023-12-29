@@ -69,6 +69,7 @@ import {
 } from "./dexie/helpers";
 import {
   buildSearchQuery,
+  decodeGoogleMessageData,
   getMessageHeader,
   saveSearchQuery,
   upsertLabelIds,
@@ -183,8 +184,8 @@ async function handleNewThreadsGoogle(
           toRecipients: [getMessageHeader(message.payload.headers, "To")],
           snippet: message.snippet || "",
           headers: message.payload.headers,
-          textData,
-          htmlData,
+          textData: decodeGoogleMessageData(textData),
+          htmlData: decodeGoogleMessageData(htmlData),
           date: parseInt(message.internalDate),
           attachments,
         });

@@ -11,15 +11,8 @@ export function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-export function cleanHtmlString(htmlString: string, encoded = false) {
-  let decodedHTML = "";
-  if (encoded) {
-    decodedHTML = decodeGoogleMessageData(htmlString);
-  } else {
-    decodedHTML = htmlString;
-  }
-
-  const htmlWithBlobs = replaceDataURIsWithBlobs(decodedHTML);
+export function cleanHtmlString(htmlString: string) {
+  const htmlWithBlobs = replaceDataURIsWithBlobs(htmlString);
   const sanitized = DomPurify.sanitize(htmlWithBlobs, {
     USE_PROFILES: { html: true, svg: false, mathMl: false },
   });

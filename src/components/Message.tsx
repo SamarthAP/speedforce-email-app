@@ -235,10 +235,7 @@ export default function Message({ message, folderId }: MessageProps) {
         <div className="pb-4 px-4">
           {/* TODO: Verify that this is valid solution -> Assume google HTML is encoded and outlook is not */}
           <ShadowDom
-            htmlString={cleanHtmlString(
-              message.htmlData,
-              selectedEmail.provider === "google"
-            )}
+            htmlString={cleanHtmlString(message.htmlData)}
             showImages={showImages}
           />
         </div>

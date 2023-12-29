@@ -1,6 +1,7 @@
 import { Transaction } from "dexie";
 import { dLog } from "../noProd";
 import { cleanIndexedDb } from "../experiments";
+import { decodeGoogleMessageData } from "../util";
 
 export const dexieSchemas = {
   /*
@@ -169,6 +170,34 @@ export const dexieSchemas = {
     },
     upgradeFnc: async (tx: Transaction) => {
       dLog("Upgrading schema to version 6");
+
+      const isHex = (str: string) => {
+        return /^[0-9A-Fa-f]*$/.test(str);
+      };
+
+      // decode google message data
+      tx.table("messages")
+        .toCollection()
+        .modify((message) => {
+          console.log(message.threadId);
+          if (message.threadId && isHex(message.threadId)) {
+            if (message.htmlData) {
+              console.log(
+                "decoding google message html data for: ",
+                message.id
+              );
+              message.htmlData = decodeGoogleMessageData(message.htmlData);
+            }
+
+            if (message.textData) {
+              console.log(
+                "decoding google message text data for: ",
+                message.id
+              );
+              message.textData = decodeGoogleMessageData(message.textData);
+            }
+          }
+        });
       // No upgrade function needed - just add searchHistory table
     },
   },

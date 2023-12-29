@@ -5,7 +5,6 @@ import { search } from "../lib/sync";
 import { classNames, parseSearchQuery } from "../lib/util";
 import { MagnifyingGlassIcon, ClockIcon } from "@heroicons/react/24/outline";
 import { Combobox } from "@headlessui/react";
-import { useNavigate } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../lib/db";
 
@@ -17,7 +16,6 @@ interface SearchBarProps {
 export default function SearchBar({ setSearchItems }: SearchBarProps) {
   const [searchText, setSearchText] = useState<string>("");
   const { selectedEmail } = useEmailPageOutletContext();
-  const navigate = useNavigate();
 
   const searchQueries = useLiveQuery(() => {
     return db.searchHistory
@@ -60,12 +58,8 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
   };
 
   const onKeyUp = async (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Escape") {
-      navigate(-1);
-      dLog("Escape pressed");
-    }
     // Improve this logic to accomodate for "test in:sent" case
-    else if (event.key === "Enter") {
+    if (event.key === "Enter") {
       triggerSearch(searchText);
     }
 
