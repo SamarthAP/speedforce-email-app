@@ -279,6 +279,7 @@ export default function ThreadView({ tabs, wrapperType }: ThreadViewProps) {
           folderId={selectedTab.folderId}
           canArchiveThread={selectedTab.canArchiveThread}
           canTrashThread={selectedTab.canTrashThread}
+          canPermanentlyDeleteThread={selectedTab.canDeletePermanentlyThread}
         />
       </div>
       <AssistBar thread={hoveredThread} setSelectedThread={setSelectedThread} />
