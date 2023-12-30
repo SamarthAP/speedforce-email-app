@@ -82,7 +82,7 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
         <Combobox
           as="div"
           className="flex items-center"
-          onChange={() => void onSearchSelect}
+          onChange={(value: string) => void onSearchSelect(value)}
         >
           <Combobox.Button ref={comboButtonRef}>
             <Combobox.Input
