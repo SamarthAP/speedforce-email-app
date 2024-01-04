@@ -27,7 +27,8 @@ export type Channels =
   | "install-update"
   | "get-app-version"
   | "add-attachments"
-  | "get-os";
+  | "get-os"
+  | "download-daily-image";
 // Example use: window.electron.ipcRenderer.sendMessage("open-link-in-browser", url);
 
 const electronHandler = {
