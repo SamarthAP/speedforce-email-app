@@ -1,6 +1,6 @@
 import { Base64 } from "js-base64";
 import DomPurify from "dompurify";
-import { db } from "./db";
+import { db, IEmailThread } from "./db";
 import { dLog } from "./noProd";
 
 export function classNames(...classes: string[]) {
@@ -147,6 +147,15 @@ export async function updateLabelIdsForEmailThread(
     .concat(addLabelIds);
 
   await db.emailThreads.update(threadId, { labelIds });
+}
+
+export async function deleteDexieThread(threadId: string) {
+  await db.emailThreads.delete(threadId);
+  await db.messages.where("threadId").equals(threadId).delete();
+}
+
+export async function addDexieThread(thread: IEmailThread) {
+  await db.emailThreads.put(thread);
 }
 
 export function delay(ms: number) {
