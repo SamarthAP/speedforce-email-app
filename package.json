@@ -2,7 +2,7 @@
   "name": "speedforce",
   "productName": "Speedforce",
   "version": "0.0.12",
-  "description": "An improved email experience.",
+  "description": "Email re-engineered for high performance.",
   "main": ".webpack/main",
   "scripts": {
     "dev": "electron-forge start",
@@ -15,8 +15,8 @@
   },
   "keywords": [],
   "author": {
-    "name": "Samarth Patel",
-    "email": "samarth.patel.22@hotmail.com"
+    "name": "Sigil Innovation",
+    "email": "contact@sigilinnovation.com"
   },
   "license": "MIT",
   "devDependencies": {
