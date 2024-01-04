@@ -3,8 +3,10 @@ import DateSelectCalendar from "../components/Calendars/DateSelectCalendar";
 import Titlebar from "../components/Titlebar";
 import { ISelectedEmail, db } from "../lib/db";
 import { classNames } from "../lib/util";
-import { useState } from "react";
+import React, { useState } from "react";
 import { dLog } from "../lib/noProd";
+import { useTooltip } from "../components/UseTooltip";
+import TooltipPopover from "../components/TooltipPopover";
 
 const panelStyles = classNames(
   "rounded-lg px-2 py-2 text-center dark:text-white",
@@ -44,11 +46,14 @@ export default function InboxZeroSetup({
   const [selectedTabIndex, setSelectedTabIndex] = useState<number>(0);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip(
+    /*disableTimer=*/ true
+  );
 
   return (
     <main className="h-screen w-screen flex flex-col items-center dark:bg-zinc-900">
       <Titlebar />
-      <div className="something max-w-sm w-full mt-4 text-sm">
+      <div className="max-w-sm w-full mt-4 text-sm">
         <Tab.Group
           selectedIndex={selectedTabIndex}
           onChange={setSelectedTabIndex}
@@ -77,26 +82,94 @@ export default function InboxZeroSetup({
           </Tab.List>
           <Tab.Panels>
             <Tab.Panel className={panelStyles}>
-              <p>Let&apos;s set something up before we visit your inbox.</p>
+              Welcome to Speedforce
+              <br></br>
+              <br></br>
+              We’re here to help you manage your inbox more efficiently.
+              <br></br>
+              <br></br>
+              <button
+                className={classNames(
+                  "inline-flex items-center float-right",
+                  "rounded-md px-2 py-1",
+                  "ring-1 ring-inset",
+                  "text-xs font-medium",
+                  "text-xs text-slate-700 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-500/10 ring-slate-600/20 dark:ring-zinc-500/20"
+                )}
+                onClick={() => {
+                  setSelectedTabIndex(1);
+                }}
+              >
+                Next
+              </button>
             </Tab.Panel>
             <Tab.Panel className={panelStyles}>
-              Inbox Zero is our feature designed to help you manage your emails
-              more efficiently by aiming to keep your inbox as empty as
-              possible.
+              Speedforce is loaded with features that will help you get to{" "}
+              <span
+                onMouseEnter={(event: React.MouseEvent<HTMLElement>) => {
+                  handleMouseEnter(
+                    event,
+                    "Inbox Zero is an approach to email management that focuses on keeping an inbox empty -- or almost empty -- at all times."
+                  );
+                }}
+                onMouseLeave={() => {
+                  handleMouseLeave();
+                }}
+                className="text-blue-600 underline-offset-4 underline cursor-pointer"
+              >
+                inbox zero.
+              </span>
+              <br></br>
+              <br></br>
+              And it all begins with a fresh start.
+              <br></br>
+              <br></br>
+              <button
+                className={classNames(
+                  "inline-flex items-center float-right",
+                  "rounded-md px-2 py-1",
+                  "ring-1 ring-inset",
+                  "text-xs font-medium",
+                  "text-xs text-slate-700 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-500/10 ring-slate-600/20 dark:ring-zinc-500/20"
+                )}
+                onClick={() => {
+                  setSelectedTabIndex(2);
+                }}
+              >
+                Next
+              </button>
             </Tab.Panel>
             <Tab.Panel className={panelStyles}>
-              To help you achieve Inbox Zero, we offer you the flexibility to
-              choose a starting point.
+              To help you achieve inbox zero, we offer you the flexibility to
+              choose a starting point for your inbox.
               <br></br>
               <br></br>
-              This means you can decide how far back in time you want to start
-              managing your emails towards Inbox Zero.
+              In the next step, you will select a date to start your inbox from.
+              You will work towards maintaining inbox zero for emails from that
+              date onwards.
               <br></br>
               <br></br>
-              Please select your inbox zero start date on the calendar in Step
-              4.
+              We won&apos;t delete any of your emails before your selected date.
+              We&apos;ll just hide them from your inbox.
+              <br></br>
+              <br></br>
+              <button
+                className={classNames(
+                  "inline-flex items-center float-right",
+                  "rounded-md px-2 py-1",
+                  "ring-1 ring-inset",
+                  "text-xs font-medium",
+                  "text-xs text-slate-700 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-500/10 ring-slate-600/20 dark:ring-zinc-500/20"
+                )}
+                onClick={() => {
+                  setSelectedTabIndex(3);
+                }}
+              >
+                Next
+              </button>
             </Tab.Panel>
             <Tab.Panel className={panelStyles}>
+              <div>Please select your inbox zero start date.</div>
               <div className="mb-4 mt-2">
                 <DateSelectCalendar
                   selectedDate={selectedDate}
@@ -128,12 +201,13 @@ export default function InboxZeroSetup({
                     });
                 }}
               >
-                Choose {formatDate(selectedDate)}
+                Select {formatDate(selectedDate)}
               </button>
             </Tab.Panel>
           </Tab.Panels>
         </Tab.Group>
       </div>
+      <TooltipPopover {...tooltipData} />
     </main>
   );
 }
