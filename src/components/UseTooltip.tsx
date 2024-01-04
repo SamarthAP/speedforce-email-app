@@ -15,7 +15,7 @@ interface TooltipHook {
   handleMouseLeave: () => void;
 }
 
-export const useTooltip = (): TooltipHook => {
+export const useTooltip = (disableTimer = false): TooltipHook => {
   const [tooltipData, setTooltipData] = useState<TooltipData>({
     showTooltip: false,
     coords: undefined,
@@ -64,11 +64,12 @@ export const useTooltip = (): TooltipHook => {
       message,
     });
 
-    const tooltipTimer = setTimeout(() => {
-      handleMouseLeave();
-    }, 2000);
-
-    setTooltipTimer(tooltipTimer);
+    if (!disableTimer) {
+      const tooltipTimer = setTimeout(() => {
+        handleMouseLeave();
+      }, 2000);
+      setTooltipTimer(tooltipTimer);
+    }
   };
 
   const handleMouseLeave = () => {
