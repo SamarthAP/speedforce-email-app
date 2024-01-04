@@ -1,7 +1,7 @@
 import UnreadDot from "./UnreadDot";
 import { IEmailThread, ISelectedEmail } from "../lib/db";
 import he from "he";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   archiveThread,
   loadNextPage,
@@ -9,6 +9,7 @@ import {
   starThread,
   unstarThread,
   trashThread,
+  deleteThread,
 } from "../lib/sync";
 import {
   CheckCircleIcon,
@@ -21,9 +22,14 @@ import { HorizontalAttachments } from "./HorizontalAttachments";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
 import { executeInstantAsyncAction } from "../lib/asyncHelpers";
-import { updateLabelIdsForEmailThread } from "../lib/util";
+import {
+  addDexieThread,
+  deleteDexieThread,
+  updateLabelIdsForEmailThread,
+} from "../lib/util";
 import { FOLDER_IDS } from "../api/constants";
 import _ from "lodash";
+import { ConfirmModal } from "./modals/ConfirmModal";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -54,6 +60,11 @@ function isOlderThanSevenDays(date: Date) {
   return date < sevenDaysAgo;
 }
 
+interface DeleteThreadModalData {
+  isDialogOpen: boolean;
+  thread: IEmailThread | null;
+}
+
 interface ThreadListProps {
   selectedEmail: ISelectedEmail;
   threads?: IEmailThread[]; // TODO: change for outlook thread
@@ -64,6 +75,7 @@ interface ThreadListProps {
   folderId: string;
   canArchiveThread?: boolean;
   canTrashThread?: boolean;
+  canPermanentlyDeleteThread?: boolean;
 }
 
 export default function ThreadList({
@@ -76,9 +88,15 @@ export default function ThreadList({
   folderId,
   canArchiveThread = false,
   canTrashThread = false,
+  canPermanentlyDeleteThread = false,
 }: ThreadListProps) {
   const observerTarget = useRef<HTMLDivElement>(null);
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
+  const [deleteThreadModalData, setDeleteThreadModalData] =
+    useState<DeleteThreadModalData>({
+      isDialogOpen: false,
+      thread: null,
+    });
 
   // 'threads' is initially empty so the div with 'observerTarget' doesn't render, so observerTarget is null,
   // and when the list is updated with data, the div renders but it doesnt update observerTarget. To fix this,
@@ -199,6 +217,23 @@ export default function ThreadList({
         ]);
         toast("Unable to trash thread");
       }
+    );
+  }
+
+  async function handleDeletePermanentlyClick(thread: IEmailThread | null) {
+    if (!thread) {
+      return;
+    }
+
+    await executeInstantAsyncAction(
+      () => void deleteDexieThread(thread.id),
+      async () =>
+        await deleteThread(
+          selectedEmail.email,
+          selectedEmail.provider,
+          thread.id
+        ),
+      () => void addDexieThread(thread)
     );
   }
 
@@ -379,6 +414,29 @@ export default function ThreadList({
                             <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
                           </button>
                         )}
+                        {canPermanentlyDeleteThread && (
+                          <button
+                            onMouseEnter={(event) => {
+                              handleMouseEnter(event, "Permanently Delete");
+                            }}
+                            onMouseLeave={handleMouseLeave}
+                            onClick={(
+                              event: React.MouseEvent<
+                                HTMLButtonElement,
+                                MouseEvent
+                              >
+                            ) => {
+                              event.stopPropagation();
+                              setDeleteThreadModalData({
+                                isDialogOpen: true,
+                                thread: thread,
+                              });
+                            }}
+                            className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
+                          >
+                            <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+                          </button>
+                        )}
                       </span>
                     </div>
                   </div>
@@ -401,6 +459,21 @@ export default function ThreadList({
         message={tooltipData.message}
         showTooltip={tooltipData.showTooltip}
         coords={tooltipData.coords}
+      />
+      <ConfirmModal
+        dialogTitle="Delete This Forever?"
+        dialogMessage="Are you sure you want to permanently delete this thread? This action cannot be undone."
+        confirmButtonText="Delete"
+        confirmButtonAction={() =>
+          void handleDeletePermanentlyClick(deleteThreadModalData.thread)
+        }
+        isDialogOpen={deleteThreadModalData.isDialogOpen}
+        setIsDialogOpen={() =>
+          setDeleteThreadModalData({
+            ...deleteThreadModalData,
+            isDialogOpen: false,
+          })
+        }
       />
     </div>
   );
