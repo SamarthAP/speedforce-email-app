@@ -1016,9 +1016,6 @@ export async function deleteThread(
     if (error) {
       return;
     }
-
-    await db.messages.where("threadId").equals(threadId).delete();
-    await db.emailThreads.delete(threadId);
   } else if (provider === "outlook") {
     const messages = await db.messages
       .where("threadId")
@@ -1031,14 +1028,12 @@ export async function deleteThread(
 
     try {
       await Promise.all(promises);
-
-      // TODO: delete from db
-      await db.messages.where("threadId").equals(threadId).delete();
-      await db.emailThreads.delete(threadId);
     } catch (e) {
       dLog("Error deleting thread");
     }
   }
+
+  toast("Deleted thread");
 }
 
 export async function trashThread(

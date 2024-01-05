@@ -24,7 +24,7 @@ const TooltipPopover: React.FC<TooltipPopoverProps> = ({
     >
       <div
         className={`
-            absolute bg-slate-600 text-white text-xs px-2 py-1 mt-1 rounded-md whitespace-nowrap transform -translate-x-1/2 pointer-events-none 
+            absolute max-w-sm bg-slate-600 text-white text-xs px-2 py-1 mt-1 rounded-md transform -translate-x-1/2 pointer-events-none 
             ${!showTooltip ? "opacity-0" : ""}
           `}
         style={{ ...coords }}
