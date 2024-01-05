@@ -6,7 +6,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { ThreadFeed } from "../components/ThreadFeed";
 import AssistBar from "../components/AssistBar";
-import { TestSyncButtons } from "../lib/experiments";
 import AccountActionsMenu from "./AccountActionsMenu";
 import { fullSync, partialSync } from "../lib/sync";
 import { PencilSquareIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
@@ -262,13 +261,6 @@ export default function ThreadView({ tabs, wrapperType }: ThreadViewProps) {
             />
           </div>
         </div>
-        {process.env.NODE_ENV !== "production" ? (
-          <TestSyncButtons
-            folderId={selectedTab.folderId}
-            gmailFetchQuery={selectedTab.gmailQuery}
-            outlookFetchQuery={selectedTab.outlookQuery}
-          />
-        ) : null}
         <ThreadList
           selectedEmail={selectedEmail}
           threads={threads}
