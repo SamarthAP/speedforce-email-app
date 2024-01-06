@@ -8,6 +8,7 @@ import {
   StarIcon,
   ArchiveBoxIcon,
   CalendarIcon,
+  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 
 import { useNavigate } from "react-router-dom";
@@ -32,6 +33,7 @@ const navigation = [
   { name: "Spam", href: "/spam", icon: ExclamationCircleIcon, current: false },
   { name: "Deleted Items", href: "/deleted", icon: TrashIcon, current: false },
   { name: "Scheduled", href: "#", icon: ClockIcon, current: false },
+  { name: "Settings", href: "/settings", icon: Cog6ToothIcon, current: false },
   // {
   //   name: "Add Account",
   //   href: "/page/addAccount",
@@ -53,7 +55,9 @@ export default function Sidebar() {
           <ViewColumnsIcon className="h-6 w-6 shrink-0" aria-hidden="true" />
         </div>
       </div> */}
-      <nav className="mt-4">
+
+      {/* NOTE: pb-6 as a hack for the weird scroll bug cutting off the last item in the nav (not fully scrolling) */}
+      <nav className="pt-2 pb-6">
         <ul role="list" className="flex flex-col items-center space-y-1">
           {navigation.map((item) => {
             if (

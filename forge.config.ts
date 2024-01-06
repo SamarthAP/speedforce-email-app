@@ -14,7 +14,7 @@ import GithubYmlPublisher from "./GithubYmlPublisher";
 const config: ForgeConfig = {
   // buildIdentifier: process.env.IS_BETA ? "beta" : "prod",
   packagerConfig: {
-    icon: "./static/icons/icon.icns",
+    icon: "./static/icons/icon", // If the file extension is omitted, it is auto-completed to the correct extension based on the platform. (ico for Windows, icns for macOS, and png for Linux.)
     protocols: [
       {
         name: "speedforce",
