@@ -190,12 +190,15 @@ export default function InboxZeroSetup({
                 onClick={() => {
                   // get 12 am for selected date
                   selectedDate.setHours(0, 0, 0, 0);
-                  db.inboxZeroMetadata
-                    .put({
-                      email: selectedEmail.email,
+                  db.emails
+                    .update(selectedEmail.email, {
                       inboxZeroStartDate: selectedDate.getTime(),
                     })
-                    .then()
+                    .then(() => {
+                      void db.selectedEmail.update(1, {
+                        inboxZeroStartDate: selectedDate.getTime(),
+                      });
+                    })
                     .catch((e) => {
                       dLog(e);
                     });

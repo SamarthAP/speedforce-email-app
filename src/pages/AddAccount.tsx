@@ -19,6 +19,7 @@ async function insertEmail(
     provider,
     accessToken,
     expiresAt,
+    inboxZeroStartDate: 0,
   });
 }
 
@@ -36,6 +37,7 @@ const manualInsertEmail = async () => {
     id: 1,
     email: email,
     provider: "google",
+    inboxZeroStartDate: 0,
   });
 
   await db.googleMetadata.put({
@@ -111,6 +113,7 @@ export default function AddAccount() {
               id: 1,
               email: data.email,
               provider: data.provider,
+              inboxZeroStartDate: 0,
             });
 
             if (data.provider === "google") {
@@ -126,8 +129,6 @@ export default function AddAccount() {
                 threadsListNextPageTokens: [],
               });
             }
-
-            // NOTE: inboxZeroMetadata is set in the inboxZeroSetup page
           }
         }
       } catch (e) {

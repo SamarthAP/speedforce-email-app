@@ -148,15 +148,16 @@ export const dexieSchemas = {
 
   /*
   Schema Version 6:
-  Oldest Compatible App Version 0.0.11
+  Oldest Compatible App Version 0.0.14
   Change description:
     - Add search history table
     - Script to decode google message data for search performance
+    - Move inboxZeroStartDate to selectedEmail table
   */
   6: {
     schema: {
-      emails: "email, provider, accessToken, expiresAt",
-      selectedEmail: "id, email, provider",
+      emails: "email, provider, accessToken, expiresAt, inboxZeroStartDate",
+      selectedEmail: "id, email, provider, inboxZeroStartDate",
       emailThreads:
         "id, historyId, email, from, subject, snippet, date, unread, *labelIds, hasAttachments",
       googleMetadata: "email, historyId, *threadsListNextPageTokens",
@@ -166,7 +167,7 @@ export const dexieSchemas = {
       outlookFolders: "id, displayName",
       contacts:
         "[email+contactEmailAddress], contactName, isSavedContact, lastInteraction",
-      inboxZeroMetadata: "email, inboxZeroStartDate",
+      dailyImageMetadata: "id, date, url",
       searchHistory: "[email+searchQuery]",
     },
     upgradeFnc: async (tx: Transaction) => {

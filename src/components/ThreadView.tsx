@@ -239,6 +239,7 @@ export default function ThreadView({
       id: 1,
       email: email.email,
       provider: email.provider,
+      inboxZeroStartDate: email.inboxZeroStartDate,
     });
   };
 
@@ -252,7 +253,7 @@ export default function ThreadView({
               <h2
                 key="Search"
                 className={classNames(
-                  "select-none mr-1 tracking-wide my-3 text-lg px-2 rounded-md cursor-pointer",
+                  "select-none tracking-wide my-3 mr-1 text-lg px-2 py-1 rounded-md cursor-pointer",
                   "font-medium text-black dark:text-white"
                 )}
               >

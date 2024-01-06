@@ -1,14 +1,6 @@
-import { IInboxZeroMetadata, db } from "../db";
+import { db } from "../db";
 import { isOutlookNextPageTokenNewer } from "../../api/outlook/helpers";
 import { dLog } from "../noProd";
-
-export async function getInboxZeroMetadata(
-  email: string
-): Promise<IInboxZeroMetadata | undefined> {
-  const metaData = await db.inboxZeroMetadata.get(email);
-
-  return metaData;
-}
 
 export async function getGoogleMetaData(email: string, folderId: string) {
   const metaData = await db.googleMetadata.where("email").equals(email).first();
@@ -122,7 +114,6 @@ export const clearEmailFromDb = async (email: string) => {
       void db.messages.where("threadId").anyOf(emailThreads).delete();
       void db.googleMetadata.where("email").equals(email).delete();
       void db.outlookMetadata.where("email").equals(email).delete();
-      void db.inboxZeroMetadata.where("email").equals(email).delete();
 
       // If the selected email is being deleted, select the first remaining email
       if (selectedEmail?.email === email) {
@@ -130,6 +121,7 @@ export const clearEmailFromDb = async (email: string) => {
           id: 1,
           email: emails[0].email,
           provider: emails[0].provider,
+          inboxZeroStartDate: emails[0].inboxZeroStartDate,
         });
       }
     }
