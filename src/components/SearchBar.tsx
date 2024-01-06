@@ -141,7 +141,7 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
         </Combobox>
       </div>
       <button onClick={() => void triggerSearch(searchText)}>
-        <MagnifyingGlassIcon className="w-5 h-5" />
+        <MagnifyingGlassIcon className="w-5 h-5 dark:text-white" />
       </button>
     </div>
   );

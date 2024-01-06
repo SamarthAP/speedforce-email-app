@@ -14,12 +14,14 @@ export interface IEmail {
   provider: "google" | "outlook";
   accessToken: string;
   expiresAt: number;
+  inboxZeroStartDate: number;
 }
 
 export interface ISelectedEmail {
   id: number;
   email: string;
   provider: "google" | "outlook";
+  inboxZeroStartDate: number;
 }
 
 export interface IEmailThread {
@@ -85,11 +87,6 @@ export interface IContact {
   lastInteraction: number; // Prioiritize contacts with recent interactions?
 }
 
-export interface IInboxZeroMetadata {
-  email: string;
-  inboxZeroStartDate: number;
-}
-
 export interface ISearchQuery {
   email: string;
   searchQuery: string;
@@ -112,7 +109,6 @@ export class SubClassedDexie extends Dexie {
   messages!: Table<IMessage, string>;
   outlookFolders!: Table<IOutlookFolder, string>;
   contacts!: Table<IContact, string>;
-  inboxZeroMetadata!: Table<IInboxZeroMetadata, string>;
   dailyImageMetadata!: Table<IDailyImageMetadata, number>;
   searchHistory!: Table<ISearchQuery, string>;
 

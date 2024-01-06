@@ -37,10 +37,6 @@ export default function AppRouter({ session }: AppRouterProps) {
     [],
     []
   );
-  const inboxZeroMetadata = useLiveQuery(
-    () => db.inboxZeroMetadata.get(selectedEmail?.email || ""),
-    [selectedEmail, selectedEmail?.email]
-  );
 
   // TODO: could update dependencies to include the other data that is awaited
   const getSocketUrl = useCallback(async () => {
@@ -237,7 +233,7 @@ export default function AppRouter({ session }: AppRouterProps) {
   }, [selectedEmail, session]);
 
   if (!loaded) {
-    return <div className="h-screen w-screen"></div>;
+    return <div className="h-screen w-screen dark:bg-zinc-900"></div>;
   }
 
   // add initialEntries={["/page/inboxZeroSetup"]} to Router to force a specific route
@@ -246,7 +242,7 @@ export default function AppRouter({ session }: AppRouterProps) {
       <Routes>
         {!selectedEmail ? (
           <Route path="/" element={<AddAccount />} />
-        ) : selectedEmail && !inboxZeroMetadata ? (
+        ) : selectedEmail && !selectedEmail.inboxZeroStartDate ? (
           <>
             <Route
               path="/"
@@ -261,7 +257,9 @@ export default function AppRouter({ session }: AppRouterProps) {
             >
               <Route
                 index
-                element={<Home inboxZeroMetadata={inboxZeroMetadata} />}
+                element={
+                  <Home inboxZeroStartDate={selectedEmail.inboxZeroStartDate} />
+                }
               />
             </Route>
             <Route
