@@ -97,21 +97,23 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
           </Combobox.Button>
 
           <Combobox.Options className="absolute z-10 top-20 max-h-60 w-[calc(screen/2)] overflow-y-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-            <Combobox.Option
-              value={searchText}
-              className={({ active }) =>
-                classNames(
-                  "relative cursor-default select-none py-2 pl-3 pr-9 border-b",
-                  active ? "bg-gray-600 text-white" : "text-gray-900"
-                )
-              }
-            >
-              <div className="flex">
-                <span className="font-semibold whitespace-nowrap">
-                  Search results for &ldquo;{searchText}&rdquo;
-                </span>
-              </div>
-            </Combobox.Option>
+            {searchText.length > 0 && (
+              <Combobox.Option
+                value={searchText}
+                className={({ active }) =>
+                  classNames(
+                    "relative cursor-default select-none py-2 pl-3 pr-9",
+                    active ? "bg-gray-600 text-white" : "text-gray-900"
+                  )
+                }
+              >
+                <div className="flex">
+                  <span className="font-semibold whitespace-nowrap">
+                    Search results for &ldquo;{searchText}&rdquo;
+                  </span>
+                </div>
+              </Combobox.Option>
+            )}
             {filteredItems.map((item) => (
               <Combobox.Option
                 key={item}
@@ -136,8 +138,6 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
               </Combobox.Option>
             ))}
           </Combobox.Options>
-          {/* {filteredItems.length > 0 && (
-          )} */}
         </Combobox>
       </div>
       <button onClick={() => void triggerSearch(searchText)}>

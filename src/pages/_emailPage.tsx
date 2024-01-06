@@ -35,7 +35,19 @@ export default function EmailPage({ selectedEmail }: EmailPageProps) {
         {isBackgroundOn && (
           <>
             <div className="absolute h-[100px] w-screen inset-0 bg-gradient-to-b from-black/50 to-transparent pointer-events-none"></div>
+            <div className="absolute h-[50px] w-screen bottom-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none"></div>
             <div className="absolute h-screen w-[90px] left-0 inset-0 bg-gradient-to-r from-black/50 to-transparent pointer-events-none"></div>
+            <div className="absolute z-10 bottom-4 left-1/2 -translate-x-1/2 text-white/75 text-sm font-medium">
+              Congrats! You&apos;ve reached Inbox Zero{" "}
+              <span
+                className="text-transparent"
+                style={{
+                  textShadow: "0 0 0 rgb(255 255 255 / 0.75)",
+                }}
+              >
+                🔥
+              </span>
+            </div>
           </>
         )}
         <InboxZeroBackgroundContext.Provider
