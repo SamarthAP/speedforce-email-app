@@ -1,6 +1,7 @@
 import { Transaction } from "dexie";
 import { dLog } from "../noProd";
 import { cleanIndexedDb } from "../experiments";
+import { decodeGoogleMessageData } from "../util";
 
 export const dexieSchemas = {
   /*
@@ -114,6 +115,7 @@ export const dexieSchemas = {
       return;
     },
   },
+
   /*
   Schema Version 5:
   Oldest Compatible App Version 0.0.11
@@ -141,6 +143,59 @@ export const dexieSchemas = {
 
       // clear database since we are introducing inbox zero
       cleanIndexedDb();
+    },
+  },
+
+  /*
+  Schema Version 6:
+  Oldest Compatible App Version 0.0.11
+  Change description:
+    - Add search history table
+    - Script to decode google message data for search performance
+  */
+  6: {
+    schema: {
+      emails: "email, provider, accessToken, expiresAt",
+      selectedEmail: "id, email, provider",
+      emailThreads:
+        "id, historyId, email, from, subject, snippet, date, unread, *labelIds, hasAttachments",
+      googleMetadata: "email, historyId, *threadsListNextPageTokens",
+      outlookMetadata: "email, historyId, *threadsListNextPageTokens",
+      messages:
+        "id, threadId, *labelIds, from, *toRecipients, snippet, headers, textData, htmlData, date, *attachments",
+      outlookFolders: "id, displayName",
+      contacts:
+        "[email+contactEmailAddress], contactName, isSavedContact, lastInteraction",
+      inboxZeroMetadata: "email, inboxZeroStartDate",
+      searchHistory: "[email+searchQuery]",
+    },
+    upgradeFnc: async (tx: Transaction) => {
+      dLog("Upgrading schema to version 6");
+
+      // Used to distinguish between google and outlook messages
+      const isHex = (str: string) => {
+        return /^[0-9A-Fa-f]*$/.test(str);
+      };
+
+      // decode google message data
+      return tx
+        .table("messages")
+        .toCollection()
+        .modify((message) => {
+          if (message.threadId && isHex(message.threadId)) {
+            try {
+              if (message.htmlData) {
+                message.htmlData = decodeGoogleMessageData(message.htmlData);
+              }
+
+              if (message.textData) {
+                message.textData = decodeGoogleMessageData(message.textData);
+              }
+            } catch (e) {
+              dLog("Error decoding google message data", e);
+            }
+          }
+        });
     },
   },
 };

@@ -19,6 +19,7 @@ import { useCallback, useEffect } from "react";
 import { getAccessToken } from "../api/accessToken";
 import { loadContacts, partialSync, watchSubscription } from "../lib/sync";
 import { handleMessage } from "../lib/wsHelpers";
+import Search from "../pages/Search";
 import InboxZeroSetup from "../pages/InboxZeroSetup";
 import Settings from "../pages/Settings";
 
@@ -298,6 +299,12 @@ export default function AppRouter({ session }: AppRouterProps) {
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
               <Route index element={<Done />} />
+            </Route>
+            <Route
+              path="/search"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<Search />} />
             </Route>
             <Route
               path="/calendar"

@@ -1,9 +1,5 @@
 import { IMessage } from "../../lib/db";
-import {
-  decodeGoogleMessageData,
-  getMessageHeader,
-  formatDateForForwardTemplate,
-} from "../../lib/util";
+import { getMessageHeader, formatDateForForwardTemplate } from "../../lib/util";
 import _ from "lodash";
 
 export function getToRecipients(message: IMessage, email: string): string[] {
@@ -42,7 +38,7 @@ export function addTabbedMessageToForwardedHTML(
   }
 
   const formattedDate = formatDateForForwardTemplate(new Date(date));
-  const htmlData = decodeGoogleMessageData(message.htmlData);
+  const htmlData = message.htmlData;
 
   return {
     beforeString: `${beforeString}

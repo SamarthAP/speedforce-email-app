@@ -3,14 +3,9 @@ import { IEmailThread, db } from "../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import Feedback from "./Feedback";
 import { DocumentDuplicateIcon } from "@heroicons/react/20/solid";
-import {
-  classNames,
-  decodeGoogleMessageData,
-  extractTextFromHTML,
-} from "../lib/util";
+import { classNames } from "../lib/util";
 import toast from "react-hot-toast";
 import { dLog } from "../lib/noProd";
-import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { useInboxZeroBackgroundContext } from "../contexts/InboxZeroBackgroundContext";
 
 function copyToClipboard(text: string) {
@@ -38,7 +33,6 @@ export default function AssistBar({
   thread,
   setSelectedThread,
 }: IAssistBarProps) {
-  const { selectedEmail } = useEmailPageOutletContext();
   const { isBackgroundOn } = useInboxZeroBackgroundContext();
 
   const emailThreads = useLiveQuery(
@@ -68,12 +62,8 @@ export default function AssistBar({
 
   // only show if message is within last 5 minutes
   if (latestMessage && Date.now() - latestMessage.date < 1000 * 60 * 5) {
-    emailContent =
-      selectedEmail.provider === "google"
-        ? extractTextFromHTML(
-            decodeGoogleMessageData(latestMessage.htmlData)
-          ) || decodeGoogleMessageData(latestMessage.textData)
-        : extractTextFromHTML(latestMessage.htmlData);
+    emailContent = latestMessage.htmlData || latestMessage.textData;
+
     // 6 digit code regex
     const codeRegex = /\b\d{6}\b/g;
     const matches = emailContent.match(codeRegex);

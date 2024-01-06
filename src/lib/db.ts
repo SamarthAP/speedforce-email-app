@@ -90,6 +90,13 @@ export interface IInboxZeroMetadata {
   inboxZeroStartDate: number;
 }
 
+export interface ISearchQuery {
+  email: string;
+  searchQuery: string;
+  lastInteraction: number;
+  numInteractions: number; // TODO: consider using this to prioritize search results
+}
+
 export interface IDailyImageMetadata {
   id: number; // So we can select only one image
   date: string; // YYYY-MM-DD
@@ -107,6 +114,7 @@ export class SubClassedDexie extends Dexie {
   contacts!: Table<IContact, string>;
   inboxZeroMetadata!: Table<IInboxZeroMetadata, string>;
   dailyImageMetadata!: Table<IDailyImageMetadata, number>;
+  searchHistory!: Table<ISearchQuery, string>;
 
   constructor() {
     super("SpeedforceDB");
@@ -125,6 +133,9 @@ export class SubClassedDexie extends Dexie {
     this.version(5)
       .stores(dexieSchemas[5].schema)
       .upgrade(dexieSchemas[5].upgradeFnc);
+    this.version(6)
+      .stores(dexieSchemas[6].schema)
+      .upgrade(dexieSchemas[6].upgradeFnc);
   }
 }
 
