@@ -1,14 +1,13 @@
-import ThreadView from "../components/ThreadView";
+import React, { useState } from "react";
+import SearchThreadView from "../components/ThreadViews/SearchThreadView";
 import { IMessage, ISelectedEmail, db } from "../lib/db";
-import { ClientInboxTabType } from "../api/model/client.inbox";
-import { useState } from "react";
-import { getFolderIdFromSearchFolder } from "../lib/util";
 import {
   fromActionHandler,
   genericSearchHandler,
   inActionHandler,
   toActionHandler,
 } from "../lib/dexie/searchHandlers";
+import Titlebar from "../components/Titlebar";
 
 // TODO: May be able to abstract this away as well
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now
@@ -66,24 +65,22 @@ export default function Search() {
       .reverse()
       .sortBy("date");
 
-  const tabs: ClientInboxTabType[] = [
-    {
-      title: "Search",
-      folderId: "",
-      gmailQuery: "",
-      outlookQuery: "",
-      filterThreadsSearchFnc: filterThreadsSearchFnc,
-      canArchiveThread: true,
-      canTrashThread: true,
-      isSearchMode: true,
-    },
-  ];
-
   return (
-    <ThreadView
-      tabs={tabs}
-      searchItems={searchItems}
-      setSearchItems={setSearchItems}
-    />
+    <React.Fragment>
+      <Titlebar />
+      <div className="flex h-full overflow-hidden">
+        <SearchThreadView
+          data={{
+            title: "Search",
+            folderId: "",
+            filterThreadsSearchFnc: filterThreadsSearchFnc,
+            canArchiveThread: true,
+            canTrashThread: true,
+          }}
+          searchItems={searchItems}
+          setSearchItems={setSearchItems}
+        />
+      </div>
+    </React.Fragment>
   );
 }

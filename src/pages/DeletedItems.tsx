@@ -1,9 +1,10 @@
-import ThreadView from "../components/ThreadView";
+import React from "react";
+import ThreadView from "../components/ThreadViews/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
-import { ClientInboxTabType } from "../api/model/client.inbox";
+import Titlebar from "../components/Titlebar";
 
 const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
   FOLDER_IDS.TRASH
@@ -20,20 +21,25 @@ const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
     .reverse()
     .sortBy("date");
 
-const tabs: ClientInboxTabType[] = [
-  {
-    title: "Deleted Items",
-    folderId: FOLDER_IDS.TRASH,
-    gmailQuery: gmailFetchQuery,
-    outlookQuery: outlookFetchQuery,
-    filterThreadsFnc: filterThreadsFnc,
-    canArchiveThread: true,
-    canDeletePermanentlyThread: true,
-  },
-];
-
 // TODO: May be able to abstract this away as well
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now
 export default function DeletedItems() {
-  return <ThreadView tabs={tabs} />;
+  return (
+    <React.Fragment>
+      <Titlebar />
+      <div className="flex h-full overflow-hidden">
+        <ThreadView
+          data={{
+            title: "Deleted Items",
+            folderId: FOLDER_IDS.TRASH,
+            gmailQuery: gmailFetchQuery,
+            outlookQuery: outlookFetchQuery,
+            filterThreadsFnc: filterThreadsFnc,
+            canArchiveThread: true,
+            canDeletePermanentlyThread: true,
+          }}
+        />
+      </div>
+    </React.Fragment>
+  );
 }

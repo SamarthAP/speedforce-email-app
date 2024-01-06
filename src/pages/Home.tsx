@@ -1,4 +1,4 @@
-import ThreadView from "../components/ThreadView";
+import InboxThreadView from "../components/ThreadViews/InboxThreadView";
 import { FOLDER_IDS } from "../api/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
@@ -30,7 +30,8 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
       .and(
         (thread) =>
           thread.labelIds.includes(FOLDER_IDS.INBOX) &&
-          thread.labelIds.includes("IMPORTANT") &&
+          (thread.labelIds.includes("IMPORTANT") ||
+            thread.labelIds.includes("CATEGORY_PERSONAL")) &&
           thread.date >= (inboxZeroStartDate || getYesterdayDate()) // NOTE: default to yesterday if no inbox zero start date
       )
       .reverse()
@@ -43,7 +44,10 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
       .and(
         (thread) =>
           thread.labelIds.includes(FOLDER_IDS.INBOX) &&
-          !thread.labelIds.includes("IMPORTANT") &&
+          !(
+            thread.labelIds.includes("IMPORTANT") ||
+            thread.labelIds.includes("CATEGORY_PERSONAL")
+          ) &&
           thread.date >= (inboxZeroStartDate || getYesterdayDate()) // NOTE: default to yesterday if no inbox zero start date
       )
       .reverse()
@@ -69,5 +73,5 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
       canTrashThread: true,
     },
   ];
-  return <ThreadView tabs={tabs} wrapperType="HOME" />;
+  return <InboxThreadView tabs={tabs} />;
 }

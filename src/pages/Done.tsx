@@ -1,8 +1,9 @@
-import ThreadView from "../components/ThreadView";
+import ThreadView from "../components/ThreadViews/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
-import { ClientInboxTabType } from "../api/model/client.inbox";
+import React from "react";
+import Titlebar from "../components/Titlebar";
 
 const gmailFetchQuery = ``;
 const outlookFetchQuery = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
@@ -31,20 +32,25 @@ const filterThreadsFnc = (selectedEmail: ISelectedEmail) => {
   }
 };
 
-const tabs: ClientInboxTabType[] = [
-  {
-    title: "Done",
-    folderId: FOLDER_IDS.DONE,
-    gmailQuery: gmailFetchQuery,
-    outlookQuery: outlookFetchQuery,
-    filterThreadsFnc: filterThreadsFnc,
-    canArchiveThread: false,
-    canTrashThread: true,
-  },
-];
-
 // TODO: May be able to abstract this away as well
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now
 export default function Done() {
-  return <ThreadView tabs={tabs} />;
+  return (
+    <React.Fragment>
+      <Titlebar />
+      <div className="flex h-full overflow-hidden">
+        <ThreadView
+          data={{
+            title: "Done",
+            folderId: FOLDER_IDS.DONE,
+            gmailQuery: gmailFetchQuery,
+            outlookQuery: outlookFetchQuery,
+            filterThreadsFnc: filterThreadsFnc,
+            canArchiveThread: false,
+            canTrashThread: true,
+          }}
+        />
+      </div>
+    </React.Fragment>
+  );
 }

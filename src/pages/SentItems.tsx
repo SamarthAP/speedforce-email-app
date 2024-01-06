@@ -1,9 +1,10 @@
-import ThreadView from "../components/ThreadView";
+import ThreadView from "../components/ThreadViews/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
-import { ClientInboxTabType } from "../api/model/client.inbox";
+import React from "react";
+import Titlebar from "../components/Titlebar";
 
 const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
   FOLDER_IDS.SENT
@@ -24,20 +25,25 @@ const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
     .reverse()
     .sortBy("date");
 
-const tabs: ClientInboxTabType[] = [
-  {
-    title: "Sent",
-    folderId: FOLDER_IDS.SENT,
-    gmailQuery: gmailFetchQuery,
-    outlookQuery: outlookFetchQuery,
-    filterThreadsFnc: filterThreadsFnc,
-    canArchiveThread: true,
-    canTrashThread: true,
-  },
-];
-
 // TODO: May be able to abstract this away as well
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now
 export default function SentItems() {
-  return <ThreadView tabs={tabs} />;
+  return (
+    <React.Fragment>
+      <Titlebar />
+      <div className="flex h-full overflow-hidden">
+        <ThreadView
+          data={{
+            title: "Sent",
+            folderId: FOLDER_IDS.SENT,
+            gmailQuery: gmailFetchQuery,
+            outlookQuery: outlookFetchQuery,
+            filterThreadsFnc: filterThreadsFnc,
+            canArchiveThread: true,
+            canTrashThread: true,
+          }}
+        />
+      </div>
+    </React.Fragment>
+  );
 }

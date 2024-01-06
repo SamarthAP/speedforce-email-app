@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { XCircleIcon } from "@heroicons/react/20/solid";
 import { useLiveQuery } from "dexie-react-hooks";
-import { IContact, db } from "../lib/db";
+import { IContact, ISelectedEmail, db } from "../lib/db";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { Combobox } from "@headlessui/react";
 import { classNames, delay } from "../lib/util";
@@ -9,17 +9,18 @@ import { string } from "zod";
 
 interface EmailSelectorInputProps {
   text: string;
+  selectedEmail: ISelectedEmail;
   emails: string[];
   setEmails: (emails: string[]) => void;
 }
 
 export function EmailSelectorInput({
   text,
+  selectedEmail,
   emails,
   setEmails,
 }: EmailSelectorInputProps) {
   const [emailText, setEmailText] = useState("");
-  const { selectedEmail } = useEmailPageOutletContext();
   const emailSchema = string().email({ message: "Invalid email" });
 
   // Check if email is valid and not already in the send list

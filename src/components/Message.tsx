@@ -197,6 +197,7 @@ export default function Message({ message, folderId }: MessageProps) {
             <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
               <EmailSelectorInput
                 text="Fwd To"
+                selectedEmail={selectedEmail}
                 emails={forwardTo}
                 setEmails={setForwardTo}
               />

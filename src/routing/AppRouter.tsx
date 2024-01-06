@@ -22,6 +22,7 @@ import { handleMessage } from "../lib/wsHelpers";
 import Search from "../pages/Search";
 import InboxZeroSetup from "../pages/InboxZeroSetup";
 import Settings from "../pages/Settings";
+import { ComposeMessage } from "../pages/ComposeMessage";
 
 interface AppRouterProps {
   session: Session;
@@ -319,6 +320,10 @@ export default function AppRouter({ session }: AppRouterProps) {
               path="/page/inboxZeroSetup"
               element={<InboxZeroSetup selectedEmail={selectedEmail} />}
             />
+            <Route
+              path="/compose"
+              element={<ComposeMessage selectedEmail={selectedEmail} />}
+            ></Route>
           </>
         )}
       </Routes>
