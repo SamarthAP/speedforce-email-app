@@ -16,7 +16,6 @@ import { classNames } from "../../lib/util";
 import { ClientInboxTabType } from "../../api/model/client.inbox";
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import { useNavigate } from "react-router-dom";
-import SearchBar from "../SearchBar";
 import { useInboxZeroBackgroundContext } from "../../contexts/InboxZeroBackgroundContext";
 
 const MAX_RENDER_COUNT = 5;
@@ -29,18 +28,12 @@ interface ThreadViewProps {
   wrapperType?: string;
 }
 
-export default function ThreadView({
-  data,
-  searchItems,
-  setSearchItems,
-  wrapperType,
-}: ThreadViewProps) {
+export default function ThreadView({ data }: ThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   // const [data, setdata] = useState<ClientInboxTabType>(tabs[0]);
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
   const [selectedThread, setSelectedThread] = useState<string>("");
   const [scrollPosition, setScrollPosition] = useState<number>(0);
-  const [writeEmailMode, setWriteEmailMode] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
@@ -184,7 +177,6 @@ export default function ThreadView({
               onMouseLeave={handleMouseLeave}
               onClick={() => {
                 navigate("/compose");
-                setWriteEmailMode(true);
               }}
             >
               <PencilSquareIcon
@@ -242,7 +234,6 @@ export default function ThreadView({
         <ThreadList
           selectedEmail={selectedEmail}
           threads={threads}
-          setSelectedThread={setSelectedThread}
           setHoveredThread={setHoveredThread}
           setScrollPosition={setScrollPosition}
           scrollRef={scrollRef}
@@ -252,7 +243,7 @@ export default function ThreadView({
           canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
         />
       </div>
-      <AssistBar thread={hoveredThread} setSelectedThread={setSelectedThread} />
+      <AssistBar thread={hoveredThread} />
     </React.Fragment>
   );
 }

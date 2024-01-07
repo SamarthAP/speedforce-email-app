@@ -25,7 +25,7 @@ export default function SearchThreadView({
 }: SearchThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
-  const [selectedThread, setSelectedThread] = useState<string>("");
+  // const [selectedThread, setSelectedThread] = useState<string>("");
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -45,7 +45,7 @@ export default function SearchThreadView({
 
       scrollRef.current.scrollTo(0, scrollPosition);
     }
-  }, [selectedThread, scrollPosition]);
+  }, [scrollPosition]);
 
   const threadIds = useLiveQuery(() => {
     return db.emailThreads
@@ -92,7 +92,7 @@ export default function SearchThreadView({
   useEffect(() => {
     // If search mode, listen for escape key to exit search mode
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !selectedThread) {
+      if (event.key === "Escape") {
         navigate(-1);
       }
     };
@@ -102,23 +102,7 @@ export default function SearchThreadView({
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  });
-
-  if (selectedThread) {
-    return (
-      <React.Fragment>
-        <ThreadFeed
-          selectedThread={selectedThread}
-          setSelectedThread={setSelectedThread}
-          folderId={data.folderId}
-        />
-        <SelectedThreadBar
-          thread={selectedThread}
-          email={selectedEmail.email}
-        />
-      </React.Fragment>
-    );
-  }
+  }, [navigate]);
 
   return (
     <React.Fragment>
@@ -141,7 +125,6 @@ export default function SearchThreadView({
         <ThreadList
           selectedEmail={selectedEmail}
           threads={threads}
-          setSelectedThread={setSelectedThread}
           setHoveredThread={setHoveredThread}
           setScrollPosition={setScrollPosition}
           scrollRef={scrollRef}
@@ -151,7 +134,7 @@ export default function SearchThreadView({
           canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
         />
       </div>
-      <AssistBar thread={hoveredThread} setSelectedThread={setSelectedThread} />
+      <AssistBar thread={hoveredThread} />
     </React.Fragment>
   );
 }

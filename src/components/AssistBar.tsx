@@ -7,6 +7,7 @@ import { classNames } from "../lib/util";
 import toast from "react-hot-toast";
 import { dLog } from "../lib/noProd";
 import { useInboxZeroBackgroundContext } from "../contexts/InboxZeroBackgroundContext";
+import { useNavigate } from "react-router-dom";
 
 function copyToClipboard(text: string) {
   // document.execCommand("copy"); is not supported anymore
@@ -26,13 +27,10 @@ function copyToClipboard(text: string) {
 
 interface IAssistBarProps {
   thread: IEmailThread | null;
-  setSelectedThread: (threadId: string) => void;
 }
 
-export default function AssistBar({
-  thread,
-  setSelectedThread,
-}: IAssistBarProps) {
+export default function AssistBar({ thread }: IAssistBarProps) {
+  const navigate = useNavigate();
   const { isBackgroundOn } = useInboxZeroBackgroundContext();
 
   const emailThreads = useLiveQuery(
@@ -98,7 +96,7 @@ export default function AssistBar({
         {emailThreads?.map((thread, idx) => (
           <div
             key={idx}
-            onClick={() => void setSelectedThread(thread.id)}
+            onClick={() => void navigate(`/thread/${thread.id}`)}
             className="text-xs text-slate-500 dark:text-zinc-400 hover:underline hover:underline-offset-4 cursor-pointer"
           >
             {thread.subject}

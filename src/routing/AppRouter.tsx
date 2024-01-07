@@ -23,6 +23,7 @@ import Search from "../pages/Search";
 import InboxZeroSetup from "../pages/InboxZeroSetup";
 import Settings from "../pages/Settings";
 import { ComposeMessage } from "../pages/ComposeMessage";
+import ThreadPage from "../pages/ThreadPage";
 
 interface AppRouterProps {
   session: Session;
@@ -323,6 +324,10 @@ export default function AppRouter({ session }: AppRouterProps) {
             <Route
               path="/compose"
               element={<ComposeMessage selectedEmail={selectedEmail} />}
+            ></Route>
+            <Route
+              path="/thread/:threadId"
+              element={<ThreadPage selectedEmail={selectedEmail} />}
             ></Route>
           </>
         )}

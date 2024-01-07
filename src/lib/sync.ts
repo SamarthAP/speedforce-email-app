@@ -83,7 +83,7 @@ import {
 import { FOLDER_IDS } from "../api/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
-import { NewAttachment } from "../components/WriteMessage";
+import { NewAttachment } from "../pages/ComposeMessage";
 import toast from "react-hot-toast";
 
 const MAX_PARTIAL_SYNC_LOOPS = 10;

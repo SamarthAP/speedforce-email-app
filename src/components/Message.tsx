@@ -1,6 +1,6 @@
 import { createRef, useState } from "react";
 import dayjs from "dayjs";
-import { IMessage } from "../lib/db";
+import { IMessage, ISelectedEmail } from "../lib/db";
 import { classNames, cleanHtmlString } from "../lib/util";
 import ShadowDom from "./ShadowDom";
 import {
@@ -22,11 +22,10 @@ import { EmailSelectorInput } from "./EmailSelectorInput";
 interface MessageProps {
   message: IMessage;
   key: string;
-  folderId: string;
+  selectedEmail: ISelectedEmail;
 }
 
-export default function Message({ message, folderId }: MessageProps) {
-  const { selectedEmail } = useEmailPageOutletContext();
+export default function Message({ message, selectedEmail }: MessageProps) {
   const [showBody, setShowBody] = useState(true);
   const [showReply, setShowReply] = useState(false);
   const [showImages, setShowImages] = useState(false);
@@ -93,9 +92,6 @@ export default function Message({ message, folderId }: MessageProps) {
     if (error) {
       toast("Error sending messsage", { icon: "❌", duration: 5000 });
     } else {
-      await partialSync(selectedEmail.email, selectedEmail.provider, {
-        folderId: folderId,
-      });
       setShowReply(false);
     }
     setSendingReply(false);

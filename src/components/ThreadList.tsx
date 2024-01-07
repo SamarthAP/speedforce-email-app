@@ -30,6 +30,7 @@ import {
 import { FOLDER_IDS } from "../api/constants";
 import _ from "lodash";
 import { ConfirmModal } from "./modals/ConfirmModal";
+import { useNavigate } from "react-router-dom";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -68,7 +69,6 @@ interface DeleteThreadModalData {
 interface ThreadListProps {
   selectedEmail: ISelectedEmail;
   threads?: IEmailThread[]; // TODO: change for outlook thread
-  setSelectedThread: (threadId: string) => void;
   setHoveredThread: (thread: IEmailThread | null) => void;
   setScrollPosition: (position: number) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
@@ -81,7 +81,6 @@ interface ThreadListProps {
 export default function ThreadList({
   selectedEmail,
   threads,
-  setSelectedThread,
   setHoveredThread,
   setScrollPosition,
   scrollRef,
@@ -90,6 +89,7 @@ export default function ThreadList({
   canTrashThread = false,
   canPermanentlyDeleteThread = false,
 }: ThreadListProps) {
+  const navigate = useNavigate();
   const observerTarget = useRef<HTMLDivElement>(null);
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
   const [deleteThreadModalData, setDeleteThreadModalData] =
@@ -295,7 +295,6 @@ export default function ThreadList({
               <div
                 onClick={() => {
                   setScrollPosition(scrollRef.current?.scrollTop || 0);
-                  setSelectedThread(thread.id);
                   if (thread.unread) {
                     void markRead(
                       selectedEmail.email,
@@ -303,6 +302,7 @@ export default function ThreadList({
                       thread.id
                     );
                   }
+                  navigate(`/thread/${thread.id}`);
                 }}
                 onMouseOver={() => setHoveredThread(thread)}
                 className="grid grid-cols-10 py-1 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-default group"

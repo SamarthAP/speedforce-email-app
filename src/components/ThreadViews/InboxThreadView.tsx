@@ -35,9 +35,7 @@ InboxThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   const [selectedTab, setSelectedTab] = useState<ClientInboxTabType>(tabs[0]);
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
-  const [selectedThread, setSelectedThread] = useState<string>("");
   const [scrollPosition, setScrollPosition] = useState<number>(0);
-  const [writeEmailMode, setWriteEmailMode] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const dailyImageMetadata = useLiveQuery(() => db.dailyImageMetadata.get(1));
   const [isBackgroundOn, setIsBackgroundOn] = useState(false);
@@ -61,34 +59,12 @@ InboxThreadViewProps) {
 
       scrollRef.current.scrollTo(0, scrollPosition);
     }
-  }, [selectedThread, scrollPosition]);
-
-  // const threadIds = useLiveQuery(() => {
-  //   return db.emailThreads
-  //     .where("email")
-  //     .equals(selectedEmail.email)
-  //     .primaryKeys();
-  // });
-
-  // // Message list used for search
-  // const messages = useLiveQuery(async () => {
-  //   return db.messages
-  //     .where("threadId")
-  //     .anyOf(threadIds || [])
-  //     .toArray();
-  // }, [threadIds]);
+  }, [scrollPosition]);
 
   const threadsList = useLiveQuery(
     () => {
       if (selectedTab.filterThreadsFnc)
         return selectedTab.filterThreadsFnc(selectedEmail);
-
-      // if (selectedTab.filterThreadsSearchFnc)
-      //   return selectedTab.filterThreadsSearchFnc(
-      //     selectedEmail,
-      //     searchItems || [],
-      //     messages || []
-      //   );
 
       const emailThreads = db.emailThreads
         .where("email")
@@ -128,34 +104,13 @@ InboxThreadViewProps) {
     return threads;
   }, [threadsList]);
 
-  // useEffect(() => {
-  //   // If search mode, listen for escape key to exit search mode
-  //   if (selectedTab.isSearchMode) {
-  //     const handleKeyPress = (event: KeyboardEvent) => {
-  //       if (event.key === "Escape" && !writeEmailMode) {
-  //         navigate(-1);
-  //       }
-  //     };
-
-  //     window.addEventListener("keydown", handleKeyPress);
-
-  //     return () => {
-  //       window.removeEventListener("keydown", handleKeyPress);
-  //     };
-  //   }
-  // });
-
   useEffect(() => {
-    if (!writeEmailMode) {
-      if (threadsList?.length === 0) {
-        setIsBackgroundOn(true); // Show inbox zero background
-      } else {
-        setIsBackgroundOn(false);
-      }
+    if (threadsList?.length === 0) {
+      setIsBackgroundOn(true); // Show inbox zero background
     } else {
       setIsBackgroundOn(false);
     }
-  }, [threadsList, writeEmailMode, setIsBackgroundOn]);
+  }, [threadsList, setIsBackgroundOn]);
 
   useEffect(() => {
     // Do not fetch on first render in any scenario. Cap the number of renders to prevent infinite loops on empty folders
@@ -202,35 +157,6 @@ InboxThreadViewProps) {
   const handleSearchClick = () => {
     navigate("/search");
   };
-
-  // if (writeEmailMode) {
-  //   return (
-  //     <React.Fragment>
-  //       <WriteMessage setWriteEmailMode={setWriteEmailMode} />
-  //       {/* TODO: Create another Bar component for this that is more helpful for writing emails */}
-  //       <AssistBar
-  //         thread={hoveredThread}
-  //         setSelectedThread={setSelectedThread}
-  //       />
-  //     </React.Fragment>
-  //   );
-  // }
-
-  if (selectedThread) {
-    return (
-      <React.Fragment>
-        <ThreadFeed
-          selectedThread={selectedThread}
-          setSelectedThread={setSelectedThread}
-          folderId={selectedTab.folderId}
-        />
-        <SelectedThreadBar
-          thread={selectedThread}
-          email={selectedEmail.email}
-        />
-      </React.Fragment>
-    );
-  }
 
   const setSelectedEmail = async (email: IEmail) => {
     await db.selectedEmail.put({
@@ -381,7 +307,6 @@ InboxThreadViewProps) {
             <ThreadList
               selectedEmail={selectedEmail}
               threads={threads}
-              setSelectedThread={setSelectedThread}
               setHoveredThread={setHoveredThread}
               setScrollPosition={setScrollPosition}
               scrollRef={scrollRef}
@@ -393,10 +318,7 @@ InboxThreadViewProps) {
               }
             />
           </div>
-          <AssistBar
-            thread={hoveredThread}
-            setSelectedThread={setSelectedThread}
-          />
+          <AssistBar thread={hoveredThread} />
         </div>
       </InboxZeroBackgroundContext.Provider>
     </div>
