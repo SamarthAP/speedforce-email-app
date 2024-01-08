@@ -24,6 +24,7 @@ import InboxZeroSetup from "../pages/InboxZeroSetup";
 import Settings from "../pages/Settings";
 import { ComposeMessage } from "../pages/ComposeMessage";
 import ThreadPage from "../pages/ThreadPage";
+import Other from "../pages/Other";
 
 interface AppRouterProps {
   session: Session;
@@ -263,6 +264,12 @@ export default function AppRouter({ session }: AppRouterProps) {
                   <Home inboxZeroStartDate={selectedEmail.inboxZeroStartDate} />
                 }
               />
+            </Route>
+            <Route
+              path="/other"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<Other />} />
             </Route>
             <Route
               path="/sent"

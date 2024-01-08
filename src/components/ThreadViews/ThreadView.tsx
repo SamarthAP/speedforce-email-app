@@ -13,7 +13,10 @@ import SelectedThreadBar from "../SelectedThreadBar";
 import TooltipPopover from "../TooltipPopover";
 import { useTooltip } from "../UseTooltip";
 import { classNames } from "../../lib/util";
-import { ClientInboxTabType } from "../../api/model/client.inbox";
+import {
+  ClientInboxTabType,
+  ClientTabNavigationType,
+} from "../../api/model/client.inbox";
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import { useNavigate } from "react-router-dom";
 import { useInboxZeroBackgroundContext } from "../../contexts/InboxZeroBackgroundContext";
@@ -23,12 +26,10 @@ const MIN_REFRESH_DELAY_MS = 1000;
 
 interface ThreadViewProps {
   data: ClientInboxTabType;
-  searchItems?: string[];
-  setSearchItems?: (searchItems: string[]) => void;
-  wrapperType?: string;
+  tabs?: ClientTabNavigationType[];
 }
 
-export default function ThreadView({ data }: ThreadViewProps) {
+export default function ThreadView({ data, tabs }: ThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   // const [data, setdata] = useState<ClientInboxTabType>(tabs[0]);
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
@@ -61,14 +62,7 @@ export default function ThreadView({ data }: ThreadViewProps) {
     () => {
       if (data.filterThreadsFnc) return data.filterThreadsFnc(selectedEmail);
 
-      const emailThreads = db.emailThreads
-        .where("email")
-        .equals(selectedEmail.email)
-        .and((thread) => thread.labelIds?.includes(data.folderId))
-        .reverse()
-        .sortBy("date");
-
-      return emailThreads;
+      return [];
     },
     [selectedEmail, data],
     []
@@ -159,14 +153,31 @@ export default function ThreadView({ data }: ThreadViewProps) {
       <div className="w-full flex flex-col overflow-hidden">
         <div className="flex flex-row items-center justify-between">
           <nav className="flex items-center pl-6" aria-label="Tabs">
-            <h2
-              className={classNames(
-                "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
-                "font-medium text-black dark:text-white"
-              )}
-            >
-              {data.title}
-            </h2>
+            {tabs ? (
+              tabs.map((tab) => (
+                <h2
+                  key={tab.title}
+                  onClick={() => navigate(tab.href)}
+                  className={classNames(
+                    "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
+                    tab.title === data.title
+                      ? "font-medium text-black dark:text-white"
+                      : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-500 dark:hover:text-slate-100 dark:hover:bg-zinc-700"
+                  )}
+                >
+                  {tab.title}
+                </h2>
+              ))
+            ) : (
+              <h2
+                className={classNames(
+                  "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
+                  "font-medium text-black dark:text-white"
+                )}
+              >
+                {data.title}
+              </h2>
+            )}
           </nav>
           <div className="flex items-center">
             <button

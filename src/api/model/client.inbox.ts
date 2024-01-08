@@ -1,5 +1,10 @@
 import { IEmailThread, IMessage, ISelectedEmail } from "../../lib/db";
 
+export interface ClientTabNavigationType {
+  title: string;
+  href: string;
+}
+
 export interface ClientInboxTabType {
   title: string;
   folderId: string;

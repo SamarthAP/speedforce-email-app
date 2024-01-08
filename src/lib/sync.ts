@@ -1270,7 +1270,6 @@ export async function search(
 ) {
   const accessToken = await getAccessToken(email);
 
-  // TODO: delete after inbox zero, since folderId will be deprecated
   const searchQuery = buildSearchQuery(provider, searchItems);
   const filter: IThreadFilter = {
     folderId: FOLDER_IDS.INBOX,

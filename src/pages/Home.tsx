@@ -73,5 +73,27 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
       canTrashThread: true,
     },
   ];
-  return <InboxThreadView tabs={tabs} />;
+  return (
+    <InboxThreadView
+      data={{
+        title: "Important",
+        folderId: FOLDER_IDS.INBOX,
+        gmailQuery: gmailFetchQueryImportant,
+        outlookQuery: outlookFetchQueryImportant,
+        filterThreadsFnc: filterThreadsFncImportant,
+        canArchiveThread: true,
+        canTrashThread: true,
+      }}
+      tabs={[
+        {
+          title: "Important",
+          href: "/",
+        },
+        {
+          title: "Other",
+          href: "/other",
+        },
+      ]}
+    />
+  );
 }

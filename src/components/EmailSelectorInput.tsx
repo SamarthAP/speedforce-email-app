@@ -2,7 +2,6 @@ import { useState } from "react";
 import { XCircleIcon } from "@heroicons/react/20/solid";
 import { useLiveQuery } from "dexie-react-hooks";
 import { IContact, ISelectedEmail, db } from "../lib/db";
-import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { Combobox } from "@headlessui/react";
 import { classNames, delay } from "../lib/util";
 import { string } from "zod";

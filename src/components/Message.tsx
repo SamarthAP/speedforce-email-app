@@ -245,6 +245,7 @@ export default function Message({ message, selectedEmail }: MessageProps) {
               key={idx}
               attachment={attachment}
               messageId={message.id}
+              selectedEmail={selectedEmail}
             />
           ))}
         </div>

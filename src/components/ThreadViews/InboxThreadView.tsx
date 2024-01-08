@@ -1,19 +1,19 @@
 import ThreadList from "../ThreadList";
 import Sidebar from "../Sidebar";
-import { IEmail, IEmailThread, ISelectedEmail, db } from "../../lib/db";
+import { IEmail, IEmailThread, db } from "../../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ThreadFeed } from "../ThreadFeed";
 import AssistBar from "../AssistBar";
 import AccountActionsMenu from "../AccountActionsMenu";
 import { fullSync, partialSync } from "../../lib/sync";
 import { PencilSquareIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
-// import { WriteMessage } from "../WriteMessage";
-import SelectedThreadBar from "../SelectedThreadBar";
 import TooltipPopover from "../TooltipPopover";
 import { useTooltip } from "../UseTooltip";
 import { classNames } from "../../lib/util";
-import { ClientInboxTabType } from "../../api/model/client.inbox";
+import {
+  ClientInboxTabType,
+  ClientTabNavigationType,
+} from "../../api/model/client.inbox";
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import { useNavigate } from "react-router-dom";
 import { InboxZeroBackgroundContext } from "../../contexts/InboxZeroBackgroundContext";
@@ -24,16 +24,17 @@ const MAX_RENDER_COUNT = 5;
 const MIN_REFRESH_DELAY_MS = 1000;
 
 interface InboxThreadViewProps {
-  tabs: ClientInboxTabType[];
-  // selectedEmail: ISelectedEmail;
+  data: ClientInboxTabType;
+  tabs?: ClientTabNavigationType[];
 }
 
 export default function InboxThreadView({
+  data,
   tabs,
 }: // selectedEmail,
 InboxThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
-  const [selectedTab, setSelectedTab] = useState<ClientInboxTabType>(tabs[0]);
+  // const [selectedTab, setSelectedTab] = useState<ClientInboxTabType>(tabs[0]);
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -63,19 +64,11 @@ InboxThreadViewProps) {
 
   const threadsList = useLiveQuery(
     () => {
-      if (selectedTab.filterThreadsFnc)
-        return selectedTab.filterThreadsFnc(selectedEmail);
+      if (data.filterThreadsFnc) return data.filterThreadsFnc(selectedEmail);
 
-      const emailThreads = db.emailThreads
-        .where("email")
-        .equals(selectedEmail.email)
-        .and((thread) => thread.labelIds?.includes(selectedTab.folderId))
-        .reverse()
-        .sortBy("date");
-
-      return emailThreads;
+      return [];
     },
-    [selectedEmail, selectedTab],
+    [selectedEmail, data],
     [
       {
         id: "fake",
@@ -123,13 +116,13 @@ InboxThreadViewProps) {
       // TODO: Do a partial sync periodically to check for new threads (when not empty)
       if (threadsList?.length === 0) {
         void fullSync(selectedEmail.email, selectedEmail.provider, {
-          folderId: selectedTab.folderId,
-          gmailQuery: selectedTab.gmailQuery,
-          outlookQuery: selectedTab.outlookQuery,
+          folderId: data.folderId,
+          gmailQuery: data.gmailQuery,
+          outlookQuery: data.outlookQuery,
         });
       }
     }
-  }, [selectedTab, selectedEmail, threadsList]);
+  }, [data, selectedEmail, threadsList]);
 
   const handleRefreshClick = async () => {
     setRefreshing(true);
@@ -137,9 +130,9 @@ InboxThreadViewProps) {
 
     // TODO: Partial sync if metadata, or else full sync
     await partialSync(selectedEmail.email, selectedEmail.provider, {
-      folderId: selectedTab.folderId,
-      gmailQuery: selectedTab.gmailQuery,
-      outlookQuery: selectedTab.outlookQuery,
+      folderId: data.folderId,
+      gmailQuery: data.gmailQuery,
+      outlookQuery: data.outlookQuery,
     });
 
     // If sync duration < MIN_REFRESH_DELAY_MS, wait until MIN_REFRESH_DELAY_MS has passed
@@ -210,29 +203,40 @@ InboxThreadViewProps) {
           <div className="w-full flex flex-col overflow-hidden">
             <div className="flex flex-row items-center justify-between">
               <nav className="flex items-center pl-6" aria-label="Tabs">
-                {tabs.map((tab) => (
+                {tabs ? (
+                  tabs.map((tab) => (
+                    <h2
+                      key={tab.title}
+                      onClick={() => navigate(tab.href)}
+                      className={
+                        isBackgroundOn
+                          ? classNames(
+                              "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
+                              tab.title === data.title
+                                ? "font-medium text-white"
+                                : "text-white/50 hover:text-white hover:bg-black/50"
+                            )
+                          : classNames(
+                              "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
+                              tab.title === data.title
+                                ? "font-medium text-black dark:text-white"
+                                : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-500 dark:hover:text-slate-100 dark:hover:bg-zinc-700"
+                            )
+                      }
+                    >
+                      {tab.title}
+                    </h2>
+                  ))
+                ) : (
                   <h2
-                    key={tab.title}
-                    onClick={() => setSelectedTab(tab)}
-                    className={
-                      isBackgroundOn
-                        ? classNames(
-                            "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
-                            tab.title === selectedTab.title
-                              ? "font-medium text-white"
-                              : "text-white/50 hover:text-white hover:bg-black/50"
-                          )
-                        : classNames(
-                            "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
-                            tab.title === selectedTab.title
-                              ? "font-medium text-black dark:text-white"
-                              : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-500 dark:hover:text-slate-100 dark:hover:bg-zinc-700"
-                          )
-                    }
+                    className={classNames(
+                      "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
+                      "font-medium text-black dark:text-white"
+                    )}
                   >
-                    {tab.title}
+                    {data.title}
                   </h2>
-                ))}
+                )}
               </nav>
               <div className="flex items-center">
                 <button
@@ -310,12 +314,10 @@ InboxThreadViewProps) {
               setHoveredThread={setHoveredThread}
               setScrollPosition={setScrollPosition}
               scrollRef={scrollRef}
-              folderId={selectedTab.folderId}
-              canArchiveThread={selectedTab.canArchiveThread}
-              canTrashThread={selectedTab.canTrashThread}
-              canPermanentlyDeleteThread={
-                selectedTab.canDeletePermanentlyThread
-              }
+              folderId={data.folderId}
+              canArchiveThread={data.canArchiveThread}
+              canTrashThread={data.canTrashThread}
+              canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
             />
           </div>
           <AssistBar thread={hoveredThread} />
