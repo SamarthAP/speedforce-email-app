@@ -28,6 +28,11 @@ import {
   updateLabelIdsForEmailThread,
 } from "../lib/util";
 import { FOLDER_IDS } from "../api/constants";
+import {
+  trackEmailDeleted,
+  trackEmailMarkedDone,
+  trackEmailStarred,
+} from "../lib/EngagementTracker";
 import _ from "lodash";
 import { ConfirmModal } from "./modals/ConfirmModal";
 
@@ -335,6 +340,7 @@ export default function ThreadList({
                         ) => {
                           event.stopPropagation();
                           void handleStarClick(thread);
+                          void trackEmailStarred(selectedEmail.email);
                         }}
                       >
                         <StarIconOutline className="w-4 h-4 text-slate-400 dark:text-zinc-500 opacity-0 group-hover:opacity-100" />
@@ -388,6 +394,7 @@ export default function ThreadList({
                             ) => {
                               event.stopPropagation();
                               void handleArchiveClick(thread);
+                              void trackEmailMarkedDone(selectedEmail.email);
                             }}
                             className="group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
                           >
@@ -408,6 +415,7 @@ export default function ThreadList({
                             ) => {
                               event.stopPropagation();
                               void handleTrashClick(thread);
+                              void trackEmailDeleted(selectedEmail.email);
                             }}
                             className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
                           >

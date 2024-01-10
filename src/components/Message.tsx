@@ -18,6 +18,11 @@ import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
 import toast from "react-hot-toast";
 import { EmailSelectorInput } from "./EmailSelectorInput";
+import {
+  trackEmailReplied,
+  trachEmailReplyAll,
+  trackEmailForwarded,
+} from "../lib/EngagementTracker";
 
 interface MessageProps {
   message: IMessage;
@@ -208,7 +213,16 @@ export default function Message({ message, folderId }: MessageProps) {
           <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
 
           <SimpleButton
-            onClick={() => void handleSendReply()}
+            onClick={() => {
+              void handleSendReply();
+              if (editorMode === "reply") {
+                void trackEmailReplied(selectedEmail.email);
+              } else if (editorMode === "replyAll") {
+                void trachEmailReplyAll(selectedEmail.email);
+              } else if (editorMode === "forward") {
+                void trackEmailForwarded(selectedEmail.email);
+              }
+            }}
             loading={sendingReply}
             text="Send"
             width="w-16"

@@ -4,6 +4,7 @@ import SimpleButton from "./SimpleButton";
 import { saveFeedback } from "../api/feedback";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import Spinner from "./Spinner";
+import { trackFeedbackButtonInteraction } from "../lib/EngagementTracker";
 
 export default function FeedbackTab() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,6 +104,7 @@ export default function FeedbackTab() {
         className="w-full h-full cursor-pointer flex justify-center p-3"
         onClick={() => {
           openModal();
+          void trackFeedbackButtonInteraction(selectedEmail.email);
         }}
       >
         <p className="rotate-90 py-3.5 text-xs text-white dark:text-black">

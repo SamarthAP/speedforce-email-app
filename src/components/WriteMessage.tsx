@@ -11,6 +11,7 @@ import { classNames } from "../lib/util";
 import toast from "react-hot-toast";
 import { EmailSelectorInput } from "./EmailSelectorInput";
 import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
+import { trackEmailSent } from "../lib/EngagementTracker";
 
 const options = {
   blockStyleFn: (block: any) => {
@@ -186,7 +187,10 @@ export function WriteMessage({ setWriteEmailMode }: WriteMessageProps) {
         </div>
         <div className="text-right">
           <SimpleButton
-            onClick={() => void handleSendEmail()}
+            onClick={() => {
+              void handleSendEmail();
+              void trackEmailSent(selectedEmail.email);
+            }}
             loading={sendingEmail}
             text="Send"
             width="w-16"
