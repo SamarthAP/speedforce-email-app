@@ -1,19 +1,19 @@
 import InboxThreadView from "../components/ThreadViews/InboxThreadView";
 import { FOLDER_IDS } from "../api/constants";
-import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
-import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
+// import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
+// import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
-import { ClientInboxTabType } from "../api/model/client.inbox";
+// import { ClientInboxTabType } from "../api/model/client.inbox";
 import { useEmailPageOutletContext } from "./_emailPage";
 import { useQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 
-const gmailFetchQueryImportant = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
-  FOLDER_IDS.INBOX
-)}`;
-const outlookFetchQueryImportant = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
-  FOLDER_IDS.INBOX
-)}/messages?$select=id,conversationId,createdDateTime&$top=20`;
+// const gmailFetchQueryImportant = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
+//   FOLDER_IDS.INBOX
+// )}`;
+// const outlookFetchQueryImportant = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
+//   FOLDER_IDS.INBOX
+// )}/messages?$select=id,conversationId,createdDateTime&$top=20`;
 
 function getYesterdayDate() {
   const yesterday = new Date();

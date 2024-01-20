@@ -1,18 +1,18 @@
 import { FOLDER_IDS } from "../api/constants";
-import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
-import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
+// import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
+// import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
 import InboxThreadView from "../components/ThreadViews/InboxThreadView";
 import { useEmailPageOutletContext } from "./_emailPage";
 import { useQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 
-const gmailFetchQueryOther = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
-  FOLDER_IDS.INBOX
-)}`;
-const outlookFetchQueryOther = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
-  FOLDER_IDS.INBOX
-)}/messages?$select=id,conversationId,createdDateTime&$top=20`;
+// const gmailFetchQueryOther = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
+//   FOLDER_IDS.INBOX
+// )}`;
+// const outlookFetchQueryOther = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
+//   FOLDER_IDS.INBOX
+// )}/messages?$select=id,conversationId,createdDateTime&$top=20`;
 
 interface OtherProps {
   inboxZeroStartDate: number;

@@ -1,43 +1,43 @@
 import { OUTLOOK_API_URL } from "../constants";
 import {
   OutlookThreadsListDataType,
-  IThreadFilter,
+  // IThreadFilter,
 } from "../../model/users.thread";
 import { dLog } from "../../../lib/noProd";
 
 // in endpoints that will not be called often, we can use the async/await syntax
-export const list = async (accessToken: string, filter: IThreadFilter) => {
-  let data: OutlookThreadsListDataType | null = null;
-  let error: string | null = null;
+// export const list = async (accessToken: string, filter: IThreadFilter) => {
+//   let data: OutlookThreadsListDataType | null = null;
+//   let error: string | null = null;
 
-  try {
-    const res: Response = await fetch(
-      `${OUTLOOK_API_URL}/me/${
-        filter.outlookQuery ? filter.outlookQuery : "messages"
-      }`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+//   try {
+//     const res: Response = await fetch(
+//       `${OUTLOOK_API_URL}/me/${
+//         filter.outlookQuery ? filter.outlookQuery : "messages"
+//       }`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${accessToken}`,
+//         },
+//       }
+//     );
 
-    if (!res.ok) {
-      error = "Error fetching threads";
-    } else {
-      const resData = await res.json();
-      data = {
-        nextPageToken: resData["@odata.nextLink"],
-        value: resData.value,
-      };
-    }
-  } catch (e) {
-    dLog(e);
-    error = "Error fetching threads";
-  }
+//     if (!res.ok) {
+//       error = "Error fetching threads";
+//     } else {
+//       const resData = await res.json();
+//       data = {
+//         nextPageToken: resData["@odata.nextLink"],
+//         value: resData.value,
+//       };
+//     }
+//   } catch (e) {
+//     dLog(e);
+//     error = "Error fetching threads";
+//   }
 
-  return { data, error };
-};
+//   return { data, error };
+// };
 
 // export const listNextPage = async (
 //   accessToken: string,

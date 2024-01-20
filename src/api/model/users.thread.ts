@@ -79,9 +79,9 @@ export interface OutlookThreadsListDataType {
   value: OutlookMessageDataType[];
 }
 
-export interface IThreadFilter {
-  folderId: string;
-  gmailQuery?: string;
-  outlookQuery?: string;
-  // TODO: Add more email filters as needed
-}
+// export interface IThreadFilter {
+//   folderId: string;
+//   gmailQuery?: string;
+//   outlookQuery?: string;
+//   // TODO: Add more email filters as needed
+// }

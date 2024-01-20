@@ -1,18 +1,17 @@
 import ThreadView from "../components/ThreadViews/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
 import { ISelectedEmail, db } from "../lib/db";
-import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
+// import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import React from "react";
 import Titlebar from "../components/Titlebar";
 import { useEmailPageOutletContext } from "./_emailPage";
 import { useQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 
-// TODO: May be able to abstract this away as well
-const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
-  FOLDER_IDS.STARRED
-)}&includeSpamTrash=true`;
-const outlookFetchQuery = `messages?$select=id,conversationId,createdDateTime&$top=20&$filter=flag/flagStatus eq 'flagged'`;
+// const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
+//   FOLDER_IDS.STARRED
+// )}&includeSpamTrash=true`;
+// const outlookFetchQuery = `messages?$select=id,conversationId,createdDateTime&$top=20&$filter=flag/flagStatus eq 'flagged'`;
 
 const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
   db.emailThreads

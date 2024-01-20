@@ -57,7 +57,12 @@ export const getThreadsExhaustive = async (
     const threadIds = _.uniq(data.value.map((thread) => thread.conversationId));
 
     if (threadIds.length > 0) {
-      await handleNewThreadsOutlook(accessToken, email, threadIds);
+      await handleNewThreadsOutlook(
+        accessToken,
+        email,
+        threadIds,
+        outlookLabelIds
+      );
     }
 
     // if (nextPageToken) {

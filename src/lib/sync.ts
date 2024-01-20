@@ -1,7 +1,7 @@
 import {
   deleteThread as gDeleteThread,
   get as gThreadGet,
-  list as gThreadList,
+  // list as gThreadList,
   // listNextPage as gThreadListNextPage,
   removeLabelIds,
   sendReply as gSendReply,
@@ -14,7 +14,7 @@ import {
   forward as gForward,
   getAttachment as gAttachmentGet,
 } from "../api/gmail/users/messages";
-import { list as gHistoryList } from "../api/gmail/users/history";
+// import { list as gHistoryList } from "../api/gmail/users/history";
 import {
   list as gContactList,
   listDirectoryPeople,
@@ -25,7 +25,7 @@ import { getToRecipients, buildForwardedHTML } from "../api/gmail/helpers";
 
 import {
   get as mThreadGet,
-  list as mThreadList,
+  // list as mThreadList,
   // listNextPage as mThreadListNextPage,
   markRead as mThreadMarkRead,
   forward as mForward,
@@ -55,9 +55,11 @@ import {
   addLabelIdsOutlook,
   removeLabelIdsOutlook,
   getFolderNameFromIdOutlook,
-  getOutlookHistoryIdFromDateTime,
+  // getOutlookHistoryIdFromDateTime,
   getOutlookSubscriptionExpirationDateTime,
 } from "../api/outlook/helpers";
+// import { list as gThreadList } from "../api/gmail/reactQuery/reactQueryHelperFunctions";
+// import { list as mThreadList } from "../api/outlook/reactQuery/reactQueryHelperFunctions";
 
 import { getAccessToken } from "../api/accessToken";
 import { IAttachment, IContact, IEmailThread, IMessage, db } from "./db";
@@ -70,17 +72,18 @@ import {
 } from "./util";
 import _ from "lodash";
 import { dLog } from "./noProd";
-import {
-  IThreadFilter,
-  OutlookThreadsListDataType,
-} from "../api/model/users.thread";
+// import {
+//   IThreadFilter,
+//   OutlookThreadsListDataType,
+// } from "../api/model/users.thread";
 import { FOLDER_IDS } from "../api/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { NewAttachment } from "../pages/ComposeMessage";
 import toast from "react-hot-toast";
+import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 
-const MAX_PARTIAL_SYNC_LOOPS = 10;
+// const MAX_PARTIAL_SYNC_LOOPS = 10;
 
 export async function handleNewThreadsGoogle(
   accessToken: string,
@@ -1006,52 +1009,50 @@ export async function search(
   provider: "google" | "outlook",
   searchItems: string[]
 ) {
-  const accessToken = await getAccessToken(email);
+  // const accessToken = await getAccessToken(email);
 
   const searchQuery = buildSearchQuery(provider, searchItems);
-  const filter: IThreadFilter = {
-    folderId: FOLDER_IDS.INBOX,
-    gmailQuery: searchQuery,
-    outlookQuery: searchQuery,
-  };
+  // const filter: IThreadFilter = {
+  //   folderId: FOLDER_IDS.INBOX,
+  //   gmailQuery: searchQuery,
+  //   outlookQuery: searchQuery,
+  // };
 
   void saveSearchQuery(email, searchItems);
+  void getThreadsExhaustive(email, provider, searchQuery, []);
 
-  if (provider === "google") {
-    // // TODO: remove this necause gThreadList is not necessary
-    // const tList = await gThreadList(accessToken, filter);
-    // if (tList.error || !tList.data) {
-    //   // TODO: send error syncing mailbox
-    //   return;
-    // }
-    // const threadIds = tList.data.threads
-    //   ? tList.data.threads.map((thread) => thread.id)
-    //   : [];
-    // if (threadIds.length > 0) {
-    //   await handleNewThreadsGoogle(accessToken, email, threadIds);
-    // }
-  } else if (provider === "outlook") {
-    const { data, error } = await mThreadList(accessToken, filter);
-
-    if (error || !data) {
-      dLog("Error searching mailbox");
-      return { data: [], error };
-    }
-
-    const threadIds = _.uniq(data.value.map((thread) => thread.conversationId));
-
-    let parsedThreads: IEmailThread[] = [];
-    if (threadIds.length > 0) {
-      parsedThreads = await handleNewThreadsOutlook(
-        accessToken,
-        email,
-        threadIds
-        // filter
-      );
-    }
-
-    return { data: parsedThreads, error: null };
-  }
+  // if (provider === "google") {
+  // Should we call exhaustive here or call the list endpoint directly for pagination
+  // // TODO: remove this necause gThreadList is not necessary
+  // const tList = await gThreadList(accessToken, filter);
+  // if (tList.error || !tList.data) {
+  //   // TODO: send error syncing mailbox
+  //   return;
+  // }
+  // const threadIds = tList.data.threads
+  //   ? tList.data.threads.map((thread) => thread.id)
+  //   : [];
+  // if (threadIds.length > 0) {
+  //   await handleNewThreadsGoogle(accessToken, email, threadIds);
+  // }
+  // } else if (provider === "outlook") {
+  // const { data, error } = await mThreadList(accessToken, filter);
+  // if (error || !data) {
+  //   dLog("Error searching mailbox");
+  //   return { data: [], error };
+  // }
+  // const threadIds = _.uniq(data.value.map((thread) => thread.conversationId));
+  // let parsedThreads: IEmailThread[] = [];
+  // if (threadIds.length > 0) {
+  //   parsedThreads = await handleNewThreadsOutlook(
+  //     accessToken,
+  //     email,
+  //     threadIds
+  //     // filter
+  //   );
+  // }
+  // return { data: parsedThreads, error: null };
+  // }
 
   return { data: [], error: null };
 }
