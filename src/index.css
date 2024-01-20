@@ -22,3 +22,25 @@
 .fadeIn-animation {
   animation: fadeIn 1s;
 }
+
+/* TODO: Make sure this doesn't affect other parts of the app */
+.ProseMirror ol {
+  list-style-type: decimal;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+}
+
+.ProseMirror:focus {
+  outline: none;
+}
+
+/* Placeholder (at the top) */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}

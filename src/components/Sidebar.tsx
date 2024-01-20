@@ -58,7 +58,10 @@ export default function Sidebar() {
 
       {/* NOTE: pb-6 as a hack for the weird scroll bug cutting off the last item in the nav (not fully scrolling) */}
       <nav className="pt-2 pb-6">
-        <ul role="list" className="flex flex-col items-center space-y-1">
+        <ul
+          role="list"
+          className="flex flex-col items-center space-y-1 list-none"
+        >
           {navigation.map((item) => {
             if (
               item.name !== "Calendar" ||
