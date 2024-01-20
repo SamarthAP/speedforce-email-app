@@ -55,24 +55,6 @@ export interface IMessage {
   // TODO: add more fields like cc, bcc, attachments, etc.
 }
 
-export interface IGoogleMetadata {
-  email: string;
-  historyId: string;
-  threadsListNextPageTokens: {
-    folderId: string; // TODO: reflect changes in SubClassedDexie
-    token: string;
-  }[];
-}
-
-export interface IOutlookMetadata {
-  email: string;
-  historyId: string;
-  threadsListNextPageTokens: {
-    folderId: string; // TODO: reflect changes in SubClassedDexie
-    token: string;
-  }[];
-}
-
 // Outlook messages do not contain folder names in response. Store names when fetching to avoid refetching unecessarily
 export interface IOutlookFolder {
   id: string;
@@ -104,8 +86,6 @@ export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
   emailThreads!: Table<IEmailThread, string>;
-  googleMetadata!: Table<IGoogleMetadata, string>;
-  outlookMetadata!: Table<IOutlookMetadata, string>;
   messages!: Table<IMessage, string>;
   outlookFolders!: Table<IOutlookFolder, string>;
   contacts!: Table<IContact, string>;

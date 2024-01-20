@@ -126,7 +126,7 @@ export default function SearchThreadView({
           setHoveredThread={setHoveredThread}
           setScrollPosition={setScrollPosition}
           scrollRef={scrollRef}
-          folderId={data.folderId}
+          // folderId={data.folderId}
           canArchiveThread={data.canArchiveThread}
           canTrashThread={data.canTrashThread}
           canPermanentlyDeleteThread={data.canDeletePermanentlyThread}

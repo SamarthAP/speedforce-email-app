@@ -39,44 +39,44 @@ export const list = async (accessToken: string, filter: IThreadFilter) => {
   return { data, error };
 };
 
-export const listNextPage = async (
-  accessToken: string,
-  nextPageToken: string
-) => {
-  let data: OutlookThreadsListDataType | null = null;
-  let error: string | null = null;
+// export const listNextPage = async (
+//   accessToken: string,
+//   nextPageToken: string
+// ) => {
+//   let data: OutlookThreadsListDataType | null = null;
+//   let error: string | null = null;
 
-  if (!nextPageToken) {
-    error = "Page token not provided";
-    return { data, error };
-  }
+//   if (!nextPageToken) {
+//     error = "Page token not provided";
+//     return { data, error };
+//   }
 
-  try {
-    const res: Response = await fetch(
-      `${nextPageToken}`, // Outlook nextPageToken is the entire URL to fetch the next page
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+//   try {
+//     const res: Response = await fetch(
+//       `${nextPageToken}`, // Outlook nextPageToken is the entire URL to fetch the next page
+//       {
+//         headers: {
+//           Authorization: `Bearer ${accessToken}`,
+//         },
+//       }
+//     );
 
-    if (!res.ok) {
-      error = "Error fetching threads";
-    } else {
-      const resData = await res.json();
-      data = {
-        nextPageToken: resData["@odata.nextLink"],
-        value: resData.value,
-      };
-    }
-  } catch (e) {
-    dLog(e);
-    error = "Error fetching threads";
-  }
+//     if (!res.ok) {
+//       error = "Error fetching threads";
+//     } else {
+//       const resData = await res.json();
+//       data = {
+//         nextPageToken: resData["@odata.nextLink"],
+//         value: resData.value,
+//       };
+//     }
+//   } catch (e) {
+//     dLog(e);
+//     error = "Error fetching threads";
+//   }
 
-  return { data, error };
-};
+//   return { data, error };
+// };
 
 // in endpoints that will be called often, we use the promise syntax so that the
 // calling function can Promise.all() them or handle them in whatever way it wants

@@ -5,6 +5,9 @@ import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
 import React from "react";
 import Titlebar from "../components/Titlebar";
+import { useEmailPageOutletContext } from "./_emailPage";
+import { useQuery } from "react-query";
+import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 
 const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
   FOLDER_IDS.DRAFTS
@@ -28,6 +31,21 @@ const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
 // TODO: May be able to abstract this away as well
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now
 export default function Drafts() {
+  const { selectedEmail } = useEmailPageOutletContext();
+
+  const email = selectedEmail.email;
+  const gmailQueryParam = "labelIds=DRAFT";
+  const outlookQueryParam =
+    "mailFolders/Drafts/messages?$select=id,conversationId,createdDateTime&$top=20";
+  useQuery(["drafts", email], () =>
+    getThreadsExhaustive(
+      email,
+      selectedEmail.provider,
+      selectedEmail.provider === "google" ? gmailQueryParam : outlookQueryParam,
+      ["ID_DRAFTS"]
+    )
+  );
+
   return (
     <React.Fragment>
       <Titlebar />
@@ -35,9 +53,7 @@ export default function Drafts() {
         <ThreadView
           data={{
             title: "Drafts",
-            folderId: FOLDER_IDS.DRAFTS,
-            gmailQuery: gmailFetchQuery,
-            outlookQuery: outlookFetchQuery,
+            // folderId: FOLDER_IDS.DRAFT S,
             filterThreadsFnc: filterThreadsFnc,
             canArchiveThread: true,
             canTrashThread: true,

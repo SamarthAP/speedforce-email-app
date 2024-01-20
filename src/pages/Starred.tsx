@@ -4,6 +4,9 @@ import { ISelectedEmail, db } from "../lib/db";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import React from "react";
 import Titlebar from "../components/Titlebar";
+import { useEmailPageOutletContext } from "./_emailPage";
+import { useQuery } from "react-query";
+import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 
 // TODO: May be able to abstract this away as well
 const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
@@ -25,6 +28,21 @@ const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
 
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now
 export default function Starred() {
+  const { selectedEmail } = useEmailPageOutletContext();
+
+  const email = selectedEmail.email;
+  const gmailQueryParam = "labelIds=STARRED";
+  const outlookQueryParam = `messages?$select=id,conversationId,createdDateTime&$top=20&$filter=flag/flagStatus eq 'flagged'`;
+
+  useQuery(["starred", email], () =>
+    getThreadsExhaustive(
+      email,
+      selectedEmail.provider,
+      selectedEmail.provider === "google" ? gmailQueryParam : outlookQueryParam,
+      ["ID_STARRED"]
+    )
+  );
+
   return (
     <React.Fragment>
       <Titlebar />
@@ -32,9 +50,7 @@ export default function Starred() {
         <ThreadView
           data={{
             title: "Starred",
-            folderId: FOLDER_IDS.STARRED,
-            gmailQuery: gmailFetchQuery,
-            outlookQuery: outlookFetchQuery,
+            // folderId: FOLDER_IDS.STARRED,
             filterThreadsFnc: filterThreadsFnc,
             canArchiveThread: true,
             canTrashThread: true,

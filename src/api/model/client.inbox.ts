@@ -7,15 +7,15 @@ export interface ClientTabNavigationType {
 
 export interface ClientInboxTabType {
   title: string;
-  folderId: string;
+  // folderId: string;
   filterThreadsFnc?: (selectedEmail: ISelectedEmail) => Promise<IEmailThread[]>;
   filterThreadsSearchFnc?: (
     selectedEmail: ISelectedEmail,
     searchItems: string[],
     messages: IMessage[]
   ) => Promise<IEmailThread[]>;
-  gmailQuery?: string;
-  outlookQuery?: string;
+  // gmailQuery?: string;
+  // outlookQuery?: string;
   canArchiveThread?: boolean;
   canTrashThread?: boolean;
   isSearchMode?: boolean;

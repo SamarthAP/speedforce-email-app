@@ -10,8 +10,7 @@ import {
 import EmailEditor, { EditorComponentRef } from "./EmailEditor";
 import { Editor } from "draft-js";
 import { stateToHTML } from "draft-js-export-html";
-import { partialSync, sendReply, sendReplyAll, forward } from "../lib/sync";
-import { useEmailPageOutletContext } from "../pages/_emailPage";
+import { sendReply, sendReplyAll, forward } from "../lib/sync";
 import SimpleButton from "./SimpleButton";
 import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";

@@ -199,4 +199,32 @@ export const dexieSchemas = {
         });
     },
   },
+
+  /*
+  Schema Version 7:
+  Oldest Compatible App Version 0.0.15
+  Change description:
+    - Remove all metadata tables
+  */
+  7: {
+    schema: {
+      emails: "email, provider, accessToken, expiresAt, inboxZeroStartDate",
+      selectedEmail: "id, email, provider, inboxZeroStartDate",
+      emailThreads:
+        "id, historyId, email, from, subject, snippet, date, unread, *labelIds, hasAttachments",
+      messages:
+        "id, threadId, *labelIds, from, *toRecipients, snippet, headers, textData, htmlData, date, *attachments",
+      outlookFolders: "id, displayName",
+      contacts:
+        "[email+contactEmailAddress], contactName, isSavedContact, lastInteraction",
+      dailyImageMetadata: "id, date, url",
+      searchHistory: "[email+searchQuery]",
+    },
+    upgradeFnc: async (tx: Transaction) => {
+      dLog("Upgrading schema to version 7");
+
+      // nuke db once again
+      cleanIndexedDb();
+    },
+  },
 };

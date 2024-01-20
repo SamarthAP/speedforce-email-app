@@ -1,9 +1,9 @@
 import { OutlookMessageDataType } from "./users.message";
 
 export interface GoogleThreadsListDataType {
-  nextPageToken: string;
+  nextPageToken?: string;
   resultSizeEstimate: number;
-  threads: {
+  threads?: {
     id: string;
     snippet: string;
     historyId: string;

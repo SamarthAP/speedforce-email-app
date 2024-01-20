@@ -72,7 +72,7 @@ export default function Search() {
         <SearchThreadView
           data={{
             title: "Search",
-            folderId: "",
+            // folderId: "",
             filterThreadsSearchFnc: filterThreadsSearchFnc,
             canArchiveThread: true,
             canTrashThread: true,

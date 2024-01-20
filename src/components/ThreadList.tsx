@@ -4,7 +4,6 @@ import he from "he";
 import React, { useEffect, useRef, useState } from "react";
 import {
   archiveThread,
-  loadNextPage,
   markRead,
   starThread,
   unstarThread,
@@ -72,7 +71,7 @@ interface ThreadListProps {
   setHoveredThread: (thread: IEmailThread | null) => void;
   setScrollPosition: (position: number) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
-  folderId: string;
+  // folderId: string;
   canArchiveThread?: boolean;
   canTrashThread?: boolean;
   canPermanentlyDeleteThread?: boolean;
@@ -84,7 +83,7 @@ export default function ThreadList({
   setHoveredThread,
   setScrollPosition,
   scrollRef,
-  folderId,
+  // folderId,
   canArchiveThread = false,
   canTrashThread = false,
   canPermanentlyDeleteThread = false,
@@ -105,9 +104,10 @@ export default function ThreadList({
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          void loadNextPage(selectedEmail.email, selectedEmail.provider, {
-            folderId: folderId,
-          });
+          console.log("need to load the next page");
+          // void loadNextPage(selectedEmail.email, selectedEmail.provider, {
+          //   folderId: folderId,
+          // });
         }
       },
       { root: null, rootMargin: "0px", threshold: 1 }
@@ -124,13 +124,7 @@ export default function ThreadList({
         observer.unobserve(target);
       }
     };
-  }, [
-    observerTarget,
-    threads,
-    selectedEmail.email,
-    selectedEmail.provider,
-    folderId,
-  ]);
+  }, [observerTarget, threads, selectedEmail.email, selectedEmail.provider]);
 
   async function handleStarClick(thread: IEmailThread) {
     if (thread.labelIds.includes("STARRED")) {
@@ -441,7 +435,10 @@ export default function ThreadList({
                     </div>
                   </div>
                 </div>
-                <HorizontalAttachments thread={thread} />
+                <HorizontalAttachments
+                  thread={thread}
+                  selectedEmail={selectedEmail}
+                />
               </div>
             </div>
           );
