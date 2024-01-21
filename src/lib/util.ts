@@ -4,7 +4,7 @@ import { db, IEmailThread } from "./db";
 import { dLog } from "./noProd";
 import { FOLDER_IDS } from "../api/constants";
 // import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
-// import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
+import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 // import { BidirectionalMap } from "../api/model/bidirectionalMap";
 
 export function classNames(...classes: string[]) {
@@ -252,7 +252,7 @@ export function buildSearchQuery(
       queryString += `&${key}=${value.join(" and ")}`;
     });
 
-    return `${folderId}messages?$select=id,conversationId,createdDateTime&$top=20${queryString}${
+    return `${folderId}messages?${OUTLOOK_SELECT_THREADLIST}&$top=20${queryString}${
       filters.length > 0 ? '&$search="' + filters.join(" AND ") + '"' : ""
     }`;
   }

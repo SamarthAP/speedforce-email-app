@@ -264,6 +264,7 @@ export async function handleNewThreadsOutlook(
       let unread = false;
       let isStarred = false;
       let isImportant = false;
+      let hasAttachments = false;
       let labelIds: string[] = [];
       for (const message of thread.value) {
         if (!message.isRead) {
@@ -274,6 +275,9 @@ export async function handleNewThreadsOutlook(
         }
         if (message.inferenceClassification.toLowerCase() === "focused") {
           isImportant = true;
+        }
+        if (message.hasAttachments) {
+          hasAttachments = true;
         }
       }
 
@@ -291,28 +295,36 @@ export async function handleNewThreadsOutlook(
           htmlData = message.body.content || "";
         }
 
-        let attachments: IAttachment[] = [];
-        // List attachments
-        if (message.hasAttachments) {
-          const { data, error } = await mAttachmentList(
-            accessToken,
-            message.id
-          );
+        const attachments: IAttachment[] =
+          message.attachments?.map((attachment) => {
+            return {
+              filename: attachment.name,
+              mimeType: attachment.contentType,
+              attachmentId: attachment.id,
+              size: attachment.size,
+            };
+          }) || [];
+        // // List attachments
+        // if (message.hasAttachments) {
+        //   const { data, error } = await mAttachmentList(
+        //     accessToken,
+        //     message.id
+        //   );
 
-          if (data && !error) {
-            // attachments.data.value.forEach((attachment) => {
-            attachments = data.map((attachment) => {
-              return {
-                filename: attachment.name,
-                mimeType: attachment.contentType,
-                attachmentId: attachment.id,
-                size: attachment.size,
-              };
-            });
-          } else {
-            dLog("Error getting attachments");
-          }
-        }
+        //   if (data && !error) {
+        //     // attachments.data.value.forEach((attachment) => {
+        //     attachments = data.map((attachment) => {
+        //       return {
+        //         filename: attachment.name,
+        //         mimeType: attachment.contentType,
+        //         attachmentId: attachment.id,
+        //         size: attachment.size,
+        //       };
+        //     });
+        //   } else {
+        //     dLog("Error getting attachments");
+        //   }
+        // }
 
         // TODO: Add CC, BCC, attachments, etc.
         parsedMessages.push({
@@ -358,7 +370,7 @@ export async function handleNewThreadsOutlook(
         ).getTime(),
         unread: unread,
         labelIds: labelIds,
-        hasAttachments: false, // TODO: implement for outlook
+        hasAttachments: hasAttachments,
       });
     }
 

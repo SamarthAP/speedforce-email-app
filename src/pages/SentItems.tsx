@@ -1,7 +1,7 @@
 import ThreadView from "../components/ThreadViews/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
 // import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
-// import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
+import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
 import React from "react";
 import Titlebar from "../components/Titlebar";
@@ -35,8 +35,7 @@ export default function SentItems() {
 
   const email = selectedEmail.email;
   const gmailQueryParam = "labelIds=SENT";
-  const outlookQueryParam =
-    "mailFolders/SentItems/messages?$select=id,conversationId,createdDateTime&$top=20";
+  const outlookQueryParam = `mailFolders/SentItems/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20`;
   useQuery(["sent", email], () =>
     getThreadsExhaustive(
       email,

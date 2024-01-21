@@ -1,7 +1,7 @@
 import InboxThreadView from "../components/ThreadViews/InboxThreadView";
 import { FOLDER_IDS } from "../api/constants";
 // import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
-// import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
+import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
 // import { ClientInboxTabType } from "../api/model/client.inbox";
 import { useEmailPageOutletContext } from "./_emailPage";
@@ -49,8 +49,7 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
     .toISOString()
     .split("T")[0];
   const gmailQueryParam = `q=label:INBOX ((category:personal) OR from:(${email}) OR from:"via Google") after:${afterDate}`;
-  const outlookQueryParam =
-    "mailFolders/Inbox/messages?$select=id,conversationId,createdDateTime&$top=20";
+  const outlookQueryParam = `mailFolders/Inbox/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20`;
   useQuery(["inbox", email], () =>
     getThreadsExhaustive(
       email,

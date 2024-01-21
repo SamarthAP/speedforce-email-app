@@ -2,7 +2,7 @@ import React from "react";
 import ThreadView from "../components/ThreadViews/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
 // import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
-// import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
+import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
 import Titlebar from "../components/Titlebar";
 import { useEmailPageOutletContext } from "./_emailPage";
@@ -31,8 +31,7 @@ export default function DeletedItems() {
 
   const email = selectedEmail.email;
   const gmailQueryParam = "labelIds=TRASH&includeSpamTrash=true";
-  const outlookQueryParam =
-    "mailFolders/DeletedItems/messages?$select=id,conversationId,createdDateTime&$top=20";
+  const outlookQueryParam = `mailFolders/DeletedItems/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20`;
 
   useQuery(["trash", email], () =>
     getThreadsExhaustive(

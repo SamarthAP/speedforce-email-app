@@ -2,6 +2,7 @@ import ThreadView from "../components/ThreadViews/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
 import { ISelectedEmail, db } from "../lib/db";
 // import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
+import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import React from "react";
 import Titlebar from "../components/Titlebar";
 import { useEmailPageOutletContext } from "./_emailPage";
@@ -31,7 +32,7 @@ export default function Starred() {
 
   const email = selectedEmail.email;
   const gmailQueryParam = "labelIds=STARRED";
-  const outlookQueryParam = `messages?$select=id,conversationId,createdDateTime&$top=20&$filter=flag/flagStatus eq 'flagged'`;
+  const outlookQueryParam = `messages?${OUTLOOK_SELECT_THREADLIST}&$top=20&$filter=flag/flagStatus eq 'flagged'`;
 
   useQuery(["starred", email], () =>
     getThreadsExhaustive(

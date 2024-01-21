@@ -1,6 +1,6 @@
 import ThreadView from "../components/ThreadViews/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
-import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
+import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
 import React from "react";
 import Titlebar from "../components/Titlebar";
@@ -8,10 +8,10 @@ import { useEmailPageOutletContext } from "./_emailPage";
 import { useQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 
-const gmailFetchQuery = ``;
-const outlookFetchQuery = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
-  FOLDER_IDS.DONE
-)}/messages?$select=id,conversationId,createdDateTime&$top=20`;
+// const gmailFetchQuery = ``;
+// const outlookFetchQuery = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
+//   FOLDER_IDS.DONE
+// )}/messages?$select=id,conversationId,createdDateTime&$top=20`;
 
 const filterThreadsFnc = (selectedEmail: ISelectedEmail) => {
   if (selectedEmail.provider === "google") {
@@ -43,8 +43,7 @@ export default function Done() {
 
   const email = selectedEmail.email;
   const gmailQueryParam = "q=-label:inbox -label:draft";
-  const outlookQueryParam =
-    "mailFolders/Archive/messages?$select=id,conversationId,createdDateTime&$top=20";
+  const outlookQueryParam = `mailFolders/Archive/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20`;
   useQuery(["done", email], () =>
     getThreadsExhaustive(
       email,

@@ -1,9 +1,9 @@
-import { OUTLOOK_API_URL } from "../constants";
+import { OUTLOOK_API_URL, OUTLOOK_EXPAND_THREADLIST } from "../constants";
 import {
   OutlookThreadsListDataType,
   // IThreadFilter,
 } from "../../model/users.thread";
-import { dLog } from "../../../lib/noProd";
+// import { dLog } from "../../../lib/noProd";
 
 // in endpoints that will not be called often, we can use the async/await syntax
 // export const list = async (accessToken: string, filter: IThreadFilter) => {
@@ -82,7 +82,7 @@ import { dLog } from "../../../lib/noProd";
 // calling function can Promise.all() them or handle them in whatever way it wants
 export const get = async (accessToken: string, threadId: string) => {
   const response = await fetch(
-    `${OUTLOOK_API_URL}/me/messages?$filter=conversationId eq '${threadId}'`,
+    `${OUTLOOK_API_URL}/me/messages?$filter=conversationId eq '${threadId}'&${OUTLOOK_EXPAND_THREADLIST}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
