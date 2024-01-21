@@ -6,9 +6,6 @@ export const list = async (
   outlookQueryParams: string,
   pageToken?: string
 ) => {
-  let data: OutlookThreadsListDataType | null = null; // TODO: fix data type
-  let error: string | null = null;
-
   try {
     const url = pageToken || `${OUTLOOK_API_URL}/me/${outlookQueryParams}`;
     const res: Response = await fetch(url, {
@@ -18,20 +15,15 @@ export const list = async (
     });
 
     if (!res.ok) {
-      // TODO: throw error
-      error = "Error fetching threads";
+      throw Error("Error fetching outlook threads");
     } else {
       const resData = await res.json();
-      console.log("ResData: ", resData);
-      data = {
+      return {
         nextPageToken: resData["@odata.nextLink"],
         value: resData.value,
-      };
+      } as OutlookThreadsListDataType;
     }
   } catch (e) {
-    error = "Error fetching threads";
+    throw Error("Error fetching outlook threads");
   }
-
-  // TODO: should ideally return res.json() as Promise<OutlookThreadsListDataType>; (with the correct data type posted on discord)
-  return { data, error };
 };
