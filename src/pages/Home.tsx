@@ -1,19 +1,10 @@
 import InboxThreadView from "../components/ThreadViews/InboxThreadView";
 import { FOLDER_IDS } from "../api/constants";
-// import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
-// import { ClientInboxTabType } from "../api/model/client.inbox";
 import { useEmailPageOutletContext } from "./_emailPage";
-import { useQuery } from "react-query";
+import { useInfiniteQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
-
-// const gmailFetchQueryImportant = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
-//   FOLDER_IDS.INBOX
-// )}`;
-// const outlookFetchQueryImportant = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
-//   FOLDER_IDS.INBOX
-// )}/messages?$select=id,conversationId,createdDateTime&$top=20`;
 
 function getYesterdayDate() {
   const yesterday = new Date();
@@ -48,22 +39,41 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
   const afterDate = new Date(selectedEmail.inboxZeroStartDate - 86400000)
     .toISOString()
     .split("T")[0];
+
   const gmailQueryParam = `q=label:INBOX ((category:personal) OR from:(${email}) OR from:"via Google") after:${afterDate}`;
   const outlookQueryParam = `mailFolders/Inbox/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20`;
-  useQuery(["inbox", email], () =>
-    getThreadsExhaustive(
-      email,
-      selectedEmail.provider,
-      selectedEmail.provider === "google" ? gmailQueryParam : outlookQueryParam,
-      ["ID_INBOX"]
-    )
+
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    status,
+  } = useInfiniteQuery(
+    ["important", email],
+    ({ pageParam = "" }) =>
+      getThreadsExhaustive(
+        email,
+        selectedEmail.provider,
+        selectedEmail.provider === "google"
+          ? gmailQueryParam
+          : outlookQueryParam,
+        ["ID_INBOX"],
+        pageParam
+      ),
+    {
+      getNextPageParam: (lastPage, pages) => {
+        return lastPage;
+      },
+    }
   );
 
   return (
     <InboxThreadView
       data={{
         title: "Important",
-        // folderId: FOLDER_IDS.INBOX,
         filterThreadsFnc: filterThreadsFncImportant,
         canArchiveThread: true,
         canTrashThread: true,
@@ -78,6 +88,11 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
           href: "/other",
         },
       ]}
+      fetchNextPage={fetchNextPage}
+      hasNextPage={hasNextPage}
+      isFetching={isFetching}
+      isFetchingNextPage={isFetchingNextPage}
+      reactQueryData={data}
     />
   );
 }

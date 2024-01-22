@@ -5,13 +5,8 @@ import { ISelectedEmail, db } from "../lib/db";
 import React from "react";
 import Titlebar from "../components/Titlebar";
 import { useEmailPageOutletContext } from "./_emailPage";
-import { useQuery } from "react-query";
+import { useInfiniteQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
-
-// const gmailFetchQuery = ``;
-// const outlookFetchQuery = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
-//   FOLDER_IDS.DONE
-// )}/messages?$select=id,conversationId,createdDateTime&$top=20`;
 
 const filterThreadsFnc = (selectedEmail: ISelectedEmail) => {
   if (selectedEmail.provider === "google") {
@@ -44,13 +39,32 @@ export default function Done() {
   const email = selectedEmail.email;
   const gmailQueryParam = "q=-label:inbox -label:draft";
   const outlookQueryParam = `mailFolders/Archive/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20`;
-  useQuery(["done", email], () =>
-    getThreadsExhaustive(
-      email,
-      selectedEmail.provider,
-      selectedEmail.provider === "google" ? gmailQueryParam : outlookQueryParam,
-      ["ID_DONE"]
-    )
+
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    status,
+  } = useInfiniteQuery(
+    ["done", email],
+    ({ pageParam = "" }) =>
+      getThreadsExhaustive(
+        email,
+        selectedEmail.provider,
+        selectedEmail.provider === "google"
+          ? gmailQueryParam
+          : outlookQueryParam,
+        ["ID_DONE"],
+        pageParam
+      ),
+    {
+      getNextPageParam: (lastPage, pages) => {
+        return lastPage;
+      },
+    }
   );
 
   return (
@@ -60,11 +74,15 @@ export default function Done() {
         <ThreadView
           data={{
             title: "Done",
-            // folderId: FOLDER_IDS.DONE,
             filterThreadsFnc: filterThreadsFnc,
             canArchiveThread: false,
             canTrashThread: true,
           }}
+          fetchNextPage={fetchNextPage}
+          hasNextPage={hasNextPage}
+          isFetching={isFetching}
+          isFetchingNextPage={isFetchingNextPage}
+          reactQueryData={data}
         />
       </div>
     </React.Fragment>

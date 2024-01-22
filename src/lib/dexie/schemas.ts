@@ -219,6 +219,7 @@ export const dexieSchemas = {
         "[email+contactEmailAddress], contactName, isSavedContact, lastInteraction",
       dailyImageMetadata: "id, date, url",
       searchHistory: "[email+searchQuery]",
+      cachedSummaryCardData: "threadId, threadSummary",
     },
     upgradeFnc: async (tx: Transaction) => {
       dLog("Upgrading schema to version 7");

@@ -5,7 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useMemo, useRef, useState } from "react";
 import AssistBar from "../AssistBar";
 import AccountActionsMenu from "../AccountActionsMenu";
-import { PencilSquareIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import TooltipPopover from "../TooltipPopover";
 import { useTooltip } from "../UseTooltip";
 import { classNames } from "../../lib/util";
@@ -18,19 +18,33 @@ import { useNavigate } from "react-router-dom";
 import { InboxZeroBackgroundContext } from "../../contexts/InboxZeroBackgroundContext";
 import Titlebar from "../Titlebar";
 import { useEmailPageOutletContext } from "../../pages/_emailPage";
+import {
+  FetchNextPageOptions,
+  InfiniteData,
+  InfiniteQueryObserverResult,
+} from "react-query";
 
 interface InboxThreadViewProps {
   data: ClientInboxTabType;
   tabs?: ClientTabNavigationType[];
+  fetchNextPage: (
+    options?: FetchNextPageOptions | undefined
+  ) => Promise<InfiniteQueryObserverResult<string | undefined, unknown>>;
+  hasNextPage: boolean | undefined;
+  isFetching: boolean;
+  isFetchingNextPage: boolean;
+  reactQueryData: InfiniteData<string | undefined> | undefined;
 }
 
 export default function InboxThreadView({
   data,
   tabs,
-}: // selectedEmail,
-InboxThreadViewProps) {
+  fetchNextPage,
+  hasNextPage,
+  isFetching,
+  isFetchingNextPage,
+}: InboxThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
-  // const [selectedTab, setSelectedTab] = useState<ClientInboxTabType>(tabs[0]);
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const dailyImageMetadata = useLiveQuery(() => db.dailyImageMetadata.get(1));
@@ -43,19 +57,63 @@ InboxThreadViewProps) {
   const renderCounter = useRef(0);
   renderCounter.current = renderCounter.current + 1;
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      const divVisibleHeight = scrollRef.current.clientHeight;
-      const divScrollHeight = scrollRef.current.scrollHeight;
-      const maxScroll = divScrollHeight - divVisibleHeight;
+  const handleScroll = (event: React.UIEvent<HTMLElement>) => {
+    const { scrollTop, clientHeight, scrollHeight } = event.currentTarget;
 
-      if (scrollPosition > maxScroll) {
-        setScrollPosition(maxScroll);
-      }
+    // if 10 pixels from the bottom of the page, fetch next page
+    // if (
+    //   scrollTop + clientHeight >= scrollHeight - 10 &&
+    //   hasNextPage &&
+    //   !isFetchingNextPage
+    // ) {
+    //   // void fetchNextPage();
+    //   console.log("fetching next page");
+    // }
 
-      scrollRef.current.scrollTo(0, scrollPosition);
+    if (
+      (scrollTop >= (scrollHeight - clientHeight) / 2 ||
+        scrollHeight <= clientHeight) &&
+      hasNextPage &&
+      !isFetchingNextPage &&
+      !isFetching
+    ) {
+      void fetchNextPage();
     }
-  }, [scrollPosition]);
+  };
+
+  const fetchEmailsIfScreenIsNotFilled = () => {
+    if (scrollRef.current) {
+      const { clientHeight, scrollHeight } = scrollRef.current;
+
+      if (
+        scrollHeight <= clientHeight &&
+        hasNextPage &&
+        !isFetchingNextPage &&
+        !isFetching
+      ) {
+        void fetchNextPage();
+      }
+    }
+  };
+
+  useEffect(() => {
+    // fetches emails if the screen is not filled
+    fetchEmailsIfScreenIsNotFilled();
+  }, [data]);
+
+  // useEffect(() => {
+  //   if (scrollRef.current) {
+  //     const divVisibleHeight = scrollRef.current.clientHeight;
+  //     const divScrollHeight = scrollRef.current.scrollHeight;
+  //     const maxScroll = divScrollHeight - divVisibleHeight;
+
+  //     if (scrollPosition > maxScroll) {
+  //       setScrollPosition(maxScroll);
+  //     }
+
+  //     scrollRef.current.scrollTo(0, scrollPosition);
+  //   }
+  // }, [scrollPosition]);
 
   const threadsList = useLiveQuery(
     () => {
@@ -99,48 +157,6 @@ InboxThreadViewProps) {
       setIsBackgroundOn(false);
     }
   }, [threadsList, setIsBackgroundOn]);
-
-  // useEffect(() => {
-  //   // Do not fetch on first render in any scenario. Cap the number of renders to prevent infinite loops on empty folders
-  //   if (
-  //     // !selectedTab.isSearchMode &&
-  //     renderCounter.current > 1 &&
-  //     renderCounter.current < MAX_RENDER_COUNT
-  //   ) {
-  //     // If there are no threadsList in the db, do a full sync
-  //     // TODO: Do a partial sync periodically to check for new threads (when not empty)
-  //     if (threadsList?.length === 0) {
-  //       void fullSync(selectedEmail.email, selectedEmail.provider, {
-  //         folderId: data.folderId,
-  //         gmailQuery: data.gmailQuery,
-  //         outlookQuery: data.outlookQuery,
-  //       });
-  //     }
-  //   }
-  // }, [data, selectedEmail, threadsList]);
-
-  // const handleRefreshClick = async () => {
-  //   setRefreshing(true);
-  //   const startTime = new Date().getTime();
-
-  //   // TODO: Partial sync if metadata, or else full sync
-  //   await partialSync(selectedEmail.email, selectedEmail.provider, {
-  //     folderId: data.folderId,
-  //     gmailQuery: data.gmailQuery,
-  //     outlookQuery: data.outlookQuery,
-  //   });
-
-  //   // If sync duration < MIN_REFRESH_DELAY_MS, wait until MIN_REFRESH_DELAY_MS has passed
-  //   // Generally, this function will always take MIN_REFRESH_DELAY_MS
-  //   const endTime = new Date().getTime();
-  //   if (endTime - startTime < MIN_REFRESH_DELAY_MS) {
-  //     await new Promise((resolve) =>
-  //       setTimeout(resolve, MIN_REFRESH_DELAY_MS - (endTime - startTime))
-  //     );
-  //   }
-
-  //   setRefreshing(false);
-  // };
 
   const handleSearchClick = () => {
     navigate("/search");
@@ -290,8 +306,8 @@ InboxThreadViewProps) {
               threads={threads}
               setHoveredThread={setHoveredThread}
               setScrollPosition={setScrollPosition}
+              handleScroll={handleScroll}
               scrollRef={scrollRef}
-              // folderId={data.folderId}
               canArchiveThread={data.canArchiveThread}
               canTrashThread={data.canTrashThread}
               canPermanentlyDeleteThread={data.canDeletePermanentlyThread}

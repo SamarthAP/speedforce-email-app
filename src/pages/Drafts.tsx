@@ -1,20 +1,12 @@
 import ThreadView from "../components/ThreadViews/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
-// import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
 import React from "react";
 import Titlebar from "../components/Titlebar";
 import { useEmailPageOutletContext } from "./_emailPage";
-import { useQuery } from "react-query";
+import { useInfiniteQuery, useQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
-
-// const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
-//   FOLDER_IDS.DRAFTS
-// )}`;
-// const outlookFetchQuery = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
-//   FOLDER_IDS.DRAFTS
-// )}/messages?$select=id,conversationId,createdDateTime&$top=20`;
 
 const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
   db.emailThreads
@@ -36,13 +28,32 @@ export default function Drafts() {
   const email = selectedEmail.email;
   const gmailQueryParam = "labelIds=DRAFT";
   const outlookQueryParam = `mailFolders/Drafts/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20`;
-  useQuery(["drafts", email], () =>
-    getThreadsExhaustive(
-      email,
-      selectedEmail.provider,
-      selectedEmail.provider === "google" ? gmailQueryParam : outlookQueryParam,
-      ["ID_DRAFTS"]
-    )
+
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    status,
+  } = useInfiniteQuery(
+    ["drafts", email],
+    ({ pageParam = "" }) =>
+      getThreadsExhaustive(
+        email,
+        selectedEmail.provider,
+        selectedEmail.provider === "google"
+          ? gmailQueryParam
+          : outlookQueryParam,
+        ["ID_DRFTS"],
+        pageParam
+      ),
+    {
+      getNextPageParam: (lastPage, pages) => {
+        return lastPage;
+      },
+    }
   );
 
   return (
@@ -52,11 +63,15 @@ export default function Drafts() {
         <ThreadView
           data={{
             title: "Drafts",
-            // folderId: FOLDER_IDS.DRAFT S,
             filterThreadsFnc: filterThreadsFnc,
             canArchiveThread: true,
             canTrashThread: true,
           }}
+          fetchNextPage={fetchNextPage}
+          hasNextPage={hasNextPage}
+          isFetching={isFetching}
+          isFetchingNextPage={isFetchingNextPage}
+          reactQueryData={data}
         />
       </div>
     </React.Fragment>

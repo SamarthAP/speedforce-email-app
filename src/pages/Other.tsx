@@ -1,18 +1,10 @@
 import { FOLDER_IDS } from "../api/constants";
-// import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
 import InboxThreadView from "../components/ThreadViews/InboxThreadView";
 import { useEmailPageOutletContext } from "./_emailPage";
-import { useQuery } from "react-query";
+import { useInfiniteQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
-
-// const gmailFetchQueryOther = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
-//   FOLDER_IDS.INBOX
-// )}`;
-// const outlookFetchQueryOther = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
-//   FOLDER_IDS.INBOX
-// )}/messages?$select=id,conversationId,createdDateTime&$top=20`;
 
 interface OtherProps {
   inboxZeroStartDate: number;
@@ -45,20 +37,37 @@ export default function Other({ inboxZeroStartDate }: OtherProps) {
     .split("T")[0];
   const gmailQueryParam = `q=label:INBOX -((category:personal) OR from:(${email}) OR from:"via Google") after:${afterDate}`;
   const outlookQueryParam = `mailFolders/Inbox/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20`;
-  useQuery(["inbox", email], () =>
-    getThreadsExhaustive(
-      email,
-      selectedEmail.provider,
-      selectedEmail.provider === "google" ? gmailQueryParam : outlookQueryParam,
-      ["ID_INBOX"]
-    )
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    status,
+  } = useInfiniteQuery(
+    ["other", email],
+    ({ pageParam = "" }) =>
+      getThreadsExhaustive(
+        email,
+        selectedEmail.provider,
+        selectedEmail.provider === "google"
+          ? gmailQueryParam
+          : outlookQueryParam,
+        ["ID_INBOX"],
+        pageParam
+      ),
+    {
+      getNextPageParam: (lastPage, pages) => {
+        return lastPage;
+      },
+    }
   );
 
   return (
     <InboxThreadView
       data={{
         title: "Other",
-        // folderId: FOLDER_IDS.INBOX,
         filterThreadsFnc: filterThreadsFncOther,
         canArchiveThread: true,
         canTrashThread: true,
@@ -73,6 +82,11 @@ export default function Other({ inboxZeroStartDate }: OtherProps) {
           href: "/other",
         },
       ]}
+      fetchNextPage={fetchNextPage}
+      hasNextPage={hasNextPage}
+      isFetching={isFetching}
+      isFetchingNextPage={isFetchingNextPage}
+      reactQueryData={data}
     />
   );
 }

@@ -82,6 +82,12 @@ export interface IDailyImageMetadata {
   url: string;
 }
 
+// NOTE: what to do if the thread is updated but we have a cached summary card?
+export interface ICachedSummaryCardData {
+  threadId: string;
+  threadSummary: string;
+}
+
 export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
@@ -91,6 +97,7 @@ export class SubClassedDexie extends Dexie {
   contacts!: Table<IContact, string>;
   dailyImageMetadata!: Table<IDailyImageMetadata, number>;
   searchHistory!: Table<ISearchQuery, string>;
+  cachedSummaryCardData!: Table<ICachedSummaryCardData, string>;
 
   constructor() {
     super("SpeedforceDB");
@@ -112,6 +119,9 @@ export class SubClassedDexie extends Dexie {
     this.version(6)
       .stores(dexieSchemas[6].schema)
       .upgrade(dexieSchemas[6].upgradeFnc);
+    this.version(7)
+      .stores(dexieSchemas[7].schema)
+      .upgrade(dexieSchemas[7].upgradeFnc);
   }
 }
 

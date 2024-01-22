@@ -6,24 +6,20 @@ export const list = async (
   outlookQueryParams: string,
   pageToken?: string
 ) => {
-  try {
-    const url = pageToken || `${OUTLOOK_API_URL}/me/${outlookQueryParams}`;
-    const res: Response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+  const url = pageToken || `${OUTLOOK_API_URL}/me/${outlookQueryParams}`;
+  const res: Response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 
-    if (!res.ok) {
-      throw Error("Error fetching outlook threads");
-    } else {
-      const resData = await res.json();
-      return {
-        nextPageToken: resData["@odata.nextLink"],
-        value: resData.value,
-      } as OutlookThreadsListDataType;
-    }
-  } catch (e) {
+  if (!res.ok) {
     throw Error("Error fetching outlook threads");
+  } else {
+    const resData = await res.json();
+    return {
+      nextPageToken: resData["@odata.nextLink"],
+      value: resData.value,
+    } as OutlookThreadsListDataType;
   }
 };

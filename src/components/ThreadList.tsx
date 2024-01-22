@@ -30,6 +30,9 @@ import { FOLDER_IDS } from "../api/constants";
 import _ from "lodash";
 import { ConfirmModal } from "./modals/ConfirmModal";
 import { useNavigate } from "react-router-dom";
+import ThreadSummaryHoverCard, {
+  ThreadSummaryHoverCardProps,
+} from "./ThreadSummaryHoverCard";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -70,6 +73,7 @@ interface ThreadListProps {
   threads?: IEmailThread[]; // TODO: change for outlook thread
   setHoveredThread: (thread: IEmailThread | null) => void;
   setScrollPosition: (position: number) => void;
+  handleScroll: (event: React.UIEvent<HTMLDivElement, UIEvent>) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
   // folderId: string;
   canArchiveThread?: boolean;
@@ -82,8 +86,8 @@ export default function ThreadList({
   threads,
   setHoveredThread,
   setScrollPosition,
+  handleScroll,
   scrollRef,
-  // folderId,
   canArchiveThread = false,
   canTrashThread = false,
   canPermanentlyDeleteThread = false,
@@ -91,40 +95,26 @@ export default function ThreadList({
   const navigate = useNavigate();
   const observerTarget = useRef<HTMLDivElement>(null);
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
+  const [hoverTimer, setHoverTimer] = useState<NodeJS.Timeout | null>(null);
+  const [hoveredSummaryCardIndex, setHoveredSummaryCardIndex] =
+    useState<number>(-1);
   const [deleteThreadModalData, setDeleteThreadModalData] =
     useState<DeleteThreadModalData>({
       isDialogOpen: false,
       thread: null,
     });
 
-  // 'threads' is initially empty so the div with 'observerTarget' doesn't render, so observerTarget is null,
-  // and when the list is updated with data, the div renders but it doesnt update observerTarget. To fix this,
-  // we add 'threads' to the dependency array of the useEffect hook.
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          console.log("need to load the next page");
-          // void loadNextPage(selectedEmail.email, selectedEmail.provider, {
-          //   folderId: folderId,
-          // });
-        }
-      },
-      { root: null, rootMargin: "0px", threshold: 1 }
-    );
+  // the type for event is React.MouseEvent<HTMLDivElement, MouseEvent>
+  const handleMouseOverThreadForSummaryCard = (
+    event: React.MouseEvent<HTMLDivElement, MouseEvent>,
+    summaryCardIndex: number
+  ) => {
+    setHoveredSummaryCardIndex(summaryCardIndex);
+  };
 
-    const target = observerTarget.current;
-
-    if (target) {
-      observer.observe(target);
-    }
-
-    return () => {
-      if (target) {
-        observer.unobserve(target);
-      }
-    };
-  }, [observerTarget, threads, selectedEmail.email, selectedEmail.provider]);
+  const handleMouseLeaveThreadForSummaryCard = () => {
+    setHoveredSummaryCardIndex(-1);
+  };
 
   async function handleStarClick(thread: IEmailThread) {
     if (thread.labelIds.includes("STARRED")) {
@@ -232,7 +222,11 @@ export default function ThreadList({
   }
 
   return (
-    <div ref={scrollRef} className="h-full overflow-y-scroll">
+    <div
+      onScroll={handleScroll}
+      ref={scrollRef}
+      className="h-full overflow-y-scroll"
+    >
       <div className="flex flex-col w-full">
         {threads?.map((thread, index) => {
           return (
@@ -298,8 +292,14 @@ export default function ThreadList({
                   }
                   navigate(`/thread/${thread.id}`);
                 }}
-                onMouseOver={() => setHoveredThread(thread)}
-                className="grid grid-cols-10 py-1 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-default group"
+                onMouseOver={(
+                  e: React.MouseEvent<HTMLDivElement, MouseEvent>
+                ) => {
+                  // setHoveredThread(thread);
+                  // handleMouseOverThreadForSummaryCard(e, index);
+                }}
+                onMouseLeave={handleMouseLeaveThreadForSummaryCard}
+                className="relative grid grid-cols-10 py-1 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-default group"
               >
                 <div className="text-sm flex items-center font-medium pr-4 col-span-2">
                   <div className="flex flex-col items-center justify-center px-2">
@@ -440,17 +440,17 @@ export default function ThreadList({
                   selectedEmail={selectedEmail}
                 />
               </div>
+              {/* <ThreadSummaryHoverCard
+                show={index === hoveredSummaryCardIndex}
+                threadId={thread.id}
+              /> */}
             </div>
           );
         })}
-        {threads?.length ? (
-          <div
-            className="text-center text-xs text-slate-400 dark:text-zinc-500 py-2"
-            ref={observerTarget}
-          >
-            Loading more emails...
-          </div>
-        ) : null}
+        <div
+          className="text-center text-xs text-slate-400 dark:text-zinc-500 h-[33px]"
+          ref={observerTarget}
+        ></div>
       </div>
       <TooltipPopover
         message={tooltipData.message}

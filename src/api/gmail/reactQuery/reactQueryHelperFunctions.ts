@@ -7,7 +7,7 @@ export const list = async (
   gmailQueryParam: string,
   pageToken?: string
 ) => {
-  let url = `${GMAIL_API_URL}/threads?maxResults=25&${gmailQueryParam}`;
+  let url = `${GMAIL_API_URL}/threads?maxResults=20&${gmailQueryParam}`;
 
   if (pageToken) {
     url += `&pageToken=${pageToken}`;

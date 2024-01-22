@@ -45,16 +45,14 @@ export const getThreadsExhaustive = async (
     //     nextPageToken
     //   );
     // }
-
-    return true;
+    return nextPageToken;
   } else if (provider === "outlook") {
-    const { data, error } = await mList(accessToken, queryParam, pageToken);
-    if (error || !data) {
-      return;
-    }
+    const listThreadsResponse = await mList(accessToken, queryParam, pageToken);
 
-    const nextPageToken = data.nextPageToken;
-    const threadIds = _.uniq(data.value.map((thread) => thread.conversationId));
+    const nextPageToken = listThreadsResponse.nextPageToken;
+    const threadIds = _.uniq(
+      listThreadsResponse.value.map((thread) => thread.conversationId)
+    );
 
     if (threadIds.length > 0) {
       await handleNewThreadsOutlook(
@@ -74,7 +72,8 @@ export const getThreadsExhaustive = async (
     //     nextPageToken
     //   );
     // }
+    return nextPageToken;
   }
 
-  return false;
+  return "";
 };
