@@ -439,10 +439,10 @@ export default function ThreadList({
           </div>
         );
       })}
-      <div
+      {/* <div
         className="text-center text-xs text-slate-400 dark:text-zinc-500 h-[33px]"
         ref={observerTarget}
-      ></div>
+      ></div> */}
       <TooltipPopover
         message={tooltipData.message}
         showTooltip={tooltipData.showTooltip}

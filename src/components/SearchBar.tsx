@@ -89,8 +89,12 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
               placeholder="..."
               pattern=""
               value={searchText}
-              onChange={(event) => void onSearchTextChange(event)}
-              onKeyUp={(event) => void onKeyUp(event)}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                void onSearchTextChange(event)
+              }
+              onKeyUp={(event: React.KeyboardEvent<HTMLInputElement>) =>
+                void onKeyUp(event)
+              }
               ref={comboInputRef}
             />
           </Combobox.Button>

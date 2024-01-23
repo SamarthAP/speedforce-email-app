@@ -27,7 +27,7 @@ interface MessageProps {
 export default function Message({ message, selectedEmail }: MessageProps) {
   const [showBody, setShowBody] = useState(true);
   const [showReply, setShowReply] = useState(false);
-  const [showImages, setShowImages] = useState(false);
+  const [showImages, setShowImages] = useState(true);
   const [sendingReply, setSendingReply] = useState(false);
   const [editorMode, setEditorMode] = useState<
     "reply" | "replyAll" | "forward" | "none"
