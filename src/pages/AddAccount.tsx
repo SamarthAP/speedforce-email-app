@@ -95,20 +95,41 @@ export default function AddAccount() {
               return;
             }
 
-            // handle data and set current email
-            await insertEmail(
-              data.email,
-              data.provider,
-              data.accessToken,
-              data.expiresAt
-            );
+            // check if email already exists
+            const emailExists = await db.emails.get(data.email);
 
-            await db.selectedEmail.put({
-              id: 1,
-              email: data.email,
-              provider: data.provider,
-              inboxZeroStartDate: 0,
-            });
+            if (emailExists !== undefined) {
+              await db.emails.update(data.email, {
+                provider: data.provider,
+                accessToken: data.accessToken,
+                expiresAt: data.expiresAt,
+              });
+
+              // NOTE: should we allow users to change ibz start date / go through the setup flow again?
+              await db.selectedEmail.update(1, {
+                email: data.email,
+                provider: data.provider,
+              });
+
+              navigate("/");
+            } else {
+              await db.emails.put({
+                email: data.email,
+                provider: data.provider,
+                accessToken: data.accessToken,
+                expiresAt: data.expiresAt,
+                inboxZeroStartDate: 0,
+              });
+
+              await db.selectedEmail.put({
+                id: 1,
+                email: data.email,
+                provider: data.provider,
+                inboxZeroStartDate: 0,
+              });
+
+              navigate("/");
+            }
           }
         }
       } catch (e) {
@@ -118,7 +139,7 @@ export default function AddAccount() {
 
     // return window.electron.ipcRenderer.on("open-url", handler);
     return window.electron.ipcRenderer.onOpenUrl(handler);
-  }, [clientId]);
+  }, [clientId, navigate]);
 
   /**
    * Opens a URL in the default browser
