@@ -43,6 +43,7 @@ export default function InboxThreadView({
   hasNextPage,
   isFetching,
   isFetchingNextPage,
+  reactQueryData,
 }: InboxThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
@@ -99,7 +100,7 @@ export default function InboxThreadView({
   useEffect(() => {
     // fetches emails if the screen is not filled
     fetchEmailsIfScreenIsNotFilled();
-  }, [data]);
+  }, [reactQueryData]);
 
   // useEffect(() => {
   //   if (scrollRef.current) {
@@ -173,7 +174,7 @@ export default function InboxThreadView({
 
   return (
     <div
-      className={`h-screen w-screen fadeIn-animation bg-cover bg-center`}
+      className={`overflow-hidden h-screen w-screen flex flex-col fadeIn-animation bg-cover bg-center`}
       style={
         isBackgroundOn && backgroundImageUrl
           ? {
@@ -209,9 +210,9 @@ export default function InboxThreadView({
         }}
       >
         <Titlebar />
-        <div className="flex h-full overflow-hidden">
+        <div className="w-full h-full flex overflow-hidden">
           <Sidebar />
-          <div className="w-full flex flex-col overflow-hidden">
+          <div className="w-full h-full flex flex-col">
             <div className="flex flex-row items-center justify-between">
               <nav className="flex items-center pl-6" aria-label="Tabs">
                 {tabs ? (
@@ -258,7 +259,6 @@ export default function InboxThreadView({
                   onMouseLeave={handleMouseLeave}
                   onClick={() => {
                     navigate("/compose");
-                    // setWriteEmailMode(true);
                   }}
                 >
                   <PencilSquareIcon

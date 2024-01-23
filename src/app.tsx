@@ -78,7 +78,6 @@ function App() {
 const container = document.getElementById("root");
 if (!container) throw new Error("No root element found");
 const root = createRoot(container); // createRoot(container!) if you use TypeScript
-document.body.style.overflow = "hidden";
 void (async () => {
   const clientId = await window.electron.ipcRenderer.invoke(
     "store-get",

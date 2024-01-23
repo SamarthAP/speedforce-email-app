@@ -57,23 +57,18 @@ export default function SentItems() {
   );
 
   return (
-    <React.Fragment>
-      <Titlebar />
-      <div className="flex h-full overflow-hidden">
-        <ThreadView
-          data={{
-            title: "Sent",
-            filterThreadsFnc: filterThreadsFnc,
-            canArchiveThread: true,
-            canTrashThread: true,
-          }}
-          fetchNextPage={fetchNextPage}
-          hasNextPage={hasNextPage}
-          isFetching={isFetching}
-          isFetchingNextPage={isFetchingNextPage}
-          reactQueryData={data}
-        />
-      </div>
-    </React.Fragment>
+    <ThreadView
+      data={{
+        title: "Sent",
+        filterThreadsFnc: filterThreadsFnc,
+        canArchiveThread: true,
+        canTrashThread: true,
+      }}
+      fetchNextPage={fetchNextPage}
+      hasNextPage={hasNextPage}
+      isFetching={isFetching}
+      isFetchingNextPage={isFetchingNextPage}
+      reactQueryData={data}
+    />
   );
 }

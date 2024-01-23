@@ -1,7 +1,7 @@
 {
   "name": "speedforce",
   "productName": "Speedforce",
-  "version": "0.0.14",
+  "version": "0.1.0",
   "description": "Email re-engineered for high performance.",
   "main": ".webpack/main",
   "scripts": {

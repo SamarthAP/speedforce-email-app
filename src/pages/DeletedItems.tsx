@@ -61,23 +61,18 @@ export default function DeletedItems() {
   );
 
   return (
-    <React.Fragment>
-      <Titlebar />
-      <div className="flex h-full overflow-hidden">
-        <ThreadView
-          data={{
-            title: "Deleted Items",
-            filterThreadsFnc: filterThreadsFnc,
-            canArchiveThread: true,
-            canDeletePermanentlyThread: true,
-          }}
-          fetchNextPage={fetchNextPage}
-          hasNextPage={hasNextPage}
-          isFetching={isFetching}
-          isFetchingNextPage={isFetchingNextPage}
-          reactQueryData={data}
-        />
-      </div>
-    </React.Fragment>
+    <ThreadView
+      data={{
+        title: "Deleted Items",
+        filterThreadsFnc: filterThreadsFnc,
+        canArchiveThread: true,
+        canDeletePermanentlyThread: true,
+      }}
+      fetchNextPage={fetchNextPage}
+      hasNextPage={hasNextPage}
+      isFetching={isFetching}
+      isFetchingNextPage={isFetchingNextPage}
+      reactQueryData={data}
+    />
   );
 }

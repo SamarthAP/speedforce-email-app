@@ -7,6 +7,7 @@ interface ThreadFeedPageProps {
   selectedEmail: ISelectedEmail;
 }
 
+// NOTE: not in use. we will make a feed
 export default function ThreadFeedPage({ selectedEmail }: ThreadFeedPageProps) {
   return (
     <div className="h-screen w-screen flex flex-col dark:bg-zinc-900">

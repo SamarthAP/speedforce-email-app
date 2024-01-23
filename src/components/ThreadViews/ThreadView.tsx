@@ -23,6 +23,7 @@ import {
   InfiniteData,
   InfiniteQueryObserverResult,
 } from "react-query";
+import Titlebar from "../Titlebar";
 
 interface ThreadViewProps {
   data: ClientInboxTabType;
@@ -43,6 +44,7 @@ export default function ThreadView({
   hasNextPage,
   isFetching,
   isFetchingNextPage,
+  reactQueryData,
 }: ThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
@@ -86,7 +88,7 @@ export default function ThreadView({
   useEffect(() => {
     // fetches emails if the screen is not filled
     fetchEmailsIfScreenIsNotFilled();
-  }, [data]);
+  }, [reactQueryData]);
 
   const threads = useLiveQuery(
     () => {
@@ -128,97 +130,103 @@ export default function ThreadView({
   };
 
   return (
-    <React.Fragment>
-      <Sidebar />
-      <div className="w-full flex flex-col overflow-hidden">
-        <div className="flex flex-row items-center justify-between">
-          <nav className="flex items-center pl-6" aria-label="Tabs">
-            {tabs ? (
-              tabs.map((tab) => (
+    <div
+      className={`overflow-hidden h-screen w-screen flex flex-col fadeIn-animation bg-cover bg-center`}
+    >
+      <Titlebar />
+
+      <div className="w-full h-full flex overflow-hidden">
+        <Sidebar />
+        <div className="w-full h-full flex flex-col">
+          <div className="flex flex-row items-center justify-between">
+            <nav className="flex items-center pl-6" aria-label="Tabs">
+              {tabs ? (
+                tabs.map((tab) => (
+                  <h2
+                    key={tab.title}
+                    onClick={() => navigate(tab.href)}
+                    className={classNames(
+                      "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
+                      tab.title === data.title
+                        ? "font-medium text-black dark:text-white"
+                        : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-500 dark:hover:text-slate-100 dark:hover:bg-zinc-700"
+                    )}
+                  >
+                    {tab.title}
+                  </h2>
+                ))
+              ) : (
                 <h2
-                  key={tab.title}
-                  onClick={() => navigate(tab.href)}
                   className={classNames(
                     "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
-                    tab.title === data.title
-                      ? "font-medium text-black dark:text-white"
-                      : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-500 dark:hover:text-slate-100 dark:hover:bg-zinc-700"
+                    "font-medium text-black dark:text-white"
                   )}
                 >
-                  {tab.title}
+                  {data.title}
                 </h2>
-              ))
-            ) : (
-              <h2
-                className={classNames(
-                  "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
-                  "font-medium text-black dark:text-white"
-                )}
+              )}
+            </nav>
+            <div className="flex items-center">
+              <button
+                className="mr-3"
+                onMouseEnter={(event) => {
+                  handleMouseEnter(event, "Compose");
+                }}
+                onMouseLeave={handleMouseLeave}
+                onClick={() => {
+                  navigate("/compose");
+                }}
               >
-                {data.title}
-              </h2>
-            )}
-          </nav>
-          <div className="flex items-center">
-            <button
-              className="mr-3"
-              onMouseEnter={(event) => {
-                handleMouseEnter(event, "Compose");
-              }}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => {
-                navigate("/compose");
-              }}
-            >
-              <PencilSquareIcon
-                className={classNames(
-                  "h-5 w-5 shrink-0",
-                  "text-black dark:text-white"
-                )}
+                <PencilSquareIcon
+                  className={classNames(
+                    "h-5 w-5 shrink-0",
+                    "text-black dark:text-white"
+                  )}
+                />
+              </button>
+              <button
+                className="mr-3"
+                onMouseEnter={(event) => {
+                  handleMouseEnter(event, "Search");
+                }}
+                onMouseLeave={handleMouseLeave}
+                onClick={handleSearchClick}
+              >
+                <MagnifyingGlassIcon
+                  className={classNames(
+                    "h-5 w-5 shrink-0",
+                    "text-black dark:text-white"
+                  )}
+                />
+              </button>
+              <AccountActionsMenu
+                selectedEmail={selectedEmail}
+                setSelectedEmail={(email) => void setSelectedEmail(email)}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
               />
-            </button>
-            <button
-              className="mr-3"
-              onMouseEnter={(event) => {
-                handleMouseEnter(event, "Search");
-              }}
-              onMouseLeave={handleMouseLeave}
-              onClick={handleSearchClick}
-            >
-              <MagnifyingGlassIcon
-                className={classNames(
-                  "h-5 w-5 shrink-0",
-                  "text-black dark:text-white"
-                )}
-              />
-            </button>
-            <AccountActionsMenu
-              selectedEmail={selectedEmail}
-              setSelectedEmail={(email) => void setSelectedEmail(email)}
-              handleMouseEnter={handleMouseEnter}
-              handleMouseLeave={handleMouseLeave}
-            />
 
-            <TooltipPopover
-              message={tooltipData.message}
-              showTooltip={tooltipData.showTooltip}
-              coords={tooltipData.coords}
-            />
+              <TooltipPopover
+                message={tooltipData.message}
+                showTooltip={tooltipData.showTooltip}
+                coords={tooltipData.coords}
+              />
+            </div>
           </div>
+          <ThreadList
+            selectedEmail={selectedEmail}
+            threads={threads}
+            setHoveredThread={setHoveredThread}
+            setScrollPosition={setScrollPosition}
+            handleScroll={handleScroll}
+            scrollRef={scrollRef}
+            canArchiveThread={data.canArchiveThread}
+            canTrashThread={data.canTrashThread}
+            canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
+          />
         </div>
-        <ThreadList
-          selectedEmail={selectedEmail}
-          threads={threads}
-          setHoveredThread={setHoveredThread}
-          setScrollPosition={setScrollPosition}
-          handleScroll={handleScroll}
-          scrollRef={scrollRef}
-          canArchiveThread={data.canArchiveThread}
-          canTrashThread={data.canTrashThread}
-          canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
-        />
+        <AssistBar thread={hoveredThread} />
       </div>
-      <AssistBar thread={hoveredThread} />
-    </React.Fragment>
+    </div>
   );
 }

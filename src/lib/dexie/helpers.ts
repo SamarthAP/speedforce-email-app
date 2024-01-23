@@ -1,5 +1,4 @@
 import { db } from "../db";
-import { isOutlookNextPageTokenNewer } from "../../api/outlook/helpers";
 import { dLog } from "../noProd";
 
 export const clearEmailFromDb = async (email: string) => {

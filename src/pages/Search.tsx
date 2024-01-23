@@ -66,21 +66,16 @@ export default function Search() {
       .sortBy("date");
 
   return (
-    <React.Fragment>
-      <Titlebar />
-      <div className="flex h-full overflow-hidden">
-        <SearchThreadView
-          data={{
-            title: "Search",
-            // folderId: "",
-            filterThreadsSearchFnc: filterThreadsSearchFnc,
-            canArchiveThread: true,
-            canTrashThread: true,
-          }}
-          searchItems={searchItems}
-          setSearchItems={setSearchItems}
-        />
-      </div>
-    </React.Fragment>
+    <SearchThreadView
+      data={{
+        title: "Search",
+        // folderId: "",
+        filterThreadsSearchFnc: filterThreadsSearchFnc,
+        canArchiveThread: true,
+        canTrashThread: true,
+      }}
+      searchItems={searchItems}
+      setSearchItems={setSearchItems}
+    />
   );
 }
