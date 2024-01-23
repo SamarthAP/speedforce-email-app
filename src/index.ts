@@ -271,6 +271,7 @@ const createWindow = (): void => {
     titleBarOverlay: false,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      devTools: process.env.NODE_ENV === "development",
     },
   });
 
@@ -280,13 +281,6 @@ const createWindow = (): void => {
   // Open the DevTools.
   if (process.env.NODE_ENV === "development") {
     mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.webContents.on("before-input-event", (event, input) => {
-      if (input.key.toLowerCase() === "i" && input.meta && input.alt) {
-        // Prevent 'Command+Option+I' from being handled
-        event.preventDefault();
-      }
-    });
   }
 };
 
