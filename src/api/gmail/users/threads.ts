@@ -1,79 +1,79 @@
-import { GMAIL_API_URL, GMAIL_FOLDER_IDS_MAP } from "../constants";
-import { FOLDER_IDS } from "../../constants";
+import { GMAIL_API_URL } from "../constants";
+// import { FOLDER_IDS } from "../../constants";
 import {
-  GoogleThreadsListDataType,
+  // GoogleThreadsListDataType,
   GoogleThreadsGetDataType,
   GoogleThreadsModifyDataType,
-  IThreadFilter,
+  // IThreadFilter,
 } from "../../model/users.thread";
 import { dLog } from "../../../lib/noProd";
 
 // in endpoints that will not be called often, we can use the async/await syntax
-export const list = async (accessToken: string, filter: IThreadFilter) => {
-  let data: GoogleThreadsListDataType | null = null;
-  let error: string | null = null;
+// export const list = async (accessToken: string, filter: IThreadFilter) => {
+//   let data: GoogleThreadsListDataType | null = null;
+//   let error: string | null = null;
 
-  try {
-    // &q=from:hello@digest.producthunt.com for testing
-    const res: Response = await fetch(
-      `${GMAIL_API_URL}/threads?maxResults=100${filter.gmailQuery}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+//   try {
+//     // &q=from:hello@digest.producthunt.com for testing
+//     const res: Response = await fetch(
+//       `${GMAIL_API_URL}/threads?maxResults=100${filter.gmailQuery}`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${accessToken}`,
+//         },
+//       }
+//     );
 
-    if (!res.ok) {
-      error = "Error fetching threads";
-    } else {
-      data = await res.json();
-    }
-  } catch (e) {
-    dLog(e);
-    error = "Error fetching threads";
-  }
+//     if (!res.ok) {
+//       error = "Error fetching threads";
+//     } else {
+//       data = await res.json();
+//     }
+//   } catch (e) {
+//     dLog(e);
+//     error = "Error fetching threads";
+//   }
 
-  return { data, error };
-};
+//   return { data, error };
+// };
 
-export const listNextPage = async (
-  accessToken: string,
-  nextPageToken: string,
-  filter: IThreadFilter
-) => {
-  let data: GoogleThreadsListDataType | null = null;
-  let error: string | null = null;
+// export const listNextPage = async (
+//   accessToken: string,
+//   nextPageToken: string,
+//   filter: IThreadFilter
+// ) => {
+//   let data: GoogleThreadsListDataType | null = null;
+//   let error: string | null = null;
 
-  let label = "";
-  if (filter?.folderId !== FOLDER_IDS.DONE) {
-    label = GMAIL_FOLDER_IDS_MAP.getValue(filter.folderId) || "";
-  }
+//   let label = "";
+//   if (filter?.folderId !== FOLDER_IDS.DONE) {
+//     label = GMAIL_FOLDER_IDS_MAP.getValue(filter.folderId) || "";
+//   }
 
-  const fetchURL =
-    filter && label
-      ? `${GMAIL_API_URL}/threads?maxResults=100&labelIds=${label}&pageToken=${nextPageToken}`
-      : `${GMAIL_API_URL}/threads?maxResults=100&pageToken=${nextPageToken}`;
+//   const fetchURL =
+//     filter && label
+//       ? `${GMAIL_API_URL}/threads?maxResults=100&labelIds=${label}&pageToken=${nextPageToken}`
+//       : `${GMAIL_API_URL}/threads?maxResults=100&pageToken=${nextPageToken}`;
 
-  try {
-    const res: Response = await fetch(fetchURL, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+//   try {
+//     const res: Response = await fetch(fetchURL, {
+//       headers: {
+//         Authorization: `Bearer ${accessToken}`,
+//       },
+//     });
 
-    if (!res.ok) {
-      error = "Error fetching threads";
-    } else {
-      data = await res.json();
-    }
-  } catch (e) {
-    dLog(e);
-    error = "Error fetching threads";
-  }
+//     if (!res.ok) {
+//       error = "Error fetching threads";
+//     } else {
+//       data = await res.json();
+//     }
+//   } catch (e) {
+//     dLog(e);
+//     error = "Error fetching threads";
+//   }
 
-  return { data, error };
-};
+//   return { data, error };
+// };
 
 // in endpoints that will be called often, we use the promise syntax so that the
 // calling function can Promise.all() them or handle them in whatever way it wants

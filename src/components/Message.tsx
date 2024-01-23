@@ -1,6 +1,6 @@
 import { createRef, useState } from "react";
 import dayjs from "dayjs";
-import { IMessage } from "../lib/db";
+import { IMessage, ISelectedEmail } from "../lib/db";
 import { classNames, cleanHtmlString } from "../lib/util";
 import ShadowDom from "./ShadowDom";
 import {
@@ -10,8 +10,7 @@ import {
 import EmailEditor, { EditorComponentRef } from "./EmailEditor";
 import { Editor } from "draft-js";
 import { stateToHTML } from "draft-js-export-html";
-import { partialSync, sendReply, sendReplyAll, forward } from "../lib/sync";
-import { useEmailPageOutletContext } from "../pages/_emailPage";
+import { sendReply, sendReplyAll, forward } from "../lib/sync";
 import SimpleButton from "./SimpleButton";
 import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
@@ -22,11 +21,10 @@ import { EmailSelectorInput } from "./EmailSelectorInput";
 interface MessageProps {
   message: IMessage;
   key: string;
-  folderId: string;
+  selectedEmail: ISelectedEmail;
 }
 
-export default function Message({ message, folderId }: MessageProps) {
-  const { selectedEmail } = useEmailPageOutletContext();
+export default function Message({ message, selectedEmail }: MessageProps) {
   const [showBody, setShowBody] = useState(true);
   const [showReply, setShowReply] = useState(false);
   const [showImages, setShowImages] = useState(false);
@@ -93,9 +91,6 @@ export default function Message({ message, folderId }: MessageProps) {
     if (error) {
       toast("Error sending messsage", { icon: "❌", duration: 5000 });
     } else {
-      await partialSync(selectedEmail.email, selectedEmail.provider, {
-        folderId: folderId,
-      });
       setShowReply(false);
     }
     setSendingReply(false);
@@ -197,6 +192,7 @@ export default function Message({ message, folderId }: MessageProps) {
             <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
               <EmailSelectorInput
                 text="Fwd To"
+                selectedEmail={selectedEmail}
                 emails={forwardTo}
                 setEmails={setForwardTo}
               />
@@ -248,6 +244,7 @@ export default function Message({ message, folderId }: MessageProps) {
               key={idx}
               attachment={attachment}
               messageId={message.id}
+              selectedEmail={selectedEmail}
             />
           ))}
         </div>

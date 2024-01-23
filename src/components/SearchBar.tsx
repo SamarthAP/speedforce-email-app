@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { dLog } from "../lib/noProd";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { search } from "../lib/sync";
 import { classNames, parseSearchQuery } from "../lib/util";

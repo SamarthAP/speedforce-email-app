@@ -12,3 +12,8 @@ outlookFolderIds.add(FOLDER_IDS.SPAM, "JunkEmail");
 outlookFolderIds.add(FOLDER_IDS.DONE, "Archive");
 
 export const OUTLOOK_FOLDER_IDS_MAP = outlookFolderIds;
+
+export const OUTLOOK_SELECT_THREADLIST =
+  "$select=id,conversationId,createdDateTime";
+export const OUTLOOK_EXPAND_THREADLIST =
+  "$expand=attachments($select=id,contentType,microsoft.graph.fileAttachment/contentId,isInline,size,name;$expand=microsoft.graph.itemattachment/item)";

@@ -55,24 +55,6 @@ export interface IMessage {
   // TODO: add more fields like cc, bcc, attachments, etc.
 }
 
-export interface IGoogleMetadata {
-  email: string;
-  historyId: string;
-  threadsListNextPageTokens: {
-    folderId: string; // TODO: reflect changes in SubClassedDexie
-    token: string;
-  }[];
-}
-
-export interface IOutlookMetadata {
-  email: string;
-  historyId: string;
-  threadsListNextPageTokens: {
-    folderId: string; // TODO: reflect changes in SubClassedDexie
-    token: string;
-  }[];
-}
-
 // Outlook messages do not contain folder names in response. Store names when fetching to avoid refetching unecessarily
 export interface IOutlookFolder {
   id: string;
@@ -100,17 +82,22 @@ export interface IDailyImageMetadata {
   url: string;
 }
 
+// NOTE: what to do if the thread is updated but we have a cached summary card?
+export interface ICachedSummaryCardData {
+  threadId: string;
+  threadSummary: string;
+}
+
 export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
   emailThreads!: Table<IEmailThread, string>;
-  googleMetadata!: Table<IGoogleMetadata, string>;
-  outlookMetadata!: Table<IOutlookMetadata, string>;
   messages!: Table<IMessage, string>;
   outlookFolders!: Table<IOutlookFolder, string>;
   contacts!: Table<IContact, string>;
   dailyImageMetadata!: Table<IDailyImageMetadata, number>;
   searchHistory!: Table<ISearchQuery, string>;
+  cachedSummaryCardData!: Table<ICachedSummaryCardData, string>;
 
   constructor() {
     super("SpeedforceDB");
@@ -132,6 +119,9 @@ export class SubClassedDexie extends Dexie {
     this.version(6)
       .stores(dexieSchemas[6].schema)
       .upgrade(dexieSchemas[6].upgradeFnc);
+    this.version(7)
+      .stores(dexieSchemas[7].schema)
+      .upgrade(dexieSchemas[7].upgradeFnc);
   }
 }
 

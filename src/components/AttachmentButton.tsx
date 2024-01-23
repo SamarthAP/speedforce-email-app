@@ -1,9 +1,8 @@
 import { PaperClipIcon } from "@heroicons/react/20/solid";
-import { IAttachment } from "../lib/db";
+import { IAttachment, ISelectedEmail } from "../lib/db";
 import { classNames } from "../lib/util";
 import toast from "react-hot-toast";
 import { downloadAttachment } from "../lib/sync";
-import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { useState } from "react";
 import Spinner from "./Spinner";
 
@@ -39,13 +38,14 @@ async function openDownloadsFolder(filename: string) {
 interface AttachmentButtonProps {
   attachment: IAttachment;
   messageId: string;
+  selectedEmail: ISelectedEmail;
 }
 
 export function AttachmentButton({
   attachment,
   messageId,
+  selectedEmail,
 }: AttachmentButtonProps) {
-  const { selectedEmail } = useEmailPageOutletContext();
   const [loading, setLoading] = useState(false);
 
   return (

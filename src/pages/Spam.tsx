@@ -1,16 +1,12 @@
-import ThreadView from "../components/ThreadView";
+import ThreadView from "../components/ThreadViews/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
-import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
-import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
+import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
-import { ClientInboxTabType } from "../api/model/client.inbox";
-
-const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
-  FOLDER_IDS.SPAM
-)}&includeSpamTrash=true`;
-const outlookFetchQuery = `mailFolders/${OUTLOOK_FOLDER_IDS_MAP.getValue(
-  FOLDER_IDS.SPAM
-)}/messages?$select=id,conversationId,createdDateTime&$top=20`;
+import React from "react";
+import Titlebar from "../components/Titlebar";
+import { useEmailPageOutletContext } from "./_emailPage";
+import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
+import { useInfiniteQuery, useQuery } from "react-query";
 
 const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
   db.emailThreads
@@ -24,20 +20,64 @@ const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
     .reverse()
     .sortBy("date");
 
-const tabs: ClientInboxTabType[] = [
-  {
-    title: "Spam",
-    folderId: FOLDER_IDS.SPAM,
-    gmailQuery: gmailFetchQuery,
-    outlookQuery: outlookFetchQuery,
-    filterThreadsFnc: filterThreadsFnc,
-    canArchiveThread: true,
-    canTrashThread: true,
-  },
-];
-
 // TODO: May be able to abstract this away as well
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now
 export default function Spam() {
-  return <ThreadView tabs={tabs} />;
+  const { selectedEmail } = useEmailPageOutletContext();
+
+  const email = selectedEmail.email;
+  const gmailQueryParam = "labelIds=SPAM&includeSpamTrash=true";
+  const outlookQueryParam = `mailFolders/JunkEmail/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20`;
+
+  useQuery(["trash", email], () =>
+    getThreadsExhaustive(
+      email,
+      selectedEmail.provider,
+      selectedEmail.provider === "google" ? gmailQueryParam : outlookQueryParam,
+      ["ID_SPAM"]
+    )
+  );
+
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    status,
+  } = useInfiniteQuery(
+    ["spam", email],
+    ({ pageParam = "" }) =>
+      getThreadsExhaustive(
+        email,
+        selectedEmail.provider,
+        selectedEmail.provider === "google"
+          ? gmailQueryParam
+          : outlookQueryParam,
+        ["ID_SPAM"],
+        pageParam
+      ),
+    {
+      getNextPageParam: (lastPage, pages) => {
+        return lastPage;
+      },
+    }
+  );
+
+  return (
+    <ThreadView
+      data={{
+        title: "Spam",
+        filterThreadsFnc: filterThreadsFnc,
+        canArchiveThread: true,
+        canTrashThread: true,
+      }}
+      fetchNextPage={fetchNextPage}
+      hasNextPage={hasNextPage}
+      isFetching={isFetching}
+      isFetchingNextPage={isFetchingNextPage}
+      reactQueryData={data}
+    />
+  );
 }

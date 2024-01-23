@@ -3,9 +3,9 @@ import DomPurify from "dompurify";
 import { db, IEmailThread } from "./db";
 import { dLog } from "./noProd";
 import { FOLDER_IDS } from "../api/constants";
-import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
-import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
-import { BidirectionalMap } from "../api/model/bidirectionalMap";
+// import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
+import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
+// import { BidirectionalMap } from "../api/model/bidirectionalMap";
 
 export function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -159,28 +159,20 @@ export function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function getLabelIdFromSearchFolder(
-  provider: "google" | "outlook",
-  folder: string
-) {
-  const map: BidirectionalMap<string, string> =
-    provider === "google" ? GMAIL_FOLDER_IDS_MAP : OUTLOOK_FOLDER_IDS_MAP;
-
+export function outlookGetFolderNameFromSearchQuery(folder: string) {
   switch (folder) {
     case "inbox":
-      return map.getValue(FOLDER_IDS.INBOX) || "";
+      return "Inbox";
     case "sent":
-      return map.getValue(FOLDER_IDS.SENT) || "";
+      return "SentItems";
     case "drafts":
-      return map.getValue(FOLDER_IDS.DRAFTS) || "";
+      return "Drafts";
     case "archive":
-      return map.getValue(FOLDER_IDS.DONE) || "";
+      return "Archive";
     case "trash":
-      return map.getValue(FOLDER_IDS.TRASH) || "";
-    case "starred":
-      return map.getValue(FOLDER_IDS.STARRED) || "";
+      return "DeletedItems";
     default:
-      return map.getValue(FOLDER_IDS.INBOX) || "";
+      return "Inbox";
   }
 }
 
@@ -242,8 +234,7 @@ export function buildSearchQuery(
             filterParam.concat("flag/flagStatus eq 'flagged'")
           );
         } else {
-          folderId = `mailFolders/${getLabelIdFromSearchFolder(
-            provider,
+          folderId = `mailFolders/${outlookGetFolderNameFromSearchQuery(
             folder
           )}/`;
         }
@@ -261,7 +252,7 @@ export function buildSearchQuery(
       queryString += `&${key}=${value.join(" and ")}`;
     });
 
-    return `${folderId}messages?$select=id,conversationId,createdDateTime&$top=20${queryString}${
+    return `${folderId}messages?${OUTLOOK_SELECT_THREADLIST}&$top=20${queryString}${
       filters.length > 0 ? '&$search="' + filters.join(" AND ") + '"' : ""
     }`;
   }

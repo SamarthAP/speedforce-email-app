@@ -1,32 +1,28 @@
-import InboxThreadView from "../components/ThreadViews/InboxThreadView";
 import { FOLDER_IDS } from "../api/constants";
 import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
+import InboxThreadView from "../components/ThreadViews/InboxThreadView";
 import { useEmailPageOutletContext } from "./_emailPage";
 import { useInfiniteQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 
-function getYesterdayDate() {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  return yesterday.getTime();
-}
-
-interface HomeProps {
+interface OtherProps {
   inboxZeroStartDate: number;
 }
 
-export default function Home({ inboxZeroStartDate }: HomeProps) {
-  const filterThreadsFncImportant = (selectedEmail: ISelectedEmail) =>
+export default function Other({ inboxZeroStartDate }: OtherProps) {
+  const filterThreadsFncOther = (selectedEmail: ISelectedEmail) =>
     db.emailThreads
       .where("email")
       .equals(selectedEmail.email)
       .and(
         (thread) =>
           thread.labelIds.includes(FOLDER_IDS.INBOX) &&
-          (thread.labelIds.includes("IMPORTANT") ||
-            thread.labelIds.includes("CATEGORY_PERSONAL")) &&
-          thread.date >= (inboxZeroStartDate || getYesterdayDate()) // NOTE: default to yesterday if no inbox zero start date
+          !(
+            thread.labelIds.includes("IMPORTANT") ||
+            thread.labelIds.includes("CATEGORY_PERSONAL")
+          ) &&
+          thread.date >= inboxZeroStartDate
       )
       .reverse()
       .sortBy("date");
@@ -39,10 +35,8 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
   const afterDate = new Date(selectedEmail.inboxZeroStartDate - 86400000)
     .toISOString()
     .split("T")[0];
-
-  const gmailQueryParam = `q=label:INBOX ((category:personal) OR from:(${email}) OR from:"via Google") after:${afterDate}`;
+  const gmailQueryParam = `q=label:INBOX -((category:personal) OR from:(${email}) OR from:"via Google") after:${afterDate}`;
   const outlookQueryParam = `mailFolders/Inbox/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20`;
-
   const {
     data,
     error,
@@ -52,7 +46,7 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
     isFetchingNextPage,
     status,
   } = useInfiniteQuery(
-    ["important", email],
+    ["other", email],
     ({ pageParam = "" }) =>
       getThreadsExhaustive(
         email,
@@ -73,8 +67,8 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
   return (
     <InboxThreadView
       data={{
-        title: "Important",
-        filterThreadsFnc: filterThreadsFncImportant,
+        title: "Other",
+        filterThreadsFnc: filterThreadsFncOther,
         canArchiveThread: true,
         canTrashThread: true,
       }}

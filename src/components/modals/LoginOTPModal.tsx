@@ -1,18 +1,14 @@
 import { Fragment, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import supabase from "../../lib/supabase";
+import toast from "react-hot-toast";
 
 interface LoginOTPModalProps {
   phone: string;
   open: boolean;
-  setOpen: (open: boolean) => void;
 }
 
-export default function LoginOTPModal({
-  phone,
-  open,
-  setOpen,
-}: LoginOTPModalProps) {
+export default function LoginOTPModal({ phone, open }: LoginOTPModalProps) {
   const [otp, setOtp] = useState("");
 
   async function supabaseVerify() {
@@ -22,8 +18,8 @@ export default function LoginOTPModal({
       type: "sms",
     });
 
-    if (!error) {
-      setOpen(false);
+    if (error) {
+      toast("We could not verify your code.");
     }
   }
 

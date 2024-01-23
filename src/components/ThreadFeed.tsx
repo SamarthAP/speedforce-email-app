@@ -8,7 +8,7 @@ import { dLog } from "../lib/noProd";
 interface ThreadFeedProps {
   selectedThread: string;
   setSelectedThread: (threadId: string) => void;
-  folderId: string;
+  // folderId: string;
 }
 // TODO: this component is intentionally called ThreadFeed,
 // because in the future, when threads are marked as "done",
@@ -18,8 +18,8 @@ interface ThreadFeedProps {
 export function ThreadFeed({
   selectedThread,
   setSelectedThread,
-  folderId,
-}: ThreadFeedProps) {
+}: // folderId,
+ThreadFeedProps) {
   const messages = useLiveQuery(() => {
     return db.messages.where("threadId").equals(selectedThread).sortBy("date");
   }, [selectedThread]);
@@ -59,11 +59,9 @@ export function ThreadFeed({
       </div>
       <div className="dark:text-white p-4 w-full">{thread?.subject}</div>
       <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll">
-        {messages?.map((message) => {
-          return (
-            <Message message={message} key={message.id} folderId={folderId} />
-          );
-        })}
+        {/* {messages?.map((message) => {
+          return <Message message={message} key={message.id}  selectedEmail={sele}/>;
+        })} */}
       </div>
     </div>
   );

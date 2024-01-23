@@ -9,6 +9,9 @@ import { Session } from "@supabase/supabase-js";
 import { Toaster } from "react-hot-toast";
 import InitialLoadingScreen from "./components/InitialLoadingScreen";
 import { asyncWithLDProvider } from "launchdarkly-react-client-sdk";
+import { QueryClient, QueryClientProvider } from "react-query";
+
+const queryClient = new QueryClient();
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -55,15 +58,17 @@ function App() {
     <SessionContext.Provider value={session}>
       <div className={`${theme}`}>
         <ThemeContext.Provider value={themeValue}>
-          {/* {session ? <AppRouter /> : <Login />} */}
-          {loading ? (
-            <InitialLoadingScreen />
-          ) : session ? (
-            <AppRouter session={session} />
-          ) : (
-            <Login />
-          )}
-          <Toaster position="bottom-center" reverseOrder={false} />
+          <QueryClientProvider client={queryClient}>
+            {/* {session ? <AppRouter /> : <Login />} */}
+            {loading ? (
+              <InitialLoadingScreen />
+            ) : session ? (
+              <AppRouter session={session} />
+            ) : (
+              <Login />
+            )}
+            <Toaster position="bottom-center" reverseOrder={false} />
+          </QueryClientProvider>
         </ThemeContext.Provider>
       </div>
     </SessionContext.Provider>
@@ -73,7 +78,6 @@ function App() {
 const container = document.getElementById("root");
 if (!container) throw new Error("No root element found");
 const root = createRoot(container); // createRoot(container!) if you use TypeScript
-document.body.style.overflow = "hidden";
 void (async () => {
   const clientId = await window.electron.ipcRenderer.invoke(
     "store-get",
