@@ -1,5 +1,4 @@
 import { WatchResponseType } from "../../model/notifications";
-import { getAccessToken } from "../../accessToken";
 
 export const watch = async (accessToken: string, email: string) => {
   let data: WatchResponseType | null = null;

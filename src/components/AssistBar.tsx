@@ -3,15 +3,11 @@ import { IEmailThread, db } from "../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import Feedback from "./Feedback";
 import { DocumentDuplicateIcon } from "@heroicons/react/20/solid";
-import {
-  classNames,
-  decodeGoogleMessageData,
-  extractTextFromHTML,
-} from "../lib/util";
+import { classNames } from "../lib/util";
 import toast from "react-hot-toast";
 import { dLog } from "../lib/noProd";
-import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { useInboxZeroBackgroundContext } from "../contexts/InboxZeroBackgroundContext";
+import { useNavigate } from "react-router-dom";
 
 function copyToClipboard(text: string) {
   // document.execCommand("copy"); is not supported anymore
@@ -31,14 +27,10 @@ function copyToClipboard(text: string) {
 
 interface IAssistBarProps {
   thread: IEmailThread | null;
-  setSelectedThread: (threadId: string) => void;
 }
 
-export default function AssistBar({
-  thread,
-  setSelectedThread,
-}: IAssistBarProps) {
-  const { selectedEmail } = useEmailPageOutletContext();
+export default function AssistBar({ thread }: IAssistBarProps) {
+  const navigate = useNavigate();
   const { isBackgroundOn } = useInboxZeroBackgroundContext();
 
   const emailThreads = useLiveQuery(
@@ -68,12 +60,8 @@ export default function AssistBar({
 
   // only show if message is within last 5 minutes
   if (latestMessage && Date.now() - latestMessage.date < 1000 * 60 * 5) {
-    emailContent =
-      selectedEmail.provider === "google"
-        ? extractTextFromHTML(
-            decodeGoogleMessageData(latestMessage.htmlData)
-          ) || decodeGoogleMessageData(latestMessage.textData)
-        : extractTextFromHTML(latestMessage.htmlData);
+    emailContent = latestMessage.htmlData || latestMessage.textData;
+
     // 6 digit code regex
     const codeRegex = /\b\d{6}\b/g;
     const matches = emailContent.match(codeRegex);
@@ -87,7 +75,7 @@ export default function AssistBar({
   }
 
   return (
-    <div className="flex-shrink-0 flex flex-col w-64 h-full p-4 border-l border-l-slate-200 dark:border-l-zinc-700 break-words">
+    <div className="flex-shrink-0 flex flex-col w-64 h-full overflow-y-scroll p-4 border-l border-l-slate-200 dark:border-l-zinc-700 break-words">
       <p className="text-sm dark:text-white mb-4">
         {thread?.from.slice(
           0,
@@ -108,7 +96,7 @@ export default function AssistBar({
         {emailThreads?.map((thread, idx) => (
           <div
             key={idx}
-            onClick={() => void setSelectedThread(thread.id)}
+            onClick={() => void navigate(`/thread/${thread.id}`)}
             className="text-xs text-slate-500 dark:text-zinc-400 hover:underline hover:underline-offset-4 cursor-pointer"
           >
             {thread.subject}

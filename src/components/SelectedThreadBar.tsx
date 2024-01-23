@@ -1,10 +1,9 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../lib/db";
-import SimpleButton from "./SimpleButton";
 import { useState } from "react";
 import { Transition } from "@headlessui/react";
 import { summarizeThread } from "../api/llm";
-import { decodeGoogleMessageData, extractTextFromHTML } from "../lib/util";
+import { extractTextFromHTML } from "../lib/util";
 
 interface CompletionObject {
   summary: {
@@ -49,9 +48,9 @@ export default function SelectedThreadBar({
             to: message.toRecipients.join(", "),
             from: message.from,
             date: new Date(message.date).toISOString(),
-            emailBody:
-              extractTextFromHTML(decodeGoogleMessageData(message.htmlData)) ||
-              decodeGoogleMessageData(message.textData),
+            emailBody: extractTextFromHTML(
+              message.htmlData || message.textData
+            ),
           };
         }),
         subject: threadObj?.subject,

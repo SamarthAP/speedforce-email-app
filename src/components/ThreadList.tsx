@@ -4,7 +4,6 @@ import he from "he";
 import React, { useEffect, useRef, useState } from "react";
 import {
   archiveThread,
-  loadNextPage,
   markRead,
   starThread,
   unstarThread,
@@ -30,6 +29,10 @@ import {
 import { FOLDER_IDS } from "../api/constants";
 import _ from "lodash";
 import { ConfirmModal } from "./modals/ConfirmModal";
+import { useNavigate } from "react-router-dom";
+import ThreadSummaryHoverCard, {
+  ThreadSummaryHoverCardProps,
+} from "./ThreadSummaryHoverCard";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -68,11 +71,11 @@ interface DeleteThreadModalData {
 interface ThreadListProps {
   selectedEmail: ISelectedEmail;
   threads?: IEmailThread[]; // TODO: change for outlook thread
-  setSelectedThread: (threadId: string) => void;
   setHoveredThread: (thread: IEmailThread | null) => void;
   setScrollPosition: (position: number) => void;
+  handleScroll: (event: React.UIEvent<HTMLDivElement, UIEvent>) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
-  folderId: string;
+  // folderId: string;
   canArchiveThread?: boolean;
   canTrashThread?: boolean;
   canPermanentlyDeleteThread?: boolean;
@@ -81,56 +84,37 @@ interface ThreadListProps {
 export default function ThreadList({
   selectedEmail,
   threads,
-  setSelectedThread,
   setHoveredThread,
   setScrollPosition,
+  handleScroll,
   scrollRef,
-  folderId,
   canArchiveThread = false,
   canTrashThread = false,
   canPermanentlyDeleteThread = false,
 }: ThreadListProps) {
+  const navigate = useNavigate();
   const observerTarget = useRef<HTMLDivElement>(null);
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
+  const [hoverTimer, setHoverTimer] = useState<NodeJS.Timeout | null>(null);
+  const [hoveredSummaryCardIndex, setHoveredSummaryCardIndex] =
+    useState<number>(-1);
   const [deleteThreadModalData, setDeleteThreadModalData] =
     useState<DeleteThreadModalData>({
       isDialogOpen: false,
       thread: null,
     });
 
-  // 'threads' is initially empty so the div with 'observerTarget' doesn't render, so observerTarget is null,
-  // and when the list is updated with data, the div renders but it doesnt update observerTarget. To fix this,
-  // we add 'threads' to the dependency array of the useEffect hook.
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          void loadNextPage(selectedEmail.email, selectedEmail.provider, {
-            folderId: folderId,
-          });
-        }
-      },
-      { root: null, rootMargin: "0px", threshold: 1 }
-    );
+  // the type for event is React.MouseEvent<HTMLDivElement, MouseEvent>
+  const handleMouseOverThreadForSummaryCard = (
+    event: React.MouseEvent<HTMLDivElement, MouseEvent>,
+    summaryCardIndex: number
+  ) => {
+    setHoveredSummaryCardIndex(summaryCardIndex);
+  };
 
-    const target = observerTarget.current;
-
-    if (target) {
-      observer.observe(target);
-    }
-
-    return () => {
-      if (target) {
-        observer.unobserve(target);
-      }
-    };
-  }, [
-    observerTarget,
-    threads,
-    selectedEmail.email,
-    selectedEmail.provider,
-    folderId,
-  ]);
+  const handleMouseLeaveThreadForSummaryCard = () => {
+    setHoveredSummaryCardIndex(-1);
+  };
 
   async function handleStarClick(thread: IEmailThread) {
     if (thread.labelIds.includes("STARRED")) {
@@ -238,223 +222,227 @@ export default function ThreadList({
   }
 
   return (
-    <div ref={scrollRef} className="h-full overflow-y-scroll">
-      <div className="flex flex-col w-full">
-        {threads?.map((thread, index) => {
-          return (
-            <div
-              // onClick={() => {
-              //   setScrollPosition(scrollRef.current?.scrollTop || 0);
-              //   setSelectedThread(thread.id);
-              //   if (thread.unread) {
-              //     void markRead(
-              //       selectedEmail.email,
-              //       selectedEmail.provider,
-              //       thread.id
-              //     );
-              //   }
-              // }}
-              // onMouseOver={() => setHoveredThread(thread)}
-              key={index}
-            >
-              {index === 0 && isToday(new Date(thread.date)) ? (
-                <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 mb-2">
-                  Today
-                </div>
-              ) : null}
-
-              {index === 0 &&
-              isLastSevenDaysButNotToday(new Date(thread.date)) ? (
-                <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 mb-2">
-                  Last 7 days
-                </div>
-              ) : null}
-
-              {index > 0 &&
-              isLastSevenDaysButNotToday(new Date(thread.date)) &&
-              isToday(new Date(threads[index - 1].date)) ? (
-                <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 my-2">
-                  Last 7 days
-                </div>
-              ) : null}
-
-              {index === 0 && isOlderThanSevenDays(new Date(thread.date)) ? (
-                <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 mb-2">
-                  Past Month And Older
-                </div>
-              ) : null}
-
-              {index > 0 &&
-              isOlderThanSevenDays(new Date(thread.date)) &&
-              isLastSevenDaysButNotToday(new Date(threads[index - 1].date)) ? (
-                <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 my-2">
-                  Past Month And Older
-                </div>
-              ) : null}
-
-              <div
-                onClick={() => {
-                  setScrollPosition(scrollRef.current?.scrollTop || 0);
-                  setSelectedThread(thread.id);
-                  if (thread.unread) {
-                    void markRead(
-                      selectedEmail.email,
-                      selectedEmail.provider,
-                      thread.id
-                    );
-                  }
-                }}
-                onMouseOver={() => setHoveredThread(thread)}
-                className="grid grid-cols-10 py-1 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-default group"
-              >
-                <div className="text-sm flex items-center font-medium pr-4 col-span-2">
-                  <div className="flex flex-col items-center justify-center px-2">
-                    {thread.labelIds.includes("STARRED") ? (
-                      <button
-                        onMouseEnter={(event) => {
-                          handleMouseEnter(event, "Unstar");
-                        }}
-                        onMouseLeave={handleMouseLeave}
-                        onClick={(
-                          event: React.MouseEvent<HTMLButtonElement, MouseEvent>
-                        ) => {
-                          event.stopPropagation();
-                          void handleStarClick(thread);
-                        }}
-                      >
-                        <StarIconSolid className="w-4 h-4 text-yellow-400" />
-                      </button>
-                    ) : (
-                      <button
-                        onMouseEnter={(event) => {
-                          handleMouseEnter(event, "Star");
-                        }}
-                        onMouseLeave={handleMouseLeave}
-                        onClick={(
-                          event: React.MouseEvent<HTMLButtonElement, MouseEvent>
-                        ) => {
-                          event.stopPropagation();
-                          void handleStarClick(thread);
-                        }}
-                      >
-                        <StarIconOutline className="w-4 h-4 text-slate-400 dark:text-zinc-500 opacity-0 group-hover:opacity-100" />
-                      </button>
-                    )}
-                  </div>
-                  <div className="pr-2">
-                    {thread.unread ? (
-                      <UnreadDot />
-                    ) : (
-                      <div className="h-[6px] w-[6px]"></div>
-                    )}
-                  </div>
-
-                  <span className="truncate text-black dark:text-zinc-100">
-                    {thread.from.slice(0, thread.from.lastIndexOf("<"))}
-                  </span>
-                </div>
-                <div className="col-span-8 flex overflow-hidden">
-                  <div className="flex max-w-[50%]">
-                    <div className="text-sm truncate pr-4 col-span-2 text-black dark:text-zinc-100">
-                      {thread.subject || "(no subject)"}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-grow overflow-hidden">
-                    <div className="text-sm truncate text-slate-400 dark:text-zinc-500 w-full">
-                      {/* {he.decode(
-                        thread.snippet.slice(0, thread.snippet.indexOf("\n"))
-                      )} */}
-                      {he.decode(thread.snippet)}
-                    </div>
-                    {/* flex-shrink-0 is the class keeping the text from not expanding the height of the row */}
-                    <div className="text-sm pl-2 pr-4 flex-shrink-0 text-slate-400 dark:text-zinc-500 font-medium flex flex-col justify-center">
-                      <span className="group-hover:hidden block">
-                        {new Date(thread.date).toDateString()}
-                      </span>
-
-                      <span className="flex flex-row">
-                        {canArchiveThread && (
-                          <button
-                            onMouseEnter={(event) => {
-                              handleMouseEnter(event, "Mark as done");
-                            }}
-                            onMouseLeave={handleMouseLeave}
-                            onClick={(
-                              event: React.MouseEvent<
-                                HTMLButtonElement,
-                                MouseEvent
-                              >
-                            ) => {
-                              event.stopPropagation();
-                              void handleArchiveClick(thread);
-                            }}
-                            className="group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
-                          >
-                            <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
-                          </button>
-                        )}
-                        {canTrashThread && (
-                          <button
-                            onMouseEnter={(event) => {
-                              handleMouseEnter(event, "Delete");
-                            }}
-                            onMouseLeave={handleMouseLeave}
-                            onClick={(
-                              event: React.MouseEvent<
-                                HTMLButtonElement,
-                                MouseEvent
-                              >
-                            ) => {
-                              event.stopPropagation();
-                              void handleTrashClick(thread);
-                            }}
-                            className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
-                          >
-                            <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
-                          </button>
-                        )}
-                        {canPermanentlyDeleteThread && (
-                          <button
-                            onMouseEnter={(event) => {
-                              handleMouseEnter(event, "Permanently Delete");
-                            }}
-                            onMouseLeave={handleMouseLeave}
-                            onClick={(
-                              event: React.MouseEvent<
-                                HTMLButtonElement,
-                                MouseEvent
-                              >
-                            ) => {
-                              event.stopPropagation();
-                              setDeleteThreadModalData({
-                                isDialogOpen: true,
-                                thread: thread,
-                              });
-                            }}
-                            className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
-                          >
-                            <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
-                          </button>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <HorizontalAttachments thread={thread} />
-              </div>
-            </div>
-          );
-        })}
-        {threads?.length ? (
+    <div
+      onScroll={handleScroll}
+      ref={scrollRef}
+      className="h-full flex flex-col overflow-y-scroll"
+    >
+      {threads?.map((thread, index) => {
+        return (
           <div
-            className="text-center text-xs text-slate-400 dark:text-zinc-500 py-2"
-            ref={observerTarget}
+            // onClick={() => {
+            //   setScrollPosition(scrollRef.current?.scrollTop || 0);
+            //   setSelectedThread(thread.id);
+            //   if (thread.unread) {
+            //     void markRead(
+            //       selectedEmail.email,
+            //       selectedEmail.provider,
+            //       thread.id
+            //     );
+            //   }
+            // }}
+            // onMouseOver={() => setHoveredThread(thread)}
+            key={index}
           >
-            Loading more emails...
+            {index === 0 && isToday(new Date(thread.date)) ? (
+              <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 mb-2">
+                Today
+              </div>
+            ) : null}
+
+            {index === 0 &&
+            isLastSevenDaysButNotToday(new Date(thread.date)) ? (
+              <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 mb-2">
+                Last 7 days
+              </div>
+            ) : null}
+
+            {index > 0 &&
+            isLastSevenDaysButNotToday(new Date(thread.date)) &&
+            isToday(new Date(threads[index - 1].date)) ? (
+              <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 my-2">
+                Last 7 days
+              </div>
+            ) : null}
+
+            {index === 0 && isOlderThanSevenDays(new Date(thread.date)) ? (
+              <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 mb-2">
+                Past Month And Older
+              </div>
+            ) : null}
+
+            {index > 0 &&
+            isOlderThanSevenDays(new Date(thread.date)) &&
+            isLastSevenDaysButNotToday(new Date(threads[index - 1].date)) ? (
+              <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 my-2">
+                Past Month And Older
+              </div>
+            ) : null}
+
+            <div
+              onClick={() => {
+                setScrollPosition(scrollRef.current?.scrollTop || 0);
+                if (thread.unread) {
+                  void markRead(
+                    selectedEmail.email,
+                    selectedEmail.provider,
+                    thread.id
+                  );
+                }
+                navigate(`/thread/${thread.id}`);
+              }}
+              onMouseOver={(
+                e: React.MouseEvent<HTMLDivElement, MouseEvent>
+              ) => {
+                setHoveredThread(thread);
+                // handleMouseOverThreadForSummaryCard(e, index);
+              }}
+              onMouseLeave={handleMouseLeaveThreadForSummaryCard}
+              className="relative grid grid-cols-10 py-1 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-default group"
+            >
+              <div className="text-sm flex items-center font-medium pr-4 col-span-2">
+                <div className="flex flex-col items-center justify-center px-2">
+                  {thread.labelIds.includes("STARRED") ? (
+                    <button
+                      onMouseEnter={(event) => {
+                        handleMouseEnter(event, "Unstar");
+                      }}
+                      onMouseLeave={handleMouseLeave}
+                      onClick={(
+                        event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+                      ) => {
+                        event.stopPropagation();
+                        void handleStarClick(thread);
+                      }}
+                    >
+                      <StarIconSolid className="w-4 h-4 text-yellow-400" />
+                    </button>
+                  ) : (
+                    <button
+                      onMouseEnter={(event) => {
+                        handleMouseEnter(event, "Star");
+                      }}
+                      onMouseLeave={handleMouseLeave}
+                      onClick={(
+                        event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+                      ) => {
+                        event.stopPropagation();
+                        void handleStarClick(thread);
+                      }}
+                    >
+                      <StarIconOutline className="w-4 h-4 text-slate-400 dark:text-zinc-500 opacity-0 group-hover:opacity-100" />
+                    </button>
+                  )}
+                </div>
+                <div className="pr-2">
+                  {thread.unread ? (
+                    <UnreadDot />
+                  ) : (
+                    <div className="h-[6px] w-[6px]"></div>
+                  )}
+                </div>
+
+                <span className="truncate text-black dark:text-zinc-100">
+                  {thread.from.slice(0, thread.from.lastIndexOf("<"))}
+                </span>
+              </div>
+              <div className="col-span-8 flex overflow-hidden">
+                <div className="flex max-w-[50%]">
+                  <div className="text-sm truncate pr-4 col-span-2 text-black dark:text-zinc-100">
+                    {thread.subject || "(no subject)"}
+                  </div>
+                </div>
+
+                <div className="flex flex-grow overflow-hidden">
+                  <div className="text-sm truncate text-slate-400 dark:text-zinc-500 w-full">
+                    {he.decode(thread.snippet)}
+                  </div>
+                  <div className="text-sm pl-2 pr-4 flex-shrink-0 text-slate-400 dark:text-zinc-500 font-medium flex flex-col justify-center">
+                    <span className="group-hover:hidden block">
+                      {new Date(thread.date).toDateString()}
+                    </span>
+
+                    <span className="flex flex-row">
+                      {canArchiveThread && (
+                        <button
+                          onMouseEnter={(event) => {
+                            handleMouseEnter(event, "Mark as done");
+                          }}
+                          onMouseLeave={handleMouseLeave}
+                          onClick={(
+                            event: React.MouseEvent<
+                              HTMLButtonElement,
+                              MouseEvent
+                            >
+                          ) => {
+                            event.stopPropagation();
+                            void handleArchiveClick(thread);
+                          }}
+                          className="group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
+                        >
+                          <CheckCircleIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+                        </button>
+                      )}
+                      {canTrashThread && (
+                        <button
+                          onMouseEnter={(event) => {
+                            handleMouseEnter(event, "Delete");
+                          }}
+                          onMouseLeave={handleMouseLeave}
+                          onClick={(
+                            event: React.MouseEvent<
+                              HTMLButtonElement,
+                              MouseEvent
+                            >
+                          ) => {
+                            event.stopPropagation();
+                            void handleTrashClick(thread);
+                          }}
+                          className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
+                        >
+                          <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+                        </button>
+                      )}
+                      {canPermanentlyDeleteThread && (
+                        <button
+                          onMouseEnter={(event) => {
+                            handleMouseEnter(event, "Permanently Delete");
+                          }}
+                          onMouseLeave={handleMouseLeave}
+                          onClick={(
+                            event: React.MouseEvent<
+                              HTMLButtonElement,
+                              MouseEvent
+                            >
+                          ) => {
+                            event.stopPropagation();
+                            setDeleteThreadModalData({
+                              isDialogOpen: true,
+                              thread: thread,
+                            });
+                          }}
+                          className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
+                        >
+                          <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <HorizontalAttachments
+                thread={thread}
+                selectedEmail={selectedEmail}
+              />
+            </div>
+            <ThreadSummaryHoverCard show={false} threadId={thread.id} />
           </div>
-        ) : null}
-      </div>
+        );
+      })}
+      <div
+        className="text-center text-xs text-slate-400 dark:text-zinc-500 h-[33px]"
+        ref={observerTarget}
+      ></div>
       <TooltipPopover
         message={tooltipData.message}
         showTooltip={tooltipData.showTooltip}

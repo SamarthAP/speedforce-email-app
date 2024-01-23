@@ -1,86 +1,88 @@
-import { OUTLOOK_API_URL } from "../constants";
+import { OUTLOOK_API_URL, OUTLOOK_EXPAND_THREADLIST } from "../constants";
 import {
   OutlookThreadsListDataType,
-  IThreadFilter,
+  // IThreadFilter,
 } from "../../model/users.thread";
-import { dLog } from "../../../lib/noProd";
+// import { dLog } from "../../../lib/noProd";
 
 // in endpoints that will not be called often, we can use the async/await syntax
-export const list = async (accessToken: string, filter: IThreadFilter) => {
-  let data: OutlookThreadsListDataType | null = null;
-  let error: string | null = null;
+// export const list = async (accessToken: string, filter: IThreadFilter) => {
+//   let data: OutlookThreadsListDataType | null = null;
+//   let error: string | null = null;
 
-  try {
-    const res: Response = await fetch(
-      `${OUTLOOK_API_URL}/me/${filter.outlookQuery}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+//   try {
+//     const res: Response = await fetch(
+//       `${OUTLOOK_API_URL}/me/${
+//         filter.outlookQuery ? filter.outlookQuery : "messages"
+//       }`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${accessToken}`,
+//         },
+//       }
+//     );
 
-    if (!res.ok) {
-      error = "Error fetching threads";
-    } else {
-      const resData = await res.json();
-      data = {
-        nextPageToken: resData["@odata.nextLink"],
-        value: resData.value,
-      };
-    }
-  } catch (e) {
-    dLog(e);
-    error = "Error fetching threads";
-  }
+//     if (!res.ok) {
+//       error = "Error fetching threads";
+//     } else {
+//       const resData = await res.json();
+//       data = {
+//         nextPageToken: resData["@odata.nextLink"],
+//         value: resData.value,
+//       };
+//     }
+//   } catch (e) {
+//     dLog(e);
+//     error = "Error fetching threads";
+//   }
 
-  return { data, error };
-};
+//   return { data, error };
+// };
 
-export const listNextPage = async (
-  accessToken: string,
-  nextPageToken: string
-) => {
-  let data: OutlookThreadsListDataType | null = null;
-  let error: string | null = null;
+// export const listNextPage = async (
+//   accessToken: string,
+//   nextPageToken: string
+// ) => {
+//   let data: OutlookThreadsListDataType | null = null;
+//   let error: string | null = null;
 
-  if (!nextPageToken) {
-    error = "Page token not provided";
-    return { data, error };
-  }
+//   if (!nextPageToken) {
+//     error = "Page token not provided";
+//     return { data, error };
+//   }
 
-  try {
-    const res: Response = await fetch(
-      `${nextPageToken}`, // Outlook nextPageToken is the entire URL to fetch the next page
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+//   try {
+//     const res: Response = await fetch(
+//       `${nextPageToken}`, // Outlook nextPageToken is the entire URL to fetch the next page
+//       {
+//         headers: {
+//           Authorization: `Bearer ${accessToken}`,
+//         },
+//       }
+//     );
 
-    if (!res.ok) {
-      error = "Error fetching threads";
-    } else {
-      const resData = await res.json();
-      data = {
-        nextPageToken: resData["@odata.nextLink"],
-        value: resData.value,
-      };
-    }
-  } catch (e) {
-    dLog(e);
-    error = "Error fetching threads";
-  }
+//     if (!res.ok) {
+//       error = "Error fetching threads";
+//     } else {
+//       const resData = await res.json();
+//       data = {
+//         nextPageToken: resData["@odata.nextLink"],
+//         value: resData.value,
+//       };
+//     }
+//   } catch (e) {
+//     dLog(e);
+//     error = "Error fetching threads";
+//   }
 
-  return { data, error };
-};
+//   return { data, error };
+// };
 
 // in endpoints that will be called often, we use the promise syntax so that the
 // calling function can Promise.all() them or handle them in whatever way it wants
 export const get = async (accessToken: string, threadId: string) => {
   const response = await fetch(
-    `${OUTLOOK_API_URL}/me/messages?$filter=conversationId eq '${threadId}'`,
+    `${OUTLOOK_API_URL}/me/messages?$filter=conversationId eq '${threadId}'&${OUTLOOK_EXPAND_THREADLIST}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

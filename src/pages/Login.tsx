@@ -2,24 +2,53 @@ import { useState } from "react";
 // import MeshGradient from "../assets/meshgradient.svg";
 import supabase from "../lib/supabase";
 import LoginOTPModal from "../components/modals/LoginOTPModal";
+import toast from "react-hot-toast";
 
 export default function Login() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState({
+    open: false,
+    phone: "",
+  });
   const [phone, setPhone] = useState("");
 
+  const parsePhoneNumber = (phone: string) => {
+    const digits = phone.replace(/\D/g, "");
+    let phoneNumber: string | null = null;
+    let err: string | null = null;
+
+    if (digits.length === 10) {
+      phoneNumber = `+1${digits}`;
+    } else if (digits.length === 11) {
+      phoneNumber = `+${digits}`;
+    } else {
+      err = "Invalid phone number";
+    }
+
+    return { phoneNumber, err };
+  };
+
   async function supabaseLogin() {
+    const { phoneNumber, err } = parsePhoneNumber(phone);
+    if (err || !phoneNumber) {
+      toast("Invalid phone number");
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
-      phone,
+      phone: phoneNumber,
     });
 
     if (!error) {
-      setOpen(true);
+      setOpen({
+        open: true,
+        phone: phoneNumber,
+      });
     }
   }
 
   return (
     <div className="w-screen h-screen flex flex-col items-center justify-center bg-zinc-900">
-      <LoginOTPModal phone={phone} open={open} setOpen={setOpen} />
+      <LoginOTPModal phone={open.phone} open={open.open} />
 
       <h1 className="text-6xl font-bold text-white">Speedforce</h1>
       <p className="my-8 text-white">

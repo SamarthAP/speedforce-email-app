@@ -24,10 +24,7 @@ export function buildMessageHeadersOutlook(message: OutlookMessageDataType) {
   ];
 }
 
-export function buildMessageLabelIdsOutlook(
-  message: OutlookMessageDataType,
-  folderId: string
-) {
+export function buildMessageLabelIdsOutlook(message: OutlookMessageDataType) {
   const labelIds = [];
 
   if (!message.isRead) {
@@ -38,24 +35,23 @@ export function buildMessageLabelIdsOutlook(
     labelIds.push("STARRED");
   }
 
-  labelIds.push(folderId);
   return labelIds;
 }
 
 // Remove folders from labelIds, but allow for a list of labels to be preserved (e.g. UNREAD)
-export function getLabelIdsForMoveMessageOutlook(
-  labelIds: string[],
-  folderId: string,
-  allowList: string[] = []
-) {
-  const filteredLabelIds = labelIds.filter((labelId) => {
-    return allowList?.includes(labelId);
-  });
+// export function getLabelIdsForMoveMessageOutlook(
+//   labelIds: string[],
+//   folderId: string,
+//   allowList: string[] = []
+// ) {
+//   const filteredLabelIds = labelIds.filter((labelId) => {
+//     return allowList?.includes(labelId);
+//   });
 
-  filteredLabelIds.push(folderId);
+//   filteredLabelIds.push(folderId);
 
-  return filteredLabelIds;
-}
+//   return filteredLabelIds;
+// }
 
 export function addLabelIdsOutlook(labelIds: string[], label: string) {
   return labelIds.concat(label);

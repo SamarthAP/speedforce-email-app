@@ -280,6 +280,13 @@ const createWindow = (): void => {
   // Open the DevTools.
   if (process.env.NODE_ENV === "development") {
     mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.webContents.on("before-input-event", (event, input) => {
+      if (input.key.toLowerCase() === "i" && input.meta && input.alt) {
+        // Prevent 'Command+Option+I' from being handled
+        event.preventDefault();
+      }
+    });
   }
 };
 

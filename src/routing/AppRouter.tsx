@@ -17,9 +17,14 @@ import { SPEEDFORCE_WS_URL, FOLDER_IDS } from "../api/constants";
 import { dLog } from "../lib/noProd";
 import { useCallback, useEffect } from "react";
 import { getAccessToken } from "../api/accessToken";
-import { loadContacts, partialSync, watchSubscription } from "../lib/sync";
+import { loadContacts, watchSubscription } from "../lib/sync";
 import { handleMessage } from "../lib/wsHelpers";
+import Search from "../pages/Search";
 import InboxZeroSetup from "../pages/InboxZeroSetup";
+import Settings from "../pages/Settings";
+import { ComposeMessage } from "../pages/ComposeMessage";
+import ThreadPage from "../pages/ThreadPage";
+import Other from "../pages/Other";
 
 interface AppRouterProps {
   session: Session;
@@ -34,10 +39,6 @@ export default function AppRouter({ session }: AppRouterProps) {
       db.selectedEmail.get(1).then((selectedEmail) => [selectedEmail, true]),
     [],
     []
-  );
-  const inboxZeroMetadata = useLiveQuery(
-    () => db.inboxZeroMetadata.get(selectedEmail?.email || ""),
-    [selectedEmail, selectedEmail?.email]
   );
 
   // TODO: could update dependencies to include the other data that is awaited
@@ -100,18 +101,18 @@ export default function AppRouter({ session }: AppRouterProps) {
     reconnectInterval: 3000,
   });
 
-  // syncs every 10 mins, but not on render
-  useEffect(() => {
-    async function handler() {
-      dLog("periodic sync");
-      if (selectedEmail)
-        await partialSync(selectedEmail.email, selectedEmail.provider, {
-          folderId: FOLDER_IDS.INBOX,
-        });
-    }
+  // // syncs every 10 mins, but not on render
+  // useEffect(() => {
+  //   async function handler() {
+  //     dLog("periodic sync");
+  //     if (selectedEmail)
+  //       await partialSync(selectedEmail.email, selectedEmail.provider, {
+  //         folderId: FOLDER_IDS.INBOX,
+  //       });
+  //   }
 
-    return window.electron.ipcRenderer.onSyncEmails(handler);
-  }, [selectedEmail]);
+  //   return window.electron.ipcRenderer.onSyncEmails(handler);
+  // }, [selectedEmail]);
 
   // watchs subscriptions and syncs on render if last sync was more than 3 days ago
   useEffect(() => {
@@ -135,9 +136,9 @@ export default function AppRouter({ session }: AppRouterProps) {
             return;
           }
 
-          await partialSync(selectedEmail.email, selectedEmail.provider, {
-            folderId: FOLDER_IDS.INBOX,
-          });
+          // await partialSync(selectedEmail.email, selectedEmail.provider, {
+          //   folderId: FOLDER_IDS.INBOX,
+          // });
 
           await window.electron.ipcRenderer.invoke(
             "store-set",
@@ -235,7 +236,7 @@ export default function AppRouter({ session }: AppRouterProps) {
   }, [selectedEmail, session]);
 
   if (!loaded) {
-    return <div className="h-screen w-screen"></div>;
+    return <div className="h-screen w-screen dark:bg-zinc-900"></div>;
   }
 
   // add initialEntries={["/page/inboxZeroSetup"]} to Router to force a specific route
@@ -244,7 +245,7 @@ export default function AppRouter({ session }: AppRouterProps) {
       <Routes>
         {!selectedEmail ? (
           <Route path="/" element={<AddAccount />} />
-        ) : selectedEmail && !inboxZeroMetadata ? (
+        ) : selectedEmail && !selectedEmail.inboxZeroStartDate ? (
           <>
             <Route
               path="/"
@@ -259,7 +260,22 @@ export default function AppRouter({ session }: AppRouterProps) {
             >
               <Route
                 index
-                element={<Home inboxZeroMetadata={inboxZeroMetadata} />}
+                element={
+                  <Home inboxZeroStartDate={selectedEmail.inboxZeroStartDate} />
+                }
+              />
+            </Route>
+            <Route
+              path="/other"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route
+                index
+                element={
+                  <Other
+                    inboxZeroStartDate={selectedEmail.inboxZeroStartDate}
+                  />
+                }
               />
             </Route>
             <Route
@@ -299,16 +315,34 @@ export default function AppRouter({ session }: AppRouterProps) {
               <Route index element={<Done />} />
             </Route>
             <Route
+              path="/search"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<Search />} />
+            </Route>
+            <Route
               path="/calendar"
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
               <Route index element={<WeekCalendarPage />} />
             </Route>
+            <Route
+              path="/settings"
+              element={<Settings selectedEmail={selectedEmail} />}
+            ></Route>
             <Route path="/page/addAccount" element={<AddAccount />} />
             <Route
               path="/page/inboxZeroSetup"
               element={<InboxZeroSetup selectedEmail={selectedEmail} />}
             />
+            <Route
+              path="/compose"
+              element={<ComposeMessage selectedEmail={selectedEmail} />}
+            ></Route>
+            <Route
+              path="/thread/:threadId"
+              element={<ThreadPage selectedEmail={selectedEmail} />}
+            ></Route>
           </>
         )}
       </Routes>
