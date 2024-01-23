@@ -33,7 +33,7 @@ export default function Titlebar() {
 
       <div className="col-span-1 flex flex-row-reverse items-center gap-x-2 mr-2">
         <ThemeToggle />
-        <Updater />
+        {/* <Updater /> */}
       </div>
     </div>
   );

@@ -120,9 +120,9 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
   // }
 
   return (
-    <div className="h-screen w-screen flex flex-col dark:bg-zinc-900">
+    <div className="h-screen w-screen overflow-hidden flex flex-col dark:bg-zinc-900">
       <Titlebar />
-      <div className="h-full flex">
+      <div className="w-full h-full flex overflow-hidden">
         <Sidebar />
         <div className="w-full h-full flex flex-col overflow-hidden">
           <div className="flex px-4 pt-4">

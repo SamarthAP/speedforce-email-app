@@ -53,7 +53,7 @@ export default function AccountActions(props: AccountActionsProps) {
   };
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center z-10">
       <Menu>
         <Menu.Button
           className="mr-3"

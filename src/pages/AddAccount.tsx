@@ -39,12 +39,6 @@ const manualInsertEmail = async () => {
     provider: "google",
     inboxZeroStartDate: 0,
   });
-
-  await db.googleMetadata.put({
-    email: email,
-    historyId: "0",
-    threadsListNextPageTokens: [],
-  });
 };
 
 export default function AddAccount() {
@@ -115,20 +109,6 @@ export default function AddAccount() {
               provider: data.provider,
               inboxZeroStartDate: 0,
             });
-
-            if (data.provider === "google") {
-              await db.googleMetadata.put({
-                email: data.email,
-                historyId: "0",
-                threadsListNextPageTokens: [],
-              });
-            } else {
-              await db.outlookMetadata.put({
-                email: data.email,
-                historyId: "0",
-                threadsListNextPageTokens: [],
-              });
-            }
           }
         }
       } catch (e) {

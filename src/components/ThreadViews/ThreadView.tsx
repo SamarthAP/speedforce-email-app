@@ -7,7 +7,6 @@ import { useEmailPageOutletContext } from "../../pages/_emailPage";
 import { ThreadFeed } from "../ThreadFeed";
 import AssistBar from "../AssistBar";
 import AccountActionsMenu from "../AccountActionsMenu";
-import { fullSync, partialSync } from "../../lib/sync";
 import { PencilSquareIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import SelectedThreadBar from "../SelectedThreadBar";
 import TooltipPopover from "../TooltipPopover";
@@ -19,46 +18,79 @@ import {
 } from "../../api/model/client.inbox";
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import { useNavigate } from "react-router-dom";
-import { useInboxZeroBackgroundContext } from "../../contexts/InboxZeroBackgroundContext";
-
-const MAX_RENDER_COUNT = 5;
-const MIN_REFRESH_DELAY_MS = 1000;
+import {
+  FetchNextPageOptions,
+  InfiniteData,
+  InfiniteQueryObserverResult,
+} from "react-query";
+import Titlebar from "../Titlebar";
 
 interface ThreadViewProps {
   data: ClientInboxTabType;
   tabs?: ClientTabNavigationType[];
+  fetchNextPage: (
+    options?: FetchNextPageOptions | undefined
+  ) => Promise<InfiniteQueryObserverResult<string | undefined, unknown>>;
+  hasNextPage: boolean | undefined;
+  isFetching: boolean;
+  isFetchingNextPage: boolean;
+  reactQueryData: InfiniteData<string | undefined> | undefined;
 }
 
-export default function ThreadView({ data, tabs }: ThreadViewProps) {
+export default function ThreadView({
+  data,
+  tabs,
+  fetchNextPage,
+  hasNextPage,
+  isFetching,
+  isFetchingNextPage,
+  reactQueryData,
+}: ThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
-  // const [data, setdata] = useState<ClientInboxTabType>(tabs[0]);
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
   const [selectedThread, setSelectedThread] = useState<string>("");
   const [scrollPosition, setScrollPosition] = useState<number>(0);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
   const navigate = useNavigate();
-  const { isBackgroundOn, setIsBackgroundOn } = useInboxZeroBackgroundContext();
 
   const renderCounter = useRef(0);
   renderCounter.current = renderCounter.current + 1;
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      const divVisibleHeight = scrollRef.current.clientHeight;
-      const divScrollHeight = scrollRef.current.scrollHeight;
-      const maxScroll = divScrollHeight - divVisibleHeight;
-
-      if (scrollPosition > maxScroll) {
-        setScrollPosition(maxScroll);
-      }
-
-      scrollRef.current.scrollTo(0, scrollPosition);
+  const handleScroll = (event: React.UIEvent<HTMLElement>) => {
+    const { scrollTop, clientHeight, scrollHeight } = event.currentTarget;
+    if (
+      (scrollTop >= (scrollHeight - clientHeight) / 2 ||
+        scrollHeight <= clientHeight) &&
+      hasNextPage &&
+      !isFetchingNextPage &&
+      !isFetching
+    ) {
+      void fetchNextPage();
     }
-  }, [selectedThread, scrollPosition]);
+  };
 
-  const threadsList = useLiveQuery(
+  const fetchEmailsIfScreenIsNotFilled = () => {
+    if (scrollRef.current) {
+      const { clientHeight, scrollHeight } = scrollRef.current;
+
+      if (
+        scrollHeight <= clientHeight &&
+        hasNextPage &&
+        !isFetchingNextPage &&
+        !isFetching
+      ) {
+        void fetchNextPage();
+      }
+    }
+  };
+
+  useEffect(() => {
+    // fetches emails if the screen is not filled
+    fetchEmailsIfScreenIsNotFilled();
+  }, [reactQueryData]);
+
+  const threads = useLiveQuery(
     () => {
       if (data.filterThreadsFnc) return data.filterThreadsFnc(selectedEmail);
 
@@ -68,75 +100,25 @@ export default function ThreadView({ data, tabs }: ThreadViewProps) {
     []
   );
 
-  const threads: IEmailThread[] = useMemo(() => {
-    let threads: IEmailThread[] = [];
-
-    if (threadsList.length && threadsList[0].id === "fake") {
-      threads = threadsList.slice(1);
-    } else {
-      threads = threadsList;
-    }
-
-    return threads;
-  }, [threadsList]);
-
-  useEffect(() => {
-    // Do not fetch on first render in any scenario. Cap the number of renders to prevent infinite loops on empty folders
-    if (renderCounter.current > 1 && renderCounter.current < MAX_RENDER_COUNT) {
-      // If there are no threadsList in the db, do a full sync
-      // TODO: Do a partial sync periodically to check for new threads (when not empty)
-      if (threadsList?.length === 0) {
-        void fullSync(selectedEmail.email, selectedEmail.provider, {
-          folderId: data.folderId,
-          gmailQuery: data.gmailQuery,
-          outlookQuery: data.outlookQuery,
-        });
-      }
-    }
-  }, [data, selectedEmail, threadsList]);
-
-  const handleRefreshClick = async () => {
-    setRefreshing(true);
-    const startTime = new Date().getTime();
-
-    // TODO: Partial sync if metadata, or else full sync
-    await partialSync(selectedEmail.email, selectedEmail.provider, {
-      folderId: data.folderId,
-      gmailQuery: data.gmailQuery,
-      outlookQuery: data.outlookQuery,
-    });
-
-    // If sync duration < MIN_REFRESH_DELAY_MS, wait until MIN_REFRESH_DELAY_MS has passed
-    // Generally, this function will always take MIN_REFRESH_DELAY_MS
-    const endTime = new Date().getTime();
-    if (endTime - startTime < MIN_REFRESH_DELAY_MS) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, MIN_REFRESH_DELAY_MS - (endTime - startTime))
-      );
-    }
-
-    setRefreshing(false);
-  };
-
   const handleSearchClick = () => {
     navigate("/search");
   };
 
-  if (selectedThread) {
-    return (
-      <React.Fragment>
-        <ThreadFeed
-          selectedThread={selectedThread}
-          setSelectedThread={setSelectedThread}
-          folderId={data.folderId}
-        />
-        <SelectedThreadBar
-          thread={selectedThread}
-          email={selectedEmail.email}
-        />
-      </React.Fragment>
-    );
-  }
+  // if (selectedThread) {
+  //   return (
+  //     <React.Fragment>
+  //       <ThreadFeed
+  //         selectedThread={selectedThread}
+  //         setSelectedThread={setSelectedThread}
+  //         // folderId={data.folderId}
+  //       />
+  //       <SelectedThreadBar
+  //         thread={selectedThread}
+  //         email={selectedEmail.email}
+  //       />
+  //     </React.Fragment>
+  //   );
+  // }
 
   const setSelectedEmail = async (email: IEmail) => {
     await db.selectedEmail.put({
@@ -148,113 +130,103 @@ export default function ThreadView({ data, tabs }: ThreadViewProps) {
   };
 
   return (
-    <React.Fragment>
-      <Sidebar />
-      <div className="w-full flex flex-col overflow-hidden">
-        <div className="flex flex-row items-center justify-between">
-          <nav className="flex items-center pl-6" aria-label="Tabs">
-            {tabs ? (
-              tabs.map((tab) => (
+    <div
+      className={`overflow-hidden h-screen w-screen flex flex-col fadeIn-animation bg-cover bg-center`}
+    >
+      <Titlebar />
+
+      <div className="w-full h-full flex overflow-hidden">
+        <Sidebar />
+        <div className="w-full h-full flex flex-col">
+          <div className="flex flex-row items-center justify-between">
+            <nav className="flex items-center pl-6" aria-label="Tabs">
+              {tabs ? (
+                tabs.map((tab) => (
+                  <h2
+                    key={tab.title}
+                    onClick={() => navigate(tab.href)}
+                    className={classNames(
+                      "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
+                      tab.title === data.title
+                        ? "font-medium text-black dark:text-white"
+                        : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-500 dark:hover:text-slate-100 dark:hover:bg-zinc-700"
+                    )}
+                  >
+                    {tab.title}
+                  </h2>
+                ))
+              ) : (
                 <h2
-                  key={tab.title}
-                  onClick={() => navigate(tab.href)}
                   className={classNames(
                     "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
-                    tab.title === data.title
-                      ? "font-medium text-black dark:text-white"
-                      : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-500 dark:hover:text-slate-100 dark:hover:bg-zinc-700"
+                    "font-medium text-black dark:text-white"
                   )}
                 >
-                  {tab.title}
+                  {data.title}
                 </h2>
-              ))
-            ) : (
-              <h2
-                className={classNames(
-                  "select-none mr-1 tracking-wide my-3 text-lg px-2 py-1 rounded-md cursor-pointer",
-                  "font-medium text-black dark:text-white"
-                )}
+              )}
+            </nav>
+            <div className="flex items-center">
+              <button
+                className="mr-3"
+                onMouseEnter={(event) => {
+                  handleMouseEnter(event, "Compose");
+                }}
+                onMouseLeave={handleMouseLeave}
+                onClick={() => {
+                  navigate("/compose");
+                }}
               >
-                {data.title}
-              </h2>
-            )}
-          </nav>
-          <div className="flex items-center">
-            <button
-              className="mr-3"
-              onMouseEnter={(event) => {
-                handleMouseEnter(event, "Compose");
-              }}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => {
-                navigate("/compose");
-              }}
-            >
-              <PencilSquareIcon
-                className={classNames(
-                  "h-5 w-5 shrink-0",
-                  isBackgroundOn ? "text-white" : "text-black dark:text-white"
-                )}
+                <PencilSquareIcon
+                  className={classNames(
+                    "h-5 w-5 shrink-0",
+                    "text-black dark:text-white"
+                  )}
+                />
+              </button>
+              <button
+                className="mr-3"
+                onMouseEnter={(event) => {
+                  handleMouseEnter(event, "Search");
+                }}
+                onMouseLeave={handleMouseLeave}
+                onClick={handleSearchClick}
+              >
+                <MagnifyingGlassIcon
+                  className={classNames(
+                    "h-5 w-5 shrink-0",
+                    "text-black dark:text-white"
+                  )}
+                />
+              </button>
+              <AccountActionsMenu
+                selectedEmail={selectedEmail}
+                setSelectedEmail={(email) => void setSelectedEmail(email)}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
               />
-            </button>
-            <button
-              className="mr-3"
-              onMouseEnter={(event) => {
-                handleMouseEnter(event, "Search");
-              }}
-              onMouseLeave={handleMouseLeave}
-              onClick={handleSearchClick}
-            >
-              <MagnifyingGlassIcon
-                className={classNames(
-                  "h-5 w-5 shrink-0",
-                  isBackgroundOn ? "text-white" : "text-black dark:text-white"
-                )}
-              />
-            </button>
-            <button
-              className="mr-3"
-              onMouseEnter={(event) => {
-                handleMouseEnter(event, "Refresh");
-              }}
-              onMouseLeave={handleMouseLeave}
-              onClick={refreshing ? void 0 : handleRefreshClick}
-            >
-              <ArrowPathIcon
-                className={classNames(
-                  "h-5 w-5 shrink-0",
-                  isBackgroundOn ? "text-white" : "text-black dark:text-white",
-                  refreshing ? "animate-spin" : ""
-                )}
-              />
-            </button>
-            <AccountActionsMenu
-              selectedEmail={selectedEmail}
-              setSelectedEmail={(email) => void setSelectedEmail(email)}
-              handleMouseEnter={handleMouseEnter}
-              handleMouseLeave={handleMouseLeave}
-            />
 
-            <TooltipPopover
-              message={tooltipData.message}
-              showTooltip={tooltipData.showTooltip}
-              coords={tooltipData.coords}
-            />
+              <TooltipPopover
+                message={tooltipData.message}
+                showTooltip={tooltipData.showTooltip}
+                coords={tooltipData.coords}
+              />
+            </div>
           </div>
+          <ThreadList
+            selectedEmail={selectedEmail}
+            threads={threads}
+            setHoveredThread={setHoveredThread}
+            setScrollPosition={setScrollPosition}
+            handleScroll={handleScroll}
+            scrollRef={scrollRef}
+            canArchiveThread={data.canArchiveThread}
+            canTrashThread={data.canTrashThread}
+            canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
+          />
         </div>
-        <ThreadList
-          selectedEmail={selectedEmail}
-          threads={threads}
-          setHoveredThread={setHoveredThread}
-          setScrollPosition={setScrollPosition}
-          scrollRef={scrollRef}
-          folderId={data.folderId}
-          canArchiveThread={data.canArchiveThread}
-          canTrashThread={data.canTrashThread}
-          canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
-        />
+        <AssistBar thread={hoveredThread} />
       </div>
-      <AssistBar thread={hoveredThread} />
-    </React.Fragment>
+    </div>
   );
 }

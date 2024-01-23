@@ -50,4 +50,21 @@ export interface OutlookMessageDataType {
   replyTo: {
     emailAddress: OutlookEmailAddress;
   }[];
+  attachments: {
+    id: string;
+    contentType: string;
+    contentId: string;
+    isInline: boolean;
+    size: number;
+    name: string;
+    item?: {
+      id: string;
+      subject: string;
+      bodyPreview: string;
+      body: {
+        contentType: string;
+        content: string;
+      };
+    };
+  }[];
 }

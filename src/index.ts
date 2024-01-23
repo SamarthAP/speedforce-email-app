@@ -271,6 +271,7 @@ const createWindow = (): void => {
     titleBarOverlay: false,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      devTools: process.env.NODE_ENV === "development",
     },
   });
 

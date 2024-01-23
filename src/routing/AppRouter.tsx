@@ -17,7 +17,7 @@ import { SPEEDFORCE_WS_URL, FOLDER_IDS } from "../api/constants";
 import { dLog } from "../lib/noProd";
 import { useCallback, useEffect } from "react";
 import { getAccessToken } from "../api/accessToken";
-import { loadContacts, partialSync, watchSubscription } from "../lib/sync";
+import { loadContacts, watchSubscription } from "../lib/sync";
 import { handleMessage } from "../lib/wsHelpers";
 import Search from "../pages/Search";
 import InboxZeroSetup from "../pages/InboxZeroSetup";
@@ -101,18 +101,18 @@ export default function AppRouter({ session }: AppRouterProps) {
     reconnectInterval: 3000,
   });
 
-  // syncs every 10 mins, but not on render
-  useEffect(() => {
-    async function handler() {
-      dLog("periodic sync");
-      if (selectedEmail)
-        await partialSync(selectedEmail.email, selectedEmail.provider, {
-          folderId: FOLDER_IDS.INBOX,
-        });
-    }
+  // // syncs every 10 mins, but not on render
+  // useEffect(() => {
+  //   async function handler() {
+  //     dLog("periodic sync");
+  //     if (selectedEmail)
+  //       await partialSync(selectedEmail.email, selectedEmail.provider, {
+  //         folderId: FOLDER_IDS.INBOX,
+  //       });
+  //   }
 
-    return window.electron.ipcRenderer.onSyncEmails(handler);
-  }, [selectedEmail]);
+  //   return window.electron.ipcRenderer.onSyncEmails(handler);
+  // }, [selectedEmail]);
 
   // watchs subscriptions and syncs on render if last sync was more than 3 days ago
   useEffect(() => {
@@ -136,9 +136,9 @@ export default function AppRouter({ session }: AppRouterProps) {
             return;
           }
 
-          await partialSync(selectedEmail.email, selectedEmail.provider, {
-            folderId: FOLDER_IDS.INBOX,
-          });
+          // await partialSync(selectedEmail.email, selectedEmail.provider, {
+          //   folderId: FOLDER_IDS.INBOX,
+          // });
 
           await window.electron.ipcRenderer.invoke(
             "store-set",
@@ -269,7 +269,14 @@ export default function AppRouter({ session }: AppRouterProps) {
               path="/other"
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
-              <Route index element={<Other />} />
+              <Route
+                index
+                element={
+                  <Other
+                    inboxZeroStartDate={selectedEmail.inboxZeroStartDate}
+                  />
+                }
+              />
             </Route>
             <Route
               path="/sent"

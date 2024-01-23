@@ -10,8 +10,7 @@ import {
 import EmailEditor, { EditorComponentRef } from "./EmailEditor";
 import { Editor } from "draft-js";
 import { stateToHTML } from "draft-js-export-html";
-import { partialSync, sendReply, sendReplyAll, forward } from "../lib/sync";
-import { useEmailPageOutletContext } from "../pages/_emailPage";
+import { sendReply, sendReplyAll, forward } from "../lib/sync";
 import SimpleButton from "./SimpleButton";
 import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
@@ -28,7 +27,7 @@ interface MessageProps {
 export default function Message({ message, selectedEmail }: MessageProps) {
   const [showBody, setShowBody] = useState(true);
   const [showReply, setShowReply] = useState(false);
-  const [showImages, setShowImages] = useState(false);
+  const [showImages, setShowImages] = useState(true);
   const [sendingReply, setSendingReply] = useState(false);
   const [editorMode, setEditorMode] = useState<
     "reply" | "replyAll" | "forward" | "none"

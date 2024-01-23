@@ -9,7 +9,7 @@ import { classNames } from "../../lib/util";
 import { ClientInboxTabType } from "../../api/model/client.inbox";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../SearchBar";
-
+import Titlebar from "../Titlebar";
 interface SearchThreadViewProps {
   data: ClientInboxTabType;
   searchItems?: string[];
@@ -30,6 +30,10 @@ export default function SearchThreadView({
 
   const renderCounter = useRef(0);
   renderCounter.current = renderCounter.current + 1;
+
+  const handleScroll = (event: React.UIEvent<HTMLElement>) => {
+    void 0;
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -103,36 +107,43 @@ export default function SearchThreadView({
   }, [navigate]);
 
   return (
-    <React.Fragment>
-      <Sidebar />
-      <div className="w-full flex flex-col overflow-hidden">
-        <div className="flex flex-row items-center justify-between">
-          <nav className="flex items-center pl-6" aria-label="Tabs">
-            <h2
-              key="Search"
-              className={classNames(
-                "select-none tracking-wide my-3 mr-1 text-lg px-2 py-1 rounded-md cursor-pointer",
-                "font-medium text-black dark:text-white"
-              )}
-            >
-              Search
-            </h2>
-          </nav>
-          <SearchBar setSearchItems={setSearchItems || (() => void 0)} />
+    <div
+      className={`overflow-hidden h-screen w-screen flex flex-col fadeIn-animation bg-cover bg-center`}
+    >
+      <Titlebar />
+
+      <div className="w-full h-full flex overflow-hidden">
+        <Sidebar />
+        <div className="w-full flex flex-col overflow-hidden">
+          <div className="flex flex-row items-center justify-between">
+            <nav className="flex items-center pl-6" aria-label="Tabs">
+              <h2
+                key="Search"
+                className={classNames(
+                  "select-none tracking-wide my-3 mr-1 text-lg px-2 py-1 rounded-md cursor-pointer",
+                  "font-medium text-black dark:text-white"
+                )}
+              >
+                Search
+              </h2>
+            </nav>
+            <SearchBar setSearchItems={setSearchItems || (() => void 0)} />
+          </div>
+          <ThreadList
+            selectedEmail={selectedEmail}
+            threads={threads}
+            setHoveredThread={setHoveredThread}
+            setScrollPosition={setScrollPosition}
+            scrollRef={scrollRef}
+            // folderId={data.folderId}
+            handleScroll={handleScroll}
+            canArchiveThread={data.canArchiveThread}
+            canTrashThread={data.canTrashThread}
+            canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
+          />
         </div>
-        <ThreadList
-          selectedEmail={selectedEmail}
-          threads={threads}
-          setHoveredThread={setHoveredThread}
-          setScrollPosition={setScrollPosition}
-          scrollRef={scrollRef}
-          folderId={data.folderId}
-          canArchiveThread={data.canArchiveThread}
-          canTrashThread={data.canTrashThread}
-          canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
-        />
+        <AssistBar thread={hoveredThread} />
       </div>
-      <AssistBar thread={hoveredThread} />
-    </React.Fragment>
+    </div>
   );
 }
