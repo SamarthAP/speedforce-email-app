@@ -81,6 +81,9 @@ export default function ShadowDom({ htmlString, showImages }: ShadowDomProps) {
   // }, [theme]);
 
   return (
-    <div className="bg-white p-4 w-full overflow-x-scroll" ref={shadowRef} />
+    <div
+      className="bg-white p-4 w-full overflow-x-scroll hide-scroll"
+      ref={shadowRef}
+    />
   );
 }

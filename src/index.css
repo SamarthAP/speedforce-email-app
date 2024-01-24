@@ -22,3 +22,7 @@
 .fadeIn-animation {
   animation: fadeIn 1s;
 }
+
+.hide-scroll::-webkit-scrollbar {
+  display: none;
+}
