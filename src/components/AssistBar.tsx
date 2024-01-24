@@ -75,7 +75,7 @@ export default function AssistBar({ thread }: IAssistBarProps) {
   }
 
   return (
-    <div className="flex-shrink-0 flex flex-col w-64 h-full overflow-y-scroll p-4 border-l border-l-slate-200 dark:border-l-zinc-700 break-words">
+    <div className="flex-shrink-0 flex flex-col w-64 h-full hide-scroll overflow-y-scroll p-4 border-l border-l-slate-200 dark:border-l-zinc-700 break-words">
       <p className="text-sm dark:text-white mb-4">
         {thread?.from.slice(
           0,
@@ -83,7 +83,6 @@ export default function AssistBar({ thread }: IAssistBarProps) {
             ? undefined
             : thread?.from.lastIndexOf("<")
         )}
-        {/* {thread?.from} */}
       </p>
       <p className="mb-2 text-sm font-bold text-slate-500 dark:text-zinc-400">
         {thread?.subject}

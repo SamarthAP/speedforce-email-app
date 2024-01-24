@@ -49,7 +49,7 @@ export default function Sidebar() {
   const { isBackgroundOn } = useInboxZeroBackgroundContext();
 
   return (
-    <div className="h-full w-20 pt-2 px-2 flex flex-col flex-shrink-0 overflow-y-scroll items-center space-y-1">
+    <div className="h-full w-20 pt-2 px-2 flex flex-col flex-shrink-0 overflow-y-scroll hide-scroll items-center space-y-1">
       {navigation.map((item) => {
         if (
           item.name !== "Calendar" ||
