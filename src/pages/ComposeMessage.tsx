@@ -139,7 +139,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
             </div>
           </div>
           <div className="dark:text-white p-4 w-full">New Message</div>
-          <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll">
+          <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll">
             <div className="border border-slate-200 dark:border-zinc-700">
               <EmailSelectorInput
                 text="To"
@@ -176,7 +176,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                     <PaperClipIcon className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="w-full pl-10 text-sm flex gap-x-1 overflow-scroll">
+                <div className="w-full pl-10 text-sm flex gap-x-1 overflow-scroll hide-scroll">
                   {attachments.map((attachment, idx) => {
                     return (
                       <div

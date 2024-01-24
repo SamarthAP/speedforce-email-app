@@ -238,7 +238,7 @@ export default function Message({ message, selectedEmail }: MessageProps) {
       )}
 
       {
-        <div className="p-4 flex gap-x-1 overflow-scroll">
+        <div className="p-4 flex gap-x-1 overflow-scroll hide-scroll">
           {message.attachments.map((attachment, idx) => (
             <AttachmentButton
               key={idx}

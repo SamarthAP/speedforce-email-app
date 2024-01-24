@@ -41,14 +41,14 @@ export function HorizontalAttachments({
 
   if (thread.hasAttachments && messages.length === 0) {
     return (
-      <div className="px-10 my-1 col-span-full w-full flex gap-x-1 overflow-x-scroll">
+      <div className="px-10 my-1 col-span-full w-full flex gap-x-1 overflow-x-scroll hide-scroll">
         <AttachmentButtonSkeleton />
       </div>
     );
   }
 
   return (
-    <div className="px-10 my-1 col-span-full w-full flex gap-x-1 overflow-x-scroll">
+    <div className="px-10 my-1 col-span-full w-full flex gap-x-1 overflow-x-scroll hide-scroll">
       {attachments.map((attachment: IAttachment, idx: number) => {
         return (
           <AttachmentButton
