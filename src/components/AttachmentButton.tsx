@@ -59,13 +59,13 @@ export function AttachmentButton({
           messageId,
           attachment.attachmentId,
           attachment.filename
-        ).then((success) => {
-          if (success) {
+        ).then(async (res) => {
+          if (res.fileName && !res.error) {
             toast.success(
               <div>
-                {`${attachment.filename} available in downloads folder `}
+                {`${res.fileName} available in downloads folder `}
                 <span
-                  onClick={() => void openDownloadsFolder(attachment.filename)}
+                  onClick={() => void openDownloadsFolder(res.fileName)}
                   className="text-blue-500 cursor-pointer underline"
                 >
                   here.
@@ -74,7 +74,7 @@ export function AttachmentButton({
               { duration: 4000 }
             );
           } else {
-            toast.error(`Failed to download ${attachment.filename}`);
+            toast.error(`Failed to download ${res.fileName}`);
           }
           setLoading(false);
         });
@@ -84,6 +84,7 @@ export function AttachmentButton({
         "rounded-md px-2 py-2 text-xs font-semibold shadow-sm focus:outline-none",
         "bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-300 dark:hover:bg-zinc-600"
       )}
+      disabled={loading}
     >
       {!loading ? (
         <PaperClipIcon

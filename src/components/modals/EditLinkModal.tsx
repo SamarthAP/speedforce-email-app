@@ -3,33 +3,33 @@ import { useEffect, useState } from "react";
 import { classNames } from "../../lib/util";
 import { string } from "zod";
 
-interface AddLinkModalProps {
-  initialTextToDisplay: string | null;
+interface EditLinkModalProps {
+  initialTextToDisplay: string;
+  initialUrl: string;
   isDialogOpen: boolean;
   setIsDialogOpen: (isOpen: boolean) => void;
-  addLink: (displayText: string, link: string) => void;
+  editLink: (displayText: string, link: string) => void;
 }
 
-export const AddLinkModal = ({
+export const EditLinkModal = ({
   initialTextToDisplay,
+  initialUrl,
   isDialogOpen,
   setIsDialogOpen,
-  addLink,
-}: AddLinkModalProps) => {
-  const [textToDisplay, setTextToDisplay] = useState(
-    initialTextToDisplay || ""
-  );
+  editLink,
+}: EditLinkModalProps) => {
+  const [textToDisplay, setTextToDisplay] = useState("");
+  const [url, setUrl] = useState("");
 
   useEffect(() => {
     if (isDialogOpen) {
-      setTextToDisplay(initialTextToDisplay || "");
-      setUrl("");
+      setTextToDisplay(initialTextToDisplay);
+      setUrl(initialUrl);
+      setIsUrlValid(isValidUrl(initialUrl));
     }
-  }, [isDialogOpen, initialTextToDisplay]);
+  }, [isDialogOpen, initialTextToDisplay, initialUrl]);
 
-  const [url, setUrl] = useState("");
   const [isUrlValid, setIsUrlValid] = useState(false);
-
   const urlSchema = string().url({ message: "Invalid url" });
 
   const isValidUrl = (url: string) => {
@@ -78,7 +78,7 @@ export const AddLinkModal = ({
                       as="h3"
                       className="text-lg font-semibold leading-6 text-gray-900"
                     >
-                      Add link
+                      Edit link
                     </Dialog.Title>
                     <div className="mt-2">
                       <span className="flex flex-row items-center space-x-4">
@@ -119,11 +119,11 @@ export const AddLinkModal = ({
                     )}
                     onClick={() => {
                       setIsDialogOpen(false);
-                      addLink(textToDisplay, url);
+                      editLink(textToDisplay, url);
                     }}
                     disabled={!isUrlValid}
                   >
-                    Add link
+                    Edit link
                   </button>
                   <button
                     type="button"

@@ -23,7 +23,6 @@
   animation: fadeIn 1s;
 }
 
-/* TODO: Make sure this doesn't affect other parts of the app */
 .ProseMirror ol {
   list-style-type: decimal;
 }
@@ -43,4 +42,8 @@
   color: #adb5bd;
   pointer-events: none;
   height: 0;
+}
+
+.hide-scroll::-webkit-scrollbar {
+  display: none;
 }

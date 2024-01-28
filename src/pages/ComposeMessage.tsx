@@ -43,8 +43,8 @@ interface ComposeMessageProps {
 
 export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
   // const editorRef = createRef<Editor>();
-  const editorComponentRef = createRef<EditorComponentRef>();
-  const [sendingEmail, setSendingEmail] = useState(false);
+  // const editorComponentRef = createRef<EditorComponentRef>();
+  // const [sendingEmail, setSendingEmail] = useState(false);
   const [to, setTo] = useState<string[]>([]);
   const [subject, setSubject] = useState("");
   // const [attachments, setAttachments] = useState<NewAttachment[]>([]);
@@ -140,7 +140,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
             </div>
           </div>
           <div className="dark:text-white p-4 w-full">New Message</div>
-          <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 mb-10 overflow-y-scroll">
+          <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 mb-10 overflow-y-scroll hide-scroll">
             <div className="border border-slate-200 dark:border-zinc-700">
               <EmailSelectorInput
                 text="To"
@@ -167,7 +167,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                 <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-start justify-end">
                   Body
                 </div>
-                <div className="w-full pl-10 overflow-scroll">
+                <div className="w-full pl-10 overflow-scroll hide-scroll">
                   {/* <EmailEditor editorRef={editorRef} ref={editorComponentRef} /> */}
                   <Tiptap
                     selectedEmail={selectedEmail}
@@ -182,7 +182,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                     <PaperClipIcon className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="w-full pl-10 text-sm flex gap-x-1 overflow-scroll">
+                <div className="w-full pl-10 text-sm flex gap-x-1 overflow-scroll hide-scroll">
                   {attachments.map((attachment, idx) => {
                     return (
                       <div

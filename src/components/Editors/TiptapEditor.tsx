@@ -16,7 +16,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
 import ImagePlugin from "./ImagePlugin";
 import SimpleButton from "../SimpleButton";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { XCircleIcon } from "@heroicons/react/20/solid";
 import { classNames } from "../../lib/util";
 import { dLog } from "../../lib/noProd";
@@ -24,6 +24,7 @@ import { ISelectedEmail } from "../../lib/db";
 import { sendEmail, sendEmailWithAttachments } from "../../lib/sync";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { EditLinkModal } from "../modals/EditLinkModal";
 
 // define your extension array
 const extensions = [
@@ -45,6 +46,7 @@ const extensions = [
       target: "_blank",
       class: "text-blue-500 underline hover:text-blue-700",
     },
+    openOnClick: false,
   }),
   ImagePlugin,
 ];
@@ -67,12 +69,39 @@ interface TiptapProps {
 export default function Tiptap({ selectedEmail, to, subject }: TiptapProps) {
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [selectedLink, setSelectedLink] = useState<{
+    displayText: string;
+    link: string;
+  } | null>(null);
+  const [isEditLinkModalOpen, setIsEditLinkModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const editor = useEditor({
     extensions,
     content,
   });
+
+  useEffect(() => {
+    if (editor) {
+      const handleClick = (event: MouseEvent) => {
+        const target = event.target as HTMLElement;
+        if (target.tagName === "A") {
+          event.preventDefault();
+          const href = target.getAttribute("href");
+          const text = target.textContent;
+          setSelectedLink({ displayText: text || "", link: href || "" });
+          setIsEditLinkModalOpen(true);
+        }
+      };
+
+      const editorEl = editor.view.dom;
+      editorEl.addEventListener("click", handleClick);
+
+      return () => {
+        editorEl.removeEventListener("click", handleClick);
+      };
+    }
+  }, [editor]);
 
   if (!editor) return null;
 
@@ -88,6 +117,48 @@ export default function Tiptap({ selectedEmail, to, subject }: TiptapProps) {
   function removeAttachment(idx: number) {
     setAttachments((prev) => prev.filter((_, i) => i !== idx));
   }
+
+  const editLink = (displayText: string | null, url: string) => {
+    const { $from } = editor.state.selection;
+    const linkMarkType = editor.state.schema.marks.link;
+
+    let startPos = $from.pos;
+    let endPos = startPos;
+
+    editor.state.doc.nodesBetween(
+      startPos,
+      editor.state.doc.content.size,
+      (node, pos) => {
+        if (
+          node.isInline &&
+          node.marks.some((mark) => mark.type === linkMarkType)
+        ) {
+          if (startPos > pos) {
+            startPos = pos;
+          }
+          endPos = pos + node.nodeSize;
+        }
+      }
+    );
+
+    // Selection not inside a link
+    if (startPos === endPos) return;
+
+    // Create a new text node with the link mark
+    const newLinkNode = editor.schema.text(displayText || url, [
+      linkMarkType.create({ href: url }),
+    ]);
+
+    // Create a transaction to replace the specified link
+    const transaction = editor.state.tr.replaceWith(
+      startPos,
+      endPos,
+      newLinkNode
+    );
+
+    // Dispatch the transaction
+    editor.view.dispatch(transaction);
+  };
 
   const handleSendEmail = async () => {
     setSendingEmail(true);
@@ -130,7 +201,7 @@ export default function Tiptap({ selectedEmail, to, subject }: TiptapProps) {
   return (
     <div>
       <TiptapMenuBar editor={editor} addAttachments={addAttachments} />
-      <div className="text-sm flex gap-x-1 overflow-scroll">
+      <div className="text-sm flex gap-x-1 overflow-scroll hide-scroll">
         {attachments.map((attachment, idx) => {
           return (
             <div
@@ -138,20 +209,23 @@ export default function Tiptap({ selectedEmail, to, subject }: TiptapProps) {
               className={classNames(
                 "inline-flex items-center h-[32px]",
                 "rounded-md mt-2 px-2 py-2 text-xs font-semibold shadow-sm focus:outline-none",
-                "bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-300 dark:hover:bg-zinc-600"
+                "bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300",
+                sendingEmail ? "" : "hover:bg-slate-300 dark:hover:bg-zinc-600"
               )}
             >
               <span className="max-w-[128px] truncate cursor-default">
                 {attachment.filename}
               </span>
-              <button onClick={() => removeAttachment(idx)}>
-                <XCircleIcon className="w-4 h-4 ml-1" />
-              </button>
+              {!sendingEmail && (
+                <button onClick={() => removeAttachment(idx)}>
+                  <XCircleIcon className="w-4 h-4 ml-1" />
+                </button>
+              )}
             </div>
           );
         })}
       </div>
-      <EditorContent editor={editor} className="mt-4" />
+      <EditorContent editor={editor} className="mt-4 dark:text-white" />
 
       <div className="text-left mt-4 mb-2">
         <SimpleButton
@@ -159,8 +233,16 @@ export default function Tiptap({ selectedEmail, to, subject }: TiptapProps) {
           loading={sendingEmail}
           text="Send"
           width="w-16"
+          disabled={to.length === 0}
         />
       </div>
+      <EditLinkModal
+        initialTextToDisplay={selectedLink?.displayText || ""}
+        initialUrl={selectedLink?.link || ""}
+        isDialogOpen={isEditLinkModalOpen}
+        setIsDialogOpen={setIsEditLinkModalOpen}
+        editLink={editLink}
+      />
     </div>
   );
 }

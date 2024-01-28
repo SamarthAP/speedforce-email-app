@@ -225,7 +225,7 @@ export default function ThreadList({
     <div
       onScroll={handleScroll}
       ref={scrollRef}
-      className="h-full flex flex-col overflow-y-scroll"
+      className="h-full flex flex-col overflow-y-scroll hide-scroll"
     >
       {threads?.map((thread, index) => {
         return (

@@ -847,9 +847,8 @@ export async function downloadAttachment(
   messageId: string,
   attachmentId: string,
   filename: string
-): Promise<boolean> {
+): Promise<{ fileName: string; error: string | null }> {
   const accessToken = await getAccessToken(email);
-
   if (provider === "google") {
     const { data, error } = await gAttachmentGet(
       accessToken,
@@ -859,17 +858,17 @@ export async function downloadAttachment(
 
     if (error || !data) {
       dLog("Error downloading attachment");
-      return false;
+      return { fileName: "", error };
     } else {
       // true if file was saved successfully, false otherwise
-      const success = await window.electron.ipcRenderer.invoke(
+      const fileName = await window.electron.ipcRenderer.invoke(
         "save-file",
         filename,
         data.data
       );
 
-      dLog("saving file:", success);
-      return success;
+      dLog("saving file:", fileName);
+      return { fileName, error: null };
     }
   } else if (provider === "outlook") {
     const { data, error } = await mAttachmentGet(
@@ -880,21 +879,21 @@ export async function downloadAttachment(
 
     if (error || !data) {
       dLog("Error downloading attachment");
-      return false;
+      return { fileName: "", error };
     } else {
       // true if file was saved successfully, false otherwise
-      const success = await window.electron.ipcRenderer.invoke(
+      const fileName = await window.electron.ipcRenderer.invoke(
         "save-file",
         filename,
         data.contentBytes
       );
 
-      dLog("saving file:", success);
-      return success;
+      dLog("saving file:", fileName);
+      return { fileName, error: null };
     }
   }
 
-  return false;
+  return { fileName: "", error: "Not implemented" };
 }
 
 export async function loadContacts(
