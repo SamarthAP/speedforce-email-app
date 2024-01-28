@@ -13,7 +13,7 @@ import EmailPage from "../pages/_emailPage";
 import WeekCalendarPage from "../pages/WeekCalendarPage";
 import { Session } from "@supabase/supabase-js";
 import useWebSocket from "react-use-websocket";
-import { SPEEDFORCE_WS_URL, FOLDER_IDS } from "../api/constants";
+import { SPEEDFORCE_WS_URL } from "../api/constants";
 import { dLog } from "../lib/noProd";
 import { useCallback, useEffect } from "react";
 import { getAccessToken } from "../api/accessToken";

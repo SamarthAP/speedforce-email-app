@@ -2,8 +2,6 @@ import ThreadView from "../components/ThreadViews/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
 import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
-import React from "react";
-import Titlebar from "../components/Titlebar";
 import { useEmailPageOutletContext } from "./_emailPage";
 import { useInfiniteQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";

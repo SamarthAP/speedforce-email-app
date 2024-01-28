@@ -1,6 +1,6 @@
 import { OUTLOOK_API_URL } from "../constants";
 import { OutlookMessageDataType } from "../../model/users.message";
-import { NewAttachment } from "../../../pages/ComposeMessage";
+import { NewAttachment } from "../../model/users.attachment";
 
 export const get = async (
   accessToken: string,

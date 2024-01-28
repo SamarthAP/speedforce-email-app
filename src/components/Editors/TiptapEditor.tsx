@@ -25,6 +25,7 @@ import { sendEmail, sendEmailWithAttachments } from "../../lib/sync";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { EditLinkModal } from "../modals/EditLinkModal";
+import { NewAttachment } from "../../api/model/users.attachment";
 
 // define your extension array
 const extensions = [
@@ -52,13 +53,6 @@ const extensions = [
 ];
 
 const content = "";
-
-export interface NewAttachment {
-  mimeType: string;
-  filename: string;
-  data: string;
-  size: number;
-}
 
 interface TiptapProps {
   selectedEmail: ISelectedEmail;

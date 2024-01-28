@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Editor } from "@tiptap/react";
 import { classNames } from "../../lib/util";
-// import { Compact } from "@uiw/react-color";
-// import { Popover } from "@headlessui/react";
 import {
   BoldIcon,
   BulletListIcon,

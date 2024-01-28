@@ -40,7 +40,7 @@ import {
   sendReplyAll as mSendReplyAll,
 } from "../api/outlook/users/message";
 import {
-  list as mAttachmentList,
+  // list as mAttachmentList,
   get as mAttachmentGet,
 } from "../api/outlook/users/attachment";
 import { list as mContactsList } from "../api/outlook/people/contacts";
@@ -79,7 +79,7 @@ import { dLog } from "./noProd";
 import { FOLDER_IDS } from "../api/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
-import { NewAttachment } from "../pages/ComposeMessage";
+import { NewAttachment } from "../api/model/users.attachment";
 import toast from "react-hot-toast";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 
@@ -102,13 +102,13 @@ export async function handleNewThreadsGoogle(
     const parsedMessages: IMessage[] = [];
 
     threads.forEach((thread) => {
-      let hasInboxLabel = false;
+      // let hasInboxLabel = false;
       let isStarred = false;
       let labelIds: string[] = [];
       for (const message of thread.messages) {
-        if (message.labelIds?.includes("INBOX")) {
-          hasInboxLabel = true;
-        }
+        // if (message.labelIds?.includes("INBOX")) {
+        //   hasInboxLabel = true;
+        // }
         if (message.labelIds?.includes("STARRED")) {
           isStarred = true;
         }

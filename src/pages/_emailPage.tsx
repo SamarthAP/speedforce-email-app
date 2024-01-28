@@ -1,5 +1,4 @@
 import { Outlet, useOutletContext } from "react-router-dom";
-import Titlebar from "../components/Titlebar";
 import { ISelectedEmail } from "../lib/db";
 
 interface OutletContext {
