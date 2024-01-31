@@ -95,8 +95,7 @@ export default function TiptapMenuBar({
     <span className="flex flex-row">
       <span className="flex flex-row items-center">
         <button
-          // onClick={() => editor.commands.undo()}
-          onClick={() => console.log(theme)}
+          onClick={() => editor.commands.undo()}
           className={classNames(
             "p-1.5 h-full",
             theme === "light" ? "hover:bg-slate-200" : "hover:bg-zinc-700"
