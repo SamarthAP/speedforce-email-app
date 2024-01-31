@@ -312,19 +312,30 @@ setInterval(() => {
 
 function saveFileToDownloadsFolder(filename: string, data: string) {
   const downloadsPath = app.getPath("downloads");
-  const filePath = path.join(downloadsPath, filename);
+  let filePath = path.join(downloadsPath, filename);
+
+  const extName = path.extname(filename);
+  const baseName = path.basename(filename, extName);
+  let counter = 1;
+
+  // Check if the file exists and rename it
+  while (fs.existsSync(filePath)) {
+    filename = `${baseName} (${counter})${extName}`;
+    filePath = path.join(downloadsPath, filename);
+    counter++;
+  }
 
   const bufferData = Buffer.from(data, "base64");
   fs.writeFileSync(filePath, bufferData);
+
+  return filename;
 }
 
 ipcMain.handle("save-file", (_event, filename, data) => {
   try {
-    saveFileToDownloadsFolder(filename, data);
-    return true;
+    return saveFileToDownloadsFolder(filename, data);
   } catch (e) {
-    // console.log(e);
-    return false;
+    return "";
   }
 });
 

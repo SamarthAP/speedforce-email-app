@@ -1,4 +1,4 @@
-import { NewAttachment } from "../../../pages/ComposeMessage";
+import { NewAttachment } from "../../model/users.attachment";
 import { dLog } from "../../../lib/noProd";
 import { GMAIL_API_URL } from "../constants";
 import { Base64 } from "js-base64";

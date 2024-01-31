@@ -8,3 +8,10 @@ export interface OutlookAttachmentDataType {
   contentId: string;
   contentBytes: string;
 }
+
+export interface NewAttachment {
+  mimeType: string;
+  filename: string;
+  data: string;
+  size: number;
+}

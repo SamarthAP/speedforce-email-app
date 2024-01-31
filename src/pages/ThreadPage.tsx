@@ -1,5 +1,4 @@
 import { ISelectedEmail, db } from "../lib/db";
-import Sidebar from "../components/Sidebar";
 import Titlebar from "../components/Titlebar";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";

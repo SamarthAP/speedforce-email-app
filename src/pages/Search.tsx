@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import SearchThreadView from "../components/ThreadViews/SearchThreadView";
 import { IMessage, ISelectedEmail, db } from "../lib/db";
 import {
@@ -7,7 +7,6 @@ import {
   inActionHandler,
   toActionHandler,
 } from "../lib/dexie/searchHandlers";
-import Titlebar from "../components/Titlebar";
 
 // TODO: May be able to abstract this away as well
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now

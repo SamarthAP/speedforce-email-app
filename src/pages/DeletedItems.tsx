@@ -1,12 +1,10 @@
-import React from "react";
 import ThreadView from "../components/ThreadViews/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
 // import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
-import Titlebar from "../components/Titlebar";
 import { useEmailPageOutletContext } from "./_emailPage";
-import { useInfiniteQuery, useQuery } from "react-query";
+import { useInfiniteQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 
 // const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(

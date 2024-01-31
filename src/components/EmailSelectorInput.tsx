@@ -124,9 +124,8 @@ export function EmailSelectorInput({
           ))}
 
           <Combobox as="div" onChange={onSearchSelect}>
-            {/* <div className="relative h-full items-center"> */}
             <Combobox.Input
-              className="block h-full border-0 bg-transparent dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
+              className="block h-full border-0 my-0.5 py-1.5 bg-transparent dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 text-sm sm:leading-6"
               placeholder="..."
               pattern=""
               value={emailText}
