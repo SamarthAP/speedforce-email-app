@@ -100,75 +100,77 @@ export function EmailSelectorInput({
           .slice(0, 5);
 
   return (
-    <div className="flex py-2">
-      {/* Input */}
-      <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center justify-end whitespace-nowrap">
-        {text}
-      </div>
-      <div className="flex flex-row flex-wrap pl-10">
-        {emails.map((email, idx) => (
-          <div
-            key={idx}
-            className="flex items-center mr-1.5 my-0.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-2 py-1 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 cursor-default"
-          >
-            <span>{email}</span>
-            <button
-              onClick={() => setEmails(emails.filter((_, i) => i !== idx))}
-              type="button"
-              className="focus:outline-none"
+    <div className="relative w-full">
+      <div className="flex py-2">
+        {/* Input */}
+        <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center justify-end whitespace-nowrap">
+          {text}
+        </div>
+        <div className="flex flex-row flex-wrap pl-10">
+          {emails.map((email, idx) => (
+            <div
+              key={idx}
+              className="flex items-center mr-1.5 my-0.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-2 py-1 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 cursor-default"
             >
-              <XCircleIcon className="w-4 h-4 ml-1" />
-            </button>
-          </div>
-        ))}
+              <span>{email}</span>
+              <button
+                onClick={() => setEmails(emails.filter((_, i) => i !== idx))}
+                type="button"
+                className="focus:outline-none"
+              >
+                <XCircleIcon className="w-4 h-4 ml-1" />
+              </button>
+            </div>
+          ))}
 
-        <Combobox as="div" className="items-center" onChange={onSearchSelect}>
-          {/* <div className="relative h-full items-center"> */}
-          <Combobox.Input
-            className="block h-full border-0 bg-transparent dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
-            placeholder="..."
-            pattern=""
-            value={emailText}
-            onChange={(event) => void onEmailTextChange(event)}
-            onKeyUp={onEmailKeyUp}
-          />
+          <Combobox as="div" onChange={onSearchSelect}>
+            {/* <div className="relative h-full items-center"> */}
+            <Combobox.Input
+              className="block h-full border-0 bg-transparent dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
+              placeholder="..."
+              pattern=""
+              value={emailText}
+              onChange={(event) => void onEmailTextChange(event)}
+              onKeyUp={onEmailKeyUp}
+            />
 
-          {filteredContacts.length > 0 && (
-            <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-[calc(screen/2)] overflow-y-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-              {filteredContacts.map((person) => (
-                <Combobox.Option
-                  key={person.contactEmailAddress}
-                  value={person}
-                  className={({ active }) =>
-                    classNames(
-                      "relative cursor-default select-none py-2 pl-3 pr-9",
-                      active ? "bg-gray-600 text-white" : "text-gray-900"
-                    )
-                  }
-                >
-                  {({ active }) => (
-                    <>
-                      <div className="flex">
-                        <span className="font-semibold whitespace-nowrap">
-                          {person.contactName}
-                        </span>
-                        <span
-                          className={classNames(
-                            "ml-2 text-gray-500",
-                            active ? "text-white" : "text-gray-500"
-                          )}
-                        >
-                          {person.contactEmailAddress}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                </Combobox.Option>
-              ))}
-            </Combobox.Options>
-          )}
-          {/* </div> */}
-        </Combobox>
+            {filteredContacts.length > 0 && (
+              <Combobox.Options className="absolute z-10 mt-1  left-[calc(6.5rem)] rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                {filteredContacts.map((person) => (
+                  <Combobox.Option
+                    key={person.contactEmailAddress}
+                    value={person}
+                    className={({ active }) =>
+                      classNames(
+                        "relative cursor-default select-none py-2 pl-3 pr-9",
+                        active ? "bg-gray-600 text-white" : "text-gray-900"
+                      )
+                    }
+                  >
+                    {({ active }) => (
+                      <>
+                        <div className="flex">
+                          <span className="font-semibold whitespace-nowrap">
+                            {person.contactName}
+                          </span>
+                          <span
+                            className={classNames(
+                              "ml-2 text-gray-500",
+                              active ? "text-white" : "text-gray-500"
+                            )}
+                          >
+                            {person.contactEmailAddress}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </Combobox.Option>
+                ))}
+              </Combobox.Options>
+            )}
+            {/* </div> */}
+          </Combobox>
+        </div>
       </div>
     </div>
   );
