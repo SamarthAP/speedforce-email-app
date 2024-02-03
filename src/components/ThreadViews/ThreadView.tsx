@@ -101,22 +101,6 @@ export default function ThreadView({
     navigate("/search");
   };
 
-  // if (selectedThread) {
-  //   return (
-  //     <React.Fragment>
-  //       <ThreadFeed
-  //         selectedThread={selectedThread}
-  //         setSelectedThread={setSelectedThread}
-  //         // folderId={data.folderId}
-  //       />
-  //       <SelectedThreadBar
-  //         thread={selectedThread}
-  //         email={selectedEmail.email}
-  //       />
-  //     </React.Fragment>
-  //   );
-  // }
-
   const setSelectedEmail = async (email: IEmail) => {
     await db.selectedEmail.put({
       id: 1,
@@ -220,6 +204,7 @@ export default function ThreadView({
             canArchiveThread={data.canArchiveThread}
             canTrashThread={data.canTrashThread}
             canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
+            isDrafts={data.isDraftMode}
           />
         </div>
         <AssistBar thread={hoveredThread} />

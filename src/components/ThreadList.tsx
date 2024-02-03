@@ -79,6 +79,7 @@ interface ThreadListProps {
   canArchiveThread?: boolean;
   canTrashThread?: boolean;
   canPermanentlyDeleteThread?: boolean;
+  isDrafts?: boolean;
 }
 
 export default function ThreadList({
@@ -91,6 +92,7 @@ export default function ThreadList({
   canArchiveThread = false,
   canTrashThread = false,
   canPermanentlyDeleteThread = false,
+  isDrafts = false,
 }: ThreadListProps) {
   const navigate = useNavigate();
   const observerTarget = useRef<HTMLDivElement>(null);
@@ -221,6 +223,20 @@ export default function ThreadList({
     );
   }
 
+  function handleThreadClick(thread: IEmailThread) {
+    setScrollPosition(scrollRef.current?.scrollTop || 0);
+
+    if (isDrafts) {
+      navigate(`/draft/${thread.id}`);
+    } else {
+      if (thread.unread) {
+        void markRead(selectedEmail.email, selectedEmail.provider, thread.id);
+      }
+
+      navigate(`/thread/${thread.id}`);
+    }
+  }
+
   return (
     <div
       onScroll={handleScroll}
@@ -229,21 +245,7 @@ export default function ThreadList({
     >
       {threads?.map((thread, index) => {
         return (
-          <div
-            // onClick={() => {
-            //   setScrollPosition(scrollRef.current?.scrollTop || 0);
-            //   setSelectedThread(thread.id);
-            //   if (thread.unread) {
-            //     void markRead(
-            //       selectedEmail.email,
-            //       selectedEmail.provider,
-            //       thread.id
-            //     );
-            //   }
-            // }}
-            // onMouseOver={() => setHoveredThread(thread)}
-            key={index}
-          >
+          <div key={index}>
             {index === 0 && isToday(new Date(thread.date)) ? (
               <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 mb-2">
                 Today
@@ -280,17 +282,7 @@ export default function ThreadList({
             ) : null}
 
             <div
-              onClick={() => {
-                setScrollPosition(scrollRef.current?.scrollTop || 0);
-                if (thread.unread) {
-                  void markRead(
-                    selectedEmail.email,
-                    selectedEmail.provider,
-                    thread.id
-                  );
-                }
-                navigate(`/thread/${thread.id}`);
-              }}
+              onClick={() => handleThreadClick(thread)}
               onMouseOver={(
                 e: React.MouseEvent<HTMLDivElement, MouseEvent>
               ) => {

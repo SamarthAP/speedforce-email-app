@@ -1,5 +1,5 @@
 export interface OutlookEmailAddress {
-  name: string;
+  name?: string;
   address: string;
 }
 

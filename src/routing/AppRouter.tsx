@@ -25,6 +25,7 @@ import Settings from "../pages/Settings";
 import { ComposeMessage } from "../pages/ComposeMessage";
 import ThreadPage from "../pages/ThreadPage";
 import Other from "../pages/Other";
+import { EditDraft } from "../pages/EditDraft";
 
 interface AppRouterProps {
   session: Session;
@@ -338,6 +339,10 @@ export default function AppRouter({ session }: AppRouterProps) {
             <Route
               path="/compose"
               element={<ComposeMessage selectedEmail={selectedEmail} />}
+            ></Route>
+            <Route
+              path="/draft/:threadId"
+              element={<EditDraft selectedEmail={selectedEmail} />}
             ></Route>
             <Route
               path="/thread/:threadId"
