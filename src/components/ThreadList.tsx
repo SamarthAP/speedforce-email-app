@@ -414,7 +414,12 @@ function ThreadListRow({
             </div>
             <div className="text-sm pl-2 pr-4 flex-shrink-0 text-slate-400 dark:text-zinc-500 font-medium flex flex-col justify-center">
               <span className="group-hover:hidden block">
-                {new Date(thread.date).toDateString()}
+                {isToday(new Date(thread.date))
+                  ? new Date(thread.date).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : new Date(thread.date).toDateString()}
               </span>
 
               <span className="flex flex-row">
