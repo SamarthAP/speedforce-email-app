@@ -2,12 +2,16 @@ import ThreadList from "../ThreadList";
 import Sidebar from "../Sidebar";
 import { IEmail, IEmailThread, db } from "../../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useEmailPageOutletContext } from "../../pages/_emailPage";
-import { ThreadFeed } from "../ThreadFeed";
 import AssistBar from "../AssistBar";
 import AccountActionsMenu from "../AccountActionsMenu";
-import { PencilSquareIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import {
+  PencilSquareIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
 import SelectedThreadBar from "../SelectedThreadBar";
 import TooltipPopover from "../TooltipPopover";
 import { useTooltip } from "../UseTooltip";
@@ -16,7 +20,6 @@ import {
   ClientInboxTabType,
   ClientTabNavigationType,
 } from "../../api/model/client.inbox";
-import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import { useNavigate } from "react-router-dom";
 import {
   FetchNextPageOptions,
@@ -48,10 +51,9 @@ export default function ThreadView({
 }: ThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
-  const [selectedThread, setSelectedThread] = useState<string>("");
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
+  const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const navigate = useNavigate();
 
   const renderCounter = useRef(0);
@@ -170,9 +172,9 @@ export default function ThreadView({
               <button
                 className="mr-3"
                 onMouseEnter={(event) => {
-                  handleMouseEnter(event, "Compose");
+                  handleShowTooltip(event, "Compose");
                 }}
-                onMouseLeave={handleMouseLeave}
+                onMouseLeave={handleHideTooltip}
                 onClick={() => {
                   navigate("/compose");
                 }}
@@ -187,9 +189,9 @@ export default function ThreadView({
               <button
                 className="mr-3"
                 onMouseEnter={(event) => {
-                  handleMouseEnter(event, "Search");
+                  handleShowTooltip(event, "Search");
                 }}
-                onMouseLeave={handleMouseLeave}
+                onMouseLeave={handleHideTooltip}
                 onClick={handleSearchClick}
               >
                 <MagnifyingGlassIcon
@@ -202,8 +204,8 @@ export default function ThreadView({
               <AccountActionsMenu
                 selectedEmail={selectedEmail}
                 setSelectedEmail={(email) => void setSelectedEmail(email)}
-                handleMouseEnter={handleMouseEnter}
-                handleMouseLeave={handleMouseLeave}
+                handleShowtooltip={handleShowTooltip}
+                handleHideTooltip={handleHideTooltip}
               />
 
               <TooltipPopover

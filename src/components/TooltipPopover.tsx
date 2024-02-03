@@ -1,5 +1,6 @@
 import React from "react";
 import { Transition } from "@headlessui/react";
+import { classNames } from "../lib/util";
 
 interface TooltipPopoverProps {
   coords: React.CSSProperties | undefined;
@@ -21,12 +22,13 @@ const TooltipPopover: React.FC<TooltipPopoverProps> = ({
       leave="transition-all duration-100 ease-out"
       leaveFrom="opacity-100"
       leaveTo="opacity-0"
+      className="z-50"
     >
       <div
-        className={`
-            absolute max-w-sm bg-slate-600 text-white text-xs px-2 py-1 mt-1 rounded-md transform -translate-x-1/2 pointer-events-none 
-            ${!showTooltip ? "opacity-0" : ""}
-          `}
+        className={classNames(
+          "absolute max-w-sm bg-slate-600 text-white text-xs px-2 py-1 mt-1 rounded-md transform -translate-x-1/2 pointer-events-none",
+          !showTooltip ? "opacity-0" : ""
+        )}
         style={{ ...coords }}
       >
         {message}

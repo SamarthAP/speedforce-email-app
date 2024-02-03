@@ -2,10 +2,8 @@ import ThreadView from "../components/ThreadViews/ThreadView";
 import { FOLDER_IDS } from "../api/constants";
 import { ISelectedEmail, db } from "../lib/db";
 import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
-import React from "react";
-import Titlebar from "../components/Titlebar";
 import { useEmailPageOutletContext } from "./_emailPage";
-import { useInfiniteQuery, useQuery } from "react-query";
+import { useInfiniteQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 
 const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>

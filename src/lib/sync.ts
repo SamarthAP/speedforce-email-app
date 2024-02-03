@@ -40,7 +40,7 @@ import {
   sendReplyAll as mSendReplyAll,
 } from "../api/outlook/users/message";
 import {
-  list as mAttachmentList,
+  // list as mAttachmentList,
   get as mAttachmentGet,
 } from "../api/outlook/users/attachment";
 import { list as mContactsList } from "../api/outlook/people/contacts";
@@ -79,7 +79,7 @@ import { dLog } from "./noProd";
 import { FOLDER_IDS } from "../api/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
-import { NewAttachment } from "../pages/ComposeMessage";
+import { NewAttachment } from "../api/model/users.attachment";
 import toast from "react-hot-toast";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 
@@ -102,13 +102,13 @@ export async function handleNewThreadsGoogle(
     const parsedMessages: IMessage[] = [];
 
     threads.forEach((thread) => {
-      let hasInboxLabel = false;
+      // let hasInboxLabel = false;
       let isStarred = false;
       let labelIds: string[] = [];
       for (const message of thread.messages) {
-        if (message.labelIds?.includes("INBOX")) {
-          hasInboxLabel = true;
-        }
+        // if (message.labelIds?.includes("INBOX")) {
+        //   hasInboxLabel = true;
+        // }
         if (message.labelIds?.includes("STARRED")) {
           isStarred = true;
         }
@@ -684,7 +684,7 @@ export async function forward(
       from,
       toRecipients,
       subject,
-      unescape(encodeURIComponent(forwardHTML))
+      decodeURIComponent(encodeURIComponent(forwardHTML))
     );
   } else if (provider === "outlook") {
     try {
@@ -847,9 +847,8 @@ export async function downloadAttachment(
   messageId: string,
   attachmentId: string,
   filename: string
-): Promise<boolean> {
+): Promise<{ fileName: string; error: string | null }> {
   const accessToken = await getAccessToken(email);
-
   if (provider === "google") {
     const { data, error } = await gAttachmentGet(
       accessToken,
@@ -859,17 +858,17 @@ export async function downloadAttachment(
 
     if (error || !data) {
       dLog("Error downloading attachment");
-      return false;
+      return { fileName: "", error };
     } else {
       // true if file was saved successfully, false otherwise
-      const success = await window.electron.ipcRenderer.invoke(
+      const fileName = await window.electron.ipcRenderer.invoke(
         "save-file",
         filename,
         data.data
       );
 
-      dLog("saving file:", success);
-      return success;
+      dLog("saving file:", fileName);
+      return { fileName, error: null };
     }
   } else if (provider === "outlook") {
     const { data, error } = await mAttachmentGet(
@@ -880,21 +879,21 @@ export async function downloadAttachment(
 
     if (error || !data) {
       dLog("Error downloading attachment");
-      return false;
+      return { fileName: "", error };
     } else {
       // true if file was saved successfully, false otherwise
-      const success = await window.electron.ipcRenderer.invoke(
+      const fileName = await window.electron.ipcRenderer.invoke(
         "save-file",
         filename,
         data.contentBytes
       );
 
-      dLog("saving file:", success);
-      return success;
+      dLog("saving file:", fileName);
+      return { fileName, error: null };
     }
   }
 
-  return false;
+  return { fileName: "", error: "Not implemented" };
 }
 
 export async function loadContacts(
