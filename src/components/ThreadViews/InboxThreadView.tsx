@@ -5,7 +5,11 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useMemo, useRef, useState } from "react";
 import AssistBar from "../AssistBar";
 import AccountActionsMenu from "../AccountActionsMenu";
-import { PencilSquareIcon } from "@heroicons/react/24/outline";
+import {
+  PencilSquareIcon,
+  MagnifyingGlassIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
 import TooltipPopover from "../TooltipPopover";
 import { useTooltip } from "../UseTooltip";
 import { classNames } from "../../lib/util";
@@ -13,7 +17,6 @@ import {
   ClientInboxTabType,
   ClientTabNavigationType,
 } from "../../api/model/client.inbox";
-import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import { useNavigate } from "react-router-dom";
 import { InboxZeroBackgroundContext } from "../../contexts/InboxZeroBackgroundContext";
 import Titlebar from "../Titlebar";
@@ -23,6 +26,7 @@ import {
   InfiniteData,
   InfiniteQueryObserverResult,
 } from "react-query";
+import PersonalAI from "../AI/PersonalAI";
 
 interface InboxThreadViewProps {
   data: ClientInboxTabType;
@@ -52,8 +56,9 @@ export default function InboxThreadView({
   const [isBackgroundOn, setIsBackgroundOn] = useState(false);
   const backgroundImageUrl = dailyImageMetadata ? dailyImageMetadata.url : ""; // TODO: load somewhere else
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
+  const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const navigate = useNavigate();
+  const [showPersonalAi, setShowPersonalAi] = useState(false);
 
   const renderCounter = useRef(0);
   renderCounter.current = renderCounter.current + 1;
@@ -185,6 +190,7 @@ export default function InboxThreadView({
             }
       }
     >
+      {/* <PersonalAI show={showPersonalAi} /> */}
       {isBackgroundOn && (
         <>
           <div className="absolute h-[100px] w-screen inset-0 bg-gradient-to-b from-black/50 to-transparent pointer-events-none"></div>
@@ -251,12 +257,31 @@ export default function InboxThreadView({
                 )}
               </nav>
               <div className="flex items-center">
+                {/* <button
+                  className="mr-3"
+                  onMouseEnter={(event) => {
+                    handleMouseEnter(event, "AI");
+                  }}
+                  onMouseLeave={handleMouseLeave}
+                  onClick={() => {
+                    setShowPersonalAi(true);
+                  }}
+                >
+                  <SparklesIcon
+                    className={classNames(
+                      "h-5 w-5 shrink-0",
+                      isBackgroundOn
+                        ? "text-white"
+                        : "text-black dark:text-white"
+                    )}
+                  />
+                </button> */}
                 <button
                   className="mr-3"
                   onMouseEnter={(event) => {
-                    handleMouseEnter(event, "Compose");
+                    handleShowTooltip(event, "Compose");
                   }}
-                  onMouseLeave={handleMouseLeave}
+                  onMouseLeave={handleHideTooltip}
                   onClick={() => {
                     navigate("/compose");
                   }}
@@ -273,9 +298,9 @@ export default function InboxThreadView({
                 <button
                   className="mr-3"
                   onMouseEnter={(event) => {
-                    handleMouseEnter(event, "Search");
+                    handleShowTooltip(event, "Search");
                   }}
-                  onMouseLeave={handleMouseLeave}
+                  onMouseLeave={handleHideTooltip}
                   onClick={handleSearchClick}
                 >
                   <MagnifyingGlassIcon
@@ -290,8 +315,8 @@ export default function InboxThreadView({
                 <AccountActionsMenu
                   selectedEmail={selectedEmail}
                   setSelectedEmail={(email) => void setSelectedEmail(email)}
-                  handleMouseEnter={handleMouseEnter}
-                  handleMouseLeave={handleMouseLeave}
+                  handleShowtooltip={handleShowTooltip}
+                  handleHideTooltip={handleHideTooltip}
                 />
 
                 <TooltipPopover

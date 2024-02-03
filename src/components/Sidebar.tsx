@@ -44,7 +44,7 @@ const navigation = [
 
 export default function Sidebar() {
   const navigate = useNavigate();
-  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
+  const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const ldClient = useLDClient();
   const { isBackgroundOn } = useInboxZeroBackgroundContext();
 
@@ -60,13 +60,13 @@ export default function Sidebar() {
             <div
               key={item.name}
               onMouseEnter={(event) => {
-                handleMouseEnter(
+                handleShowTooltip(
                   event,
                   item.name == "Deleted Items" ? "Deleted" : item.name
                 );
               }}
               onMouseLeave={() => {
-                handleMouseLeave();
+                handleHideTooltip();
               }}
               onClick={() => navigate(item.href)}
               className={

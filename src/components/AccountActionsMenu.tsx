@@ -19,11 +19,11 @@ import { ConfirmModal } from "./modals/ConfirmModal";
 interface AccountActionsProps {
   selectedEmail: ISelectedEmail;
   setSelectedEmail: (email: IEmail) => void;
-  handleMouseEnter: (
+  handleShowtooltip: (
     event: React.MouseEvent<HTMLElement>,
     message: string
   ) => void;
-  handleMouseLeave: () => void;
+  handleHideTooltip: () => void;
 }
 
 export default function AccountActions(props: AccountActionsProps) {
@@ -53,15 +53,15 @@ export default function AccountActions(props: AccountActionsProps) {
   };
 
   return (
-    <div className="flex flex-col items-center z-10">
+    <div className="flex flex-col items-center">
       <Menu>
         <Menu.Button
           className="mr-3"
           onMouseEnter={(event: React.MouseEvent<HTMLElement>) => {
-            props.handleMouseEnter(event, "Account Actions");
+            props.handleShowtooltip(event, "Account Actions");
           }}
           onMouseLeave={() => {
-            props.handleMouseLeave();
+            props.handleHideTooltip();
           }}
         >
           <UserCircleIcon
@@ -78,6 +78,7 @@ export default function AccountActions(props: AccountActionsProps) {
           leave="transition duration-75 ease-out"
           leaveFrom="transform scale-100 opacity-100"
           leaveTo="transform scale-95 opacity-0"
+          className="z-10"
         >
           <Menu.Items className="absolute right-0 shadow-2xl p-2 bg-white">
             <div className="bg-white flex flex-row justify-between items-center">
