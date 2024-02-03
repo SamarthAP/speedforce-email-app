@@ -46,7 +46,7 @@ export default function InboxZeroSetup({
   const [selectedTabIndex, setSelectedTabIndex] = useState<number>(0);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip(
+  const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip(
     /*disableTimer=*/ true
   );
 
@@ -107,13 +107,13 @@ export default function InboxZeroSetup({
               Speedforce is loaded with features that will help you get to{" "}
               <span
                 onMouseEnter={(event: React.MouseEvent<HTMLElement>) => {
-                  handleMouseEnter(
+                  handleShowTooltip(
                     event,
                     "Inbox Zero is an approach to email management that focuses on keeping an inbox empty -- or almost empty -- at all times."
                   );
                 }}
                 onMouseLeave={() => {
-                  handleMouseLeave();
+                  handleHideTooltip();
                 }}
                 className="text-blue-600 underline-offset-4 underline cursor-pointer"
               >

@@ -684,7 +684,7 @@ export async function forward(
       from,
       toRecipients,
       subject,
-      unescape(encodeURIComponent(forwardHTML))
+      decodeURIComponent(encodeURIComponent(forwardHTML))
     );
   } else if (provider === "outlook") {
     try {

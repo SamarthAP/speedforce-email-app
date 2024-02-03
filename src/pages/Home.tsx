@@ -17,6 +17,9 @@ interface HomeProps {
 }
 
 export default function Home({ inboxZeroStartDate }: HomeProps) {
+  const { selectedEmail } = useEmailPageOutletContext();
+  const email = selectedEmail.email;
+
   const filterThreadsFncImportant = (selectedEmail: ISelectedEmail) =>
     db.emailThreads
       .where("email")
@@ -25,23 +28,22 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
         (thread) =>
           thread.labelIds.includes(FOLDER_IDS.INBOX) &&
           (thread.labelIds.includes("IMPORTANT") ||
-            thread.labelIds.includes("CATEGORY_PERSONAL")) &&
+            thread.labelIds.includes("CATEGORY_PERSONAL") ||
+            thread.from === email) &&
           thread.date >= (inboxZeroStartDate || getYesterdayDate()) // NOTE: default to yesterday if no inbox zero start date
       )
       .reverse()
       .sortBy("date");
 
-  const { selectedEmail } = useEmailPageOutletContext();
-
-  const email = selectedEmail.email;
   // get the `after` date in YYYY/MM/DD format, which is the day before the inbox zero start date
   // this is because gmail does not have an inclusive query param for dates
   const afterDate = new Date(selectedEmail.inboxZeroStartDate - 86400000)
     .toISOString()
     .split("T")[0];
 
-  const gmailQueryParam = `q=label:INBOX ((category:personal) OR from:(${email}) OR from:"via Google") after:${afterDate}`;
   const outlookQueryParam = `mailFolders/Inbox/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20&$filter=receivedDateTime ge ${afterDate}T00:00:00Z`;
+  // NOTE: we don't include q= at the start because getThreadsExhaustive assumes there is a query param
+  const gmailQueryParam = `label:INBOX ((category:personal) OR from:(${email}) OR from:"via Google") after:${afterDate}`;
 
   const {
     data,
