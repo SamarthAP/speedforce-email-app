@@ -113,28 +113,27 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
     if (draft.isCreated && draft.draftId) {
       setSendingEmail(true);
 
-      // const { data, error } = await sendDraft(
-      //   selectedEmail.email,
-      //   selectedEmail.provider,
-      //   draft.draftId
-      // );
-      // if (error) {
-      //   toast.error("Error sending email");
-      //   return setSendingEmail(false);
-      // }
+      const { data, error } = await sendDraft(
+        selectedEmail.email,
+        selectedEmail.provider,
+        draft.draftId
+      );
+      if (error) {
+        toast.error("Error sending email");
+        return setSendingEmail(false);
+      }
 
       const draftMessage = await db.messages
         .where("id")
         .equals(draft.draftId)
         .first();
+
       if (draftMessage) {
-        // await updateLabelIdsForEmailThread(
-        //   draftMessage.threadId,
-        //   ["SENT"],
-        //   ["DRAFTS", FOLDER_IDS.DRAFTS]
-        // );
-        // await draftMessage.delete();
-        console.log("draftMessage", draftMessage);
+        await updateLabelIdsForEmailThread(
+          draftMessage.threadId,
+          ["SENT"],
+          ["DRAFTS", FOLDER_IDS.DRAFTS]
+        );
       }
       setSendingEmail(false);
     } else {

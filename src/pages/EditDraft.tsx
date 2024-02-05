@@ -10,12 +10,22 @@ import { dLog } from "../lib/noProd";
 import { NewAttachment } from "../api/model/users.attachment";
 import {
   createDraft,
+  deleteDraft,
+  deleteThread,
+  sendDraft,
   sendEmail,
   sendEmailWithAttachments,
   updateDraft,
 } from "../lib/sync";
 import toast from "react-hot-toast";
 import { SendDraftRequestType } from "./ComposeMessage";
+import {
+  addDexieThread,
+  deleteDexieThread,
+  updateLabelIdsForEmailThread,
+} from "../lib/util";
+import { FOLDER_IDS } from "../api/constants";
+import { executeInstantAsyncAction } from "../lib/asyncHelpers";
 
 interface EditDraftProps {
   selectedEmail: ISelectedEmail;
@@ -31,10 +41,15 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   const navigate = useNavigate();
   const { threadId } = useParams();
 
+  const setToAndSaveDraft = (emails: string[]) => {
+    setTo(emails);
+    void saveDraft({ to: emails });
+  };
+
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        console.log("saving draft");
+        void saveDraft({});
         navigate(-1);
       }
     };
@@ -90,7 +105,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       .first();
 
     if (!message || !message.id) {
-      return;
+      return { error: "No message found" };
     }
 
     const { data, error } = await updateDraft(
@@ -105,13 +120,19 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
     if (error || !data) {
       dLog(error);
-      return;
+      return { error };
     }
+
+    return { error: null };
   };
 
+  // content is passed in as live data from editor as it is only saved when the user stops typing for 5 seconds
   const handleSendEmail = async (content: string) => {
     setSendingEmail(true);
+    const thread = await db.emailThreads.get(threadId || "");
+
     if (attachments.length > 0) {
+      // send with attachments
       const { error } = await sendEmailWithAttachments(
         selectedEmail.email,
         selectedEmail.provider,
@@ -121,12 +142,41 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         attachments
       );
 
+      // If send fails, try save draft and return
       if (error) {
-        dLog(error);
+        await saveDraft({ content });
         toast.error("Error sending email");
         return setSendingEmail(false);
       }
+
+      // delete draft thread as there will be a new thread for the sent email
+      console.log(thread);
+      const messages = await db.messages
+        .where("threadId")
+        .equals(threadId || "")
+        .toArray();
+      console.log(messages);
+      // if (thread) {
+      //   await executeInstantAsyncAction(
+      //     async () => {
+      //       if (thread && message) {
+      //         await db.messages.delete(message.id);
+      //         await db.emailThreads.delete(thread.id);
+      //       }
+      //     },
+      //     async () => {
+      //       console.log(thread);
+      //       await deleteThread(
+      //         selectedEmail.email,
+      //         selectedEmail.provider,
+      //         thread.id
+      //       );
+      //     },
+      //     () => console.log("dexie thread not found")
+      //   );
+      // }
     } else {
+      // send regular
       const { error } = await sendEmail(
         selectedEmail.email,
         selectedEmail.provider,
@@ -135,15 +185,117 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         content
       );
 
+      // If send fails, try save draft and return
       if (error) {
-        dLog(error);
+        await saveDraft({ content });
         toast.error("Error sending email");
         return setSendingEmail(false);
       }
+
+      console.log(thread);
+      const messages = await db.messages
+        .where("threadId")
+        .equals(threadId || "")
+        .toArray();
+      console.log(messages);
+      // console.log(thread);
+      // if (thread) {
+      //   void deleteDexieThread(thread?.id);
+      // }
+      // delete draft thread as there will be a new thread for the sent email
+      // console.log(message);
+
+      // if (thread) {
+      //   await executeInstantAsyncAction(
+      //     async () => void deleteDexieThread(thread.id),
+      //     async () =>
+      //       await deleteThread(
+      //         selectedEmail.email,
+      //         selectedEmail.provider,
+      //         threadId || ""
+      //       ),
+      //     () => void addDexieThread(thread)
+      //   );
+      // }
     }
 
+    // if (!thread || !message || !message.id) {
+    //   return;
+    // }
+
+    // // Save first if there are unsaved changes before sending to avoid sending old data
+    // if (
+    //   thread.subject !== subject ||
+    //   message.toRecipients.join(",") !== to.join(",") ||
+    //   message.attachments.map((x) => x.filename).join(",") !==
+    //     attachments.map((x) => x.filename).join(",")
+    // ) {
+    //   const draftError = await saveDraft({ content });
+    //   if (draftError) {
+    //     toast.error("Error sending email");
+    //     return setSendingEmail(false);
+    //   }
+    // }
+
+    // const { error } = await sendDraft(
+    //   selectedEmail.email,
+    //   selectedEmail.provider,
+    //   message.id
+    // );
+
+    // if (error) {
+    //   toast.error("Error sending email");
+    //   return setSendingEmail(false);
+    // }
+    // await updateLabelIdsForEmailThread(
+    //   message.threadId,
+    //   ["SENT"],
+    //   ["DRAFTS", FOLDER_IDS.DRAFTS]
+    // );
+
+    // setSendingEmail(false);
+
+    // if (attachments.length > 0) {
+    //   let { error } = await sendEmailWithAttachments(
+    //     selectedEmail.email,
+    //     selectedEmail.provider,
+    //     to.join(","),
+    //     subject,
+    //     content,
+    //     attachments
+    //   );
+
+    //   if (error) {
+    //     dLog(error);
+    //     toast.error("Error sending email");
+    //     return setSendingEmail(false);
+    //   }
+
+    //   if (message && message.id) {
+    //     ({ error } = await deleteDraft(
+    //       selectedEmail.email,
+    //       selectedEmail.provider,
+    //       message.id
+    //     ));
+    //   }
+    // } else {
+    //   const { error } = await sendEmail(
+    //     selectedEmail.email,
+    //     selectedEmail.provider,
+    //     to.join(","),
+    //     subject,
+    //     content
+    //   );
+
+    //   if (error) {
+    //     dLog(error);
+    //     toast.error("Error sending email");
+    //     return setSendingEmail(false);
+    //   }
+    // }
+
     toast.success("Email sent");
-    navigate(-1);
+    // navigate(-1);
   };
 
   return (
@@ -157,6 +309,12 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
               className="flex flex-row cursor-pointer items-center"
               onClick={(e) => {
                 e.stopPropagation();
+                void saveDraft({
+                  to,
+                  subject,
+                  content: contentHtml,
+                  attachments,
+                });
                 navigate(-1);
               }}
             >
@@ -173,7 +331,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                 text="To"
                 selectedEmail={selectedEmail}
                 emails={to}
-                setEmails={setTo}
+                setEmails={setToAndSaveDraft}
               />
               <div className="flex pb-2 border-b border-b-slate-200 dark:border-b-zinc-700">
                 {/* Input */}
@@ -183,6 +341,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                 <input
                   value={subject}
                   onChange={(event) => setSubject(event.target.value)}
+                  onBlur={() => void saveDraft({ subject })}
                   type="text"
                   name="subject"
                   id="subject"

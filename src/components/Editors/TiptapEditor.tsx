@@ -58,7 +58,9 @@ interface TiptapProps {
   setAttachments: (attachments: NewAttachment[]) => void;
   sendEmail: (content: string) => Promise<void>;
   setContent: (content: string) => void;
-  saveDraft: (request: SendDraftRequestType) => Promise<void>;
+  saveDraft: (
+    request: SendDraftRequestType
+  ) => Promise<{ error: string | null }>;
   sendingEmail: boolean;
 }
 
@@ -137,7 +139,6 @@ export default function Tiptap({
   }
 
   function removeAttachment(idx: number) {
-    // setAttachments((prev) => prev.filter((_, i) => i !== idx));
     setAttachments(attachments.filter((_, i) => i !== idx));
   }
 

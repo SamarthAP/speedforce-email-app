@@ -44,6 +44,10 @@
   height: 0;
 }
 
+.fadeIn-animation-300 {
+  animation: fadeIn 300ms;
+}
+
 .hide-scroll::-webkit-scrollbar {
   display: none;
 }

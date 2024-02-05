@@ -33,7 +33,7 @@ export default function Message({ message, selectedEmail }: MessageProps) {
     "reply" | "replyAll" | "forward" | "none"
   >("none");
   const [forwardTo, setForwardTo] = useState<string[]>([]);
-  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
+  const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
 
   const replyRef = createRef<HTMLDivElement>();
   const editorRef = createRef<Editor>();
@@ -110,9 +110,9 @@ export default function Message({ message, selectedEmail }: MessageProps) {
             <>
               <div
                 onMouseEnter={(event) => {
-                  handleMouseEnter(event, "Reply");
+                  handleShowTooltip(event, "Reply");
                 }}
-                onMouseLeave={handleMouseLeave}
+                onMouseLeave={handleHideTooltip}
               >
                 <ArrowUturnLeftIcon
                   onClick={(e) => {
@@ -124,9 +124,9 @@ export default function Message({ message, selectedEmail }: MessageProps) {
               </div>
               <div
                 onMouseEnter={(event) => {
-                  handleMouseEnter(event, "Reply All");
+                  handleShowTooltip(event, "Reply All");
                 }}
-                onMouseLeave={handleMouseLeave}
+                onMouseLeave={handleHideTooltip}
               >
                 <svg
                   onClick={(e) => {
@@ -150,9 +150,9 @@ export default function Message({ message, selectedEmail }: MessageProps) {
               </div>
               <div
                 onMouseEnter={(event) => {
-                  handleMouseEnter(event, "Forward");
+                  handleShowTooltip(event, "Forward");
                 }}
-                onMouseLeave={handleMouseLeave}
+                onMouseLeave={handleHideTooltip}
               >
                 <ArrowUturnRightIcon
                   onClick={(e) => {

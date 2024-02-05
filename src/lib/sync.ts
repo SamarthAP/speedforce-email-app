@@ -226,7 +226,7 @@ export async function handleNewThreadsGoogle(
 async function batchGetThreads(
   accessToken: string,
   threadIds: string[],
-  batchSize = 4
+  batchSize = 3
 ) {
   const threads = [];
   const batches = _.chunk(threadIds, batchSize);
@@ -256,7 +256,7 @@ export async function handleNewThreadsOutlook(
 ) {
   try {
     // Outlook throttle limit is 4 concurrent requests
-    const threads = await batchGetThreads(accessToken, threadsIds, 4);
+    const threads = await batchGetThreads(accessToken, threadsIds, 3);
 
     const parsedThreads: IEmailThread[] = [];
     const parsedMessages: IMessage[] = [];
@@ -684,7 +684,7 @@ export async function forward(
       from,
       toRecipients,
       subject,
-      unescape(encodeURIComponent(forwardHTML))
+      decodeURIComponent(encodeURIComponent(forwardHTML))
     );
   } else if (provider === "outlook") {
     try {
@@ -763,7 +763,8 @@ export async function sendEmailWithAttachments(
 export async function deleteThread(
   email: string,
   provider: "google" | "outlook",
-  threadId: string
+  threadId: string,
+  shouldToast = true
 ) {
   const accessToken = await getAccessToken(email);
 
@@ -779,6 +780,8 @@ export async function deleteThread(
       .equals(threadId)
       .toArray();
 
+    // console.log(threadId);
+    // console.log(messages);
     const promises = messages.map((message) => {
       return mDeleteMessage(accessToken, message.id);
     });
@@ -790,7 +793,9 @@ export async function deleteThread(
     }
   }
 
-  toast("Deleted thread");
+  if (shouldToast) {
+    toast("Deleted thread");
+  }
 }
 
 export async function trashThread(
@@ -1143,6 +1148,29 @@ export async function updateDraft(
   }
 
   return { data: null, error: null };
+}
+
+export async function deleteDraft(
+  email: string,
+  provider: "google" | "outlook",
+  messageId: string
+) {
+  const accessToken = await getAccessToken(email);
+
+  if (provider === "google") {
+    // TODO: not implemented
+  } else {
+    try {
+      await mDeleteMessage(accessToken, messageId);
+
+      return { data: null, error: null };
+    } catch (e) {
+      dLog("Error deleting draft");
+      return { data: null, error: "Error deleting draft" };
+    }
+  }
+
+  return { data: null, error: "Not implemented" };
 }
 
 export async function sendDraft(

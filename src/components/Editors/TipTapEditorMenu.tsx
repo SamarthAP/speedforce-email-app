@@ -28,7 +28,7 @@ export default function TiptapMenuBar({
   editor,
   addAttachments,
 }: TiptapMenuBarProps) {
-  const { tooltipData, handleMouseEnter, handleMouseLeave } = useTooltip();
+  const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const [isAddLinkModalOpen, setIsAddLinkModalOpen] = useState(false);
   const [selectedText, setSelectedText] = useState<string | null>(null);
   const { theme, setTheme } = useThemeContext();
@@ -101,9 +101,9 @@ export default function TiptapMenuBar({
             theme === "light" ? "hover:bg-slate-200" : "hover:bg-zinc-700"
           )}
           onMouseEnter={(event) => {
-            handleMouseEnter(event, "Undo \u2318Z");
+            handleShowTooltip(event, "Undo \u2318Z");
           }}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeave={handleHideTooltip}
         >
           <UndoIcon
             className="w-4 h-4"
@@ -117,9 +117,9 @@ export default function TiptapMenuBar({
             theme === "light" ? "hover:bg-slate-200" : "hover:bg-zinc-700"
           )}
           onMouseEnter={(event) => {
-            handleMouseEnter(event, "Redo \u2318Y");
+            handleShowTooltip(event, "Redo \u2318Y");
           }}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeave={handleHideTooltip}
         >
           <RedoIcon
             className="w-4 h-4"
@@ -141,9 +141,9 @@ export default function TiptapMenuBar({
             theme === "light" ? "hover:bg-slate-200" : "hover:bg-zinc-700"
           )}
           onMouseEnter={(event) => {
-            handleMouseEnter(event, "Add Attachments");
+            handleShowTooltip(event, "Add Attachments");
           }}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeave={handleHideTooltip}
         >
           <PaperClipIcon
             className={classNames(
@@ -159,9 +159,9 @@ export default function TiptapMenuBar({
             theme === "light" ? "hover:bg-slate-200" : "hover:bg-zinc-700"
           )}
           onMouseEnter={(event) => {
-            handleMouseEnter(event, "Add External Link");
+            handleShowTooltip(event, "Add External Link");
           }}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeave={handleHideTooltip}
         >
           <LinkIcon
             className={classNames(
@@ -189,9 +189,9 @@ export default function TiptapMenuBar({
               : `hover:bg-zinc-700 ${editor.isActive("bold") && "bg-zinc-700"}`
           )}
           onMouseEnter={(event) => {
-            handleMouseEnter(event, "Bold \u2318B");
+            handleShowTooltip(event, "Bold \u2318B");
           }}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeave={handleHideTooltip}
         >
           <BoldIcon
             className="w-3 h-3"
@@ -211,9 +211,9 @@ export default function TiptapMenuBar({
                 }`
           )}
           onMouseEnter={(event) => {
-            handleMouseEnter(event, "Italic \u2318I");
+            handleShowTooltip(event, "Italic \u2318I");
           }}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeave={handleHideTooltip}
         >
           <ItalicIcon
             className="w-3 h-3"
@@ -233,9 +233,9 @@ export default function TiptapMenuBar({
                 }`
           )}
           onMouseEnter={(event) => {
-            handleMouseEnter(event, "Underline \u2318U");
+            handleShowTooltip(event, "Underline \u2318U");
           }}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeave={handleHideTooltip}
         >
           <UnderlineIcon
             className="w-3 h-4"
@@ -359,9 +359,9 @@ export default function TiptapMenuBar({
                 }`
           )}
           onMouseEnter={(event) => {
-            handleMouseEnter(event, "Numbered List");
+            handleShowTooltip(event, "Numbered List");
           }}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeave={handleHideTooltip}
         >
           <NumberedListIcon
             className="w-4 h-4"
@@ -381,9 +381,9 @@ export default function TiptapMenuBar({
                 }`
           )}
           onMouseEnter={(event) => {
-            handleMouseEnter(event, "Bulleted List");
+            handleShowTooltip(event, "Bulleted List");
           }}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeave={handleHideTooltip}
         >
           <BulletListIcon
             className="w-4 h-4"
