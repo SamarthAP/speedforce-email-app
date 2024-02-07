@@ -97,7 +97,6 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         .map((x) => x.filename)
         .join(",")}`
     );
-    // Update draft
 
     const message = await db.messages
       .where("threadId")
@@ -192,110 +191,27 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         return setSendingEmail(false);
       }
 
-      console.log(thread);
-      const messages = await db.messages
-        .where("threadId")
-        .equals(threadId || "")
-        .toArray();
-      console.log(messages);
-      // console.log(thread);
-      // if (thread) {
-      //   void deleteDexieThread(thread?.id);
-      // }
-      // delete draft thread as there will be a new thread for the sent email
-      // console.log(message);
+      // console.log("thread 1", thread);
+      // const messages = await db.messages
+      //   .where("threadId")
+      //   .equals(threadId || "")
+      //   .toArray();
+      // console.log("messages 1", messages);
 
-      // if (thread) {
-      //   await executeInstantAsyncAction(
-      //     async () => void deleteDexieThread(thread.id),
-      //     async () =>
-      //       await deleteThread(
-      //         selectedEmail.email,
-      //         selectedEmail.provider,
-      //         threadId || ""
-      //       ),
-      //     () => void addDexieThread(thread)
-      //   );
-      // }
+      if (threadId) {
+        await deleteThread(
+          selectedEmail.email,
+          selectedEmail.provider,
+          threadId,
+          false
+        );
+
+        await deleteDexieThread(threadId);
+      }
     }
 
-    // if (!thread || !message || !message.id) {
-    //   return;
-    // }
-
-    // // Save first if there are unsaved changes before sending to avoid sending old data
-    // if (
-    //   thread.subject !== subject ||
-    //   message.toRecipients.join(",") !== to.join(",") ||
-    //   message.attachments.map((x) => x.filename).join(",") !==
-    //     attachments.map((x) => x.filename).join(",")
-    // ) {
-    //   const draftError = await saveDraft({ content });
-    //   if (draftError) {
-    //     toast.error("Error sending email");
-    //     return setSendingEmail(false);
-    //   }
-    // }
-
-    // const { error } = await sendDraft(
-    //   selectedEmail.email,
-    //   selectedEmail.provider,
-    //   message.id
-    // );
-
-    // if (error) {
-    //   toast.error("Error sending email");
-    //   return setSendingEmail(false);
-    // }
-    // await updateLabelIdsForEmailThread(
-    //   message.threadId,
-    //   ["SENT"],
-    //   ["DRAFTS", FOLDER_IDS.DRAFTS]
-    // );
-
-    // setSendingEmail(false);
-
-    // if (attachments.length > 0) {
-    //   let { error } = await sendEmailWithAttachments(
-    //     selectedEmail.email,
-    //     selectedEmail.provider,
-    //     to.join(","),
-    //     subject,
-    //     content,
-    //     attachments
-    //   );
-
-    //   if (error) {
-    //     dLog(error);
-    //     toast.error("Error sending email");
-    //     return setSendingEmail(false);
-    //   }
-
-    //   if (message && message.id) {
-    //     ({ error } = await deleteDraft(
-    //       selectedEmail.email,
-    //       selectedEmail.provider,
-    //       message.id
-    //     ));
-    //   }
-    // } else {
-    //   const { error } = await sendEmail(
-    //     selectedEmail.email,
-    //     selectedEmail.provider,
-    //     to.join(","),
-    //     subject,
-    //     content
-    //   );
-
-    //   if (error) {
-    //     dLog(error);
-    //     toast.error("Error sending email");
-    //     return setSendingEmail(false);
-    //   }
-    // }
-
     toast.success("Email sent");
-    // navigate(-1);
+    navigate(-1);
   };
 
   return (
@@ -356,7 +272,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                 </div>
                 <div className="w-full pl-10 overflow-scroll hide-scroll">
                   <TiptapEditor
-                    to={to}
+                    canSendEmail={to.length > 0}
                     initialContent={contentHtml}
                     attachments={attachments}
                     setAttachments={setAttachments}

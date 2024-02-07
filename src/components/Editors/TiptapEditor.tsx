@@ -52,7 +52,6 @@ const extensions = [
 const content = "";
 
 interface TiptapProps {
-  to: string[];
   initialContent: string;
   attachments: NewAttachment[];
   setAttachments: (attachments: NewAttachment[]) => void;
@@ -61,17 +60,18 @@ interface TiptapProps {
   saveDraft: (
     request: SendDraftRequestType
   ) => Promise<{ error: string | null }>;
+  canSendEmail: boolean;
   sendingEmail: boolean;
 }
 
 export default function Tiptap({
-  to,
   initialContent,
   attachments,
   setAttachments,
   sendEmail,
   setContent,
   saveDraft,
+  canSendEmail,
   sendingEmail,
 }: TiptapProps) {
   const [selectedLink, setSelectedLink] = useState<{
@@ -222,7 +222,7 @@ export default function Tiptap({
           loading={sendingEmail}
           text="Send"
           width="w-16"
-          disabled={to.length === 0}
+          disabled={!canSendEmail}
         />
       </div>
       <EditLinkModal

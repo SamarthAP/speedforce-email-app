@@ -17,6 +17,8 @@ import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
 import toast from "react-hot-toast";
 import { EmailSelectorInput } from "./EmailSelectorInput";
+import Tiptap from "./Editors/TiptapEditor";
+import { NewAttachment } from "../api/model/users.attachment";
 
 interface MessageProps {
   message: IMessage;
@@ -29,6 +31,7 @@ export default function Message({ message, selectedEmail }: MessageProps) {
   const [showReply, setShowReply] = useState(false);
   const [showImages, setShowImages] = useState(true);
   const [sendingReply, setSendingReply] = useState(false);
+  const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const [editorMode, setEditorMode] = useState<
     "reply" | "replyAll" | "forward" | "none"
   >("none");
@@ -201,7 +204,16 @@ export default function Message({ message, selectedEmail }: MessageProps) {
           // </span>
           null}
 
-          <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
+          {/* <EmailEditor editorRef={editorRef} ref={editorComponentRef} /> */}
+          <Tiptap
+            initialContent=""
+            canSendEmail={true}
+            sendingEmail={sendingReply}
+            sendEmail={handleSendReply}
+            setContent={() => console.log("setContent")}
+            attachments={attachments}
+            setAttachments={setAttachments}
+          />
 
           <SimpleButton
             onClick={() => void handleSendReply()}

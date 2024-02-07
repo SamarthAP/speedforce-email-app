@@ -87,7 +87,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
 
       if (error || !data) {
         dLog(error);
-        return;
+        return { error };
       }
     } else {
       // Create draft
@@ -102,11 +102,13 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
 
       if (error || !data) {
         dLog(error);
-        return;
+        return { error };
       }
 
       setDraft({ isCreated: true, draftId: data });
     }
+
+    return { error: null };
   };
 
   const handleSendEmail = async (content: string) => {
@@ -228,13 +230,10 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                 <div className="w-full pl-10 overflow-scroll hide-scroll">
                   {/* <EmailEditor editorRef={editorRef} ref={editorComponentRef} /> */}
                   <Tiptap
-                    to={to}
-                    // subject={subject}
-                    // body={body}
-                    // setBody={setBody}
                     initialContent=""
                     attachments={attachments}
                     setAttachments={setAttachments}
+                    canSendEmail={to.length > 0}
                     sendingEmail={sendingEmail}
                     sendEmail={handleSendEmail}
                     setContent={setContentHtml}
