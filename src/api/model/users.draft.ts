@@ -1,6 +1,14 @@
 // import { OutlookAttachmentDataType } from "./users.attachment";
 import { OutlookEmailAddress } from "./users.message";
 
+export interface GmailDraftDataType {
+  id?: string;
+  message?: {
+    id?: string;
+    threadId?: string;
+  };
+}
+
 export interface OutlookDraftDataType {
   id?: string;
   subject?: string;
@@ -33,7 +41,7 @@ export interface OutlookDraftDataType {
   // attachments?: OutlookAttachmentDataType[];
 }
 
-export interface OutlookDraftResponseDataType {
+export interface CreateDraftResponseDataType {
   id: string;
-  conversationId: string;
+  threadId: string;
 }

@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { EmailSelectorInput } from "../components/EmailSelectorInput";
 import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
-import { ISelectedEmail, db } from "../lib/db";
+import { ISelectedEmail } from "../lib/db";
 import { useNavigate } from "react-router-dom";
 import Titlebar from "../components/Titlebar";
 import Sidebar from "../components/Sidebar";
 import Tiptap from "../components/Editors/TiptapEditor";
 import {
   createDraft,
-  deleteMessage,
-  deleteThread,
   sendEmail,
   sendEmailWithAttachments,
   updateDraft,
+  deleteDraft,
 } from "../lib/sync";
 import { dLog } from "../lib/noProd";
 import { NewAttachment } from "../api/model/users.attachment";
@@ -39,8 +38,8 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
 
   const [draft, setDraft] = useState<{
     id: string;
-    conversationId: string;
-  }>({ id: "", conversationId: "" }); // TODO: Type this
+    threadId: string;
+  }>({ id: "", threadId: "" }); // TODO: Type this
   const navigate = useNavigate();
 
   const setToAndSaveDraft = (emails: string[]) => {
@@ -50,7 +49,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
 
   const saveDraft = useCallback(
     async (request: SendDraftRequestType) => {
-      if (draft.id && draft.conversationId) {
+      if (draft.id && draft.threadId) {
         // Update draft
         const { data, error } = await updateDraft(
           selectedEmail.email,
@@ -82,7 +81,10 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
           return { error };
         }
 
-        setDraft(data);
+        setDraft({
+          id: data.id,
+          threadId: data.threadId,
+        });
       }
 
       return { error: null };
@@ -134,15 +136,14 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       }
 
       // delete draft thread as there will be a new thread for the sent email
-      if (draft.conversationId) {
-        await deleteThread(
+      if (draft.threadId) {
+        await deleteDraft(
           selectedEmail.email,
           selectedEmail.provider,
-          draft.conversationId,
-          false
+          draft.threadId
         );
 
-        await deleteDexieThread(draft.conversationId);
+        await deleteDexieThread(draft.threadId);
       }
     } else {
       // send without attachments
@@ -161,15 +162,14 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
         return setSendingEmail(false);
       }
 
-      if (draft.conversationId) {
-        await deleteThread(
+      if (draft.id && draft.threadId) {
+        await deleteDraft(
           selectedEmail.email,
           selectedEmail.provider,
-          draft.conversationId,
-          false
+          draft.id
         );
 
-        await deleteDexieThread(draft.conversationId);
+        await deleteDexieThread(draft.threadId);
       }
     }
 

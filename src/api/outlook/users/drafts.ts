@@ -1,7 +1,4 @@
-import {
-  OutlookDraftDataType,
-  OutlookDraftResponseDataType,
-} from "../../model/users.draft";
+import { OutlookDraftDataType } from "../../model/users.draft";
 // import { NewAttachment } from "../../model/users.attachment";
 import { OUTLOOK_API_URL } from "../constants";
 
@@ -13,6 +10,8 @@ export const create = async (
   // attachments: NewAttachment[]
 ) => {
   const body: OutlookDraftDataType = {};
+  let data: OutlookDraftDataType | null = null;
+
   if (toRecipients.length > 0) {
     body.toRecipients = toRecipients.map((email) => ({
       emailAddress: { address: email },
@@ -44,9 +43,10 @@ export const create = async (
 
   if (!response.ok) {
     throw Error("Error creating draft");
+  } else {
+    data = await response.json();
   }
 
-  const data: OutlookDraftResponseDataType = await response.json();
   return data;
 };
 

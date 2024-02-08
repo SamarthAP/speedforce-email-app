@@ -60,6 +60,11 @@ import {
   getOutlookSubscriptionExpirationDateTime,
 } from "../api/outlook/helpers";
 import {
+  create as gDraftCreate,
+  update as gDraftUpdate,
+  deleteDraft as gDraftDelete,
+} from "../api/gmail/users/drafts";
+import {
   create as mDraftCreate,
   update as mDraftUpdate,
   send as mDraftSend,
@@ -81,8 +86,7 @@ import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { NewAttachment } from "../api/model/users.attachment";
 import toast from "react-hot-toast";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
-
-// const MAX_PARTIAL_SYNC_LOOPS = 10;
+import { CreateDraftResponseDataType } from "../api/model/users.draft";
 
 export async function handleNewThreadsGoogle(
   accessToken: string,
@@ -794,7 +798,7 @@ export async function deleteThread(
   }
 
   if (shouldToast) {
-    toast("Deleted thread");
+    toast.success("Deleted thread");
   }
 }
 
@@ -842,7 +846,7 @@ export async function trashThread(
     }
   }
 
-  toast("Trashed thread");
+  toast.success("Trashed thread");
   return { data: null, error: null };
 }
 
@@ -1091,10 +1095,28 @@ export async function createDraft(
     return { data: null, error: "No recipients provided" };
   }
 
-  const accessToken = await getAccessToken(email);
+  let resp: CreateDraftResponseDataType | null = null;
 
+  const accessToken = await getAccessToken(email);
   if (provider === "google") {
-    // TODO: not implemented
+    const { data, error } = await gDraftCreate(
+      accessToken,
+      email,
+      toRecipients.join(","),
+      subject,
+      content
+      // attachments
+    );
+
+    if (error || !data) {
+      dLog("Error creating draft");
+      return { data: null, error: "Error creating draft" };
+    }
+
+    resp = {
+      id: data.id || "",
+      threadId: data.message?.threadId || "",
+    };
   } else {
     try {
       const draft = await mDraftCreate(
@@ -1105,14 +1127,19 @@ export async function createDraft(
         // attachments
       );
 
-      return { data: draft, error: null };
+      if (!draft) return { data: null, error: "Error creating draft" };
+
+      resp = {
+        id: draft.id || "",
+        threadId: draft.conversationId || "",
+      };
     } catch (e) {
       dLog("Error creating draft");
       return { data: null, error: "Error creating draft" };
     }
   }
 
-  return { data: null, error: null };
+  return { data: resp, error: null };
 }
 
 export async function updateDraft(
@@ -1127,9 +1154,16 @@ export async function updateDraft(
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    // TODO: not implemented
+    return await gDraftUpdate(
+      accessToken,
+      messageId,
+      email,
+      toRecipients.join(","),
+      subject,
+      content
+      // attachments
+    );
   } else {
-    // TODO: not implemented
     try {
       const data = await mDraftUpdate(
         accessToken,
@@ -1146,8 +1180,6 @@ export async function updateDraft(
       return { data: null, error: "Error updating draft" };
     }
   }
-
-  return { data: null, error: null };
 }
 
 export async function deleteDraft(
@@ -1158,7 +1190,7 @@ export async function deleteDraft(
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    // TODO: not implemented
+    return await gDraftDelete(accessToken, messageId);
   } else {
     try {
       await mDeleteMessage(accessToken, messageId);
@@ -1169,8 +1201,6 @@ export async function deleteDraft(
       return { data: null, error: "Error deleting draft" };
     }
   }
-
-  return { data: null, error: "Not implemented" };
 }
 
 export async function sendDraft(

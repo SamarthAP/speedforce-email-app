@@ -204,16 +204,7 @@ export default function Message({ message, selectedEmail }: MessageProps) {
           // </span>
           null}
 
-          {/* <EmailEditor editorRef={editorRef} ref={editorComponentRef} /> */}
-          <Tiptap
-            initialContent=""
-            canSendEmail={true}
-            sendingEmail={sendingReply}
-            sendEmail={handleSendReply}
-            setContent={() => console.log("setContent")}
-            attachments={attachments}
-            setAttachments={setAttachments}
-          />
+          <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
 
           <SimpleButton
             onClick={() => void handleSendReply()}
