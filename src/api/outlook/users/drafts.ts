@@ -2,15 +2,15 @@ import {
   OutlookDraftDataType,
   OutlookDraftResponseDataType,
 } from "../../model/users.draft";
-import { NewAttachment } from "../../model/users.attachment";
+// import { NewAttachment } from "../../model/users.attachment";
 import { OUTLOOK_API_URL } from "../constants";
 
 export const create = async (
   accessToken: string,
   toRecipients: string[],
   subject: string,
-  content: string,
-  attachments: NewAttachment[]
+  content: string
+  // attachments: NewAttachment[]
 ) => {
   const body: OutlookDraftDataType = {};
   if (toRecipients.length > 0) {
@@ -24,9 +24,14 @@ export const create = async (
   if (content) {
     body.body = { contentType: "HTML", content };
   }
-  if (attachments.length > 0) {
-    body.attachments = attachments;
-  }
+  // if (attachments.length > 0) {
+  //   body.attachments = attachments.map((attachment) => ({
+  //     name: attachment.filename,
+  //     contentBytes: attachment.data,
+  //     contentType: attachment.mimeType,
+  //     size: attachment.size,
+  //   }));
+  // }
 
   const response = await fetch(`${OUTLOOK_API_URL}/me/messages`, {
     headers: {
@@ -42,7 +47,7 @@ export const create = async (
   }
 
   const data: OutlookDraftResponseDataType = await response.json();
-  return data.id;
+  return data;
 };
 
 export const update = async (
@@ -50,8 +55,8 @@ export const update = async (
   messageId: string,
   toRecipients: string[],
   subject: string,
-  content: string,
-  attachments: NewAttachment[]
+  content: string
+  // attachments: NewAttachment[]
 ) => {
   const body: OutlookDraftDataType = {};
   if (toRecipients.length > 0) {
@@ -65,9 +70,14 @@ export const update = async (
   if (content) {
     body.body = { contentType: "HTML", content };
   }
-  if (attachments.length > 0) {
-    body.attachments = attachments;
-  }
+  // if (attachments.length > 0) {
+  //   body.attachments = attachments.map((attachment) => ({
+  //     name: attachment.filename,
+  //     contentBytes: attachment.data,
+  //     contentType: attachment.mimeType,
+  //     size: attachment.size,
+  //   }));
+  // }
 
   const response = await fetch(`${OUTLOOK_API_URL}/me/messages/${messageId}`, {
     headers: {

@@ -98,7 +98,7 @@ export default function ThreadView({
 
       return [];
     },
-    [selectedEmail, data],
+    [selectedEmail, data, navigate],
     []
   );
 

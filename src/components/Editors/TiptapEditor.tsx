@@ -86,7 +86,7 @@ export default function Tiptap({
       setContent(html);
       void saveDraft({ content: html });
     }, 5000),
-    []
+    [saveDraft]
   );
 
   const editor = useEditor({
@@ -97,6 +97,11 @@ export default function Tiptap({
       debouncedSaveDraft(editor.getHTML());
     },
   });
+
+  // Clean up the debounced save draft function so that it doesn't run after the component is unmounted
+  useEffect(() => {
+    return () => debouncedSaveDraft.cancel();
+  }, [debouncedSaveDraft]);
 
   // Clicking link handler to open the edit link modal
   useEffect(() => {
@@ -135,11 +140,14 @@ export default function Tiptap({
     const newAttachments: NewAttachment[] =
       await window.electron.ipcRenderer.invoke("add-attachments");
 
+    void saveDraft({ attachments: [...attachments, ...newAttachments] });
     setAttachments([...attachments, ...newAttachments]);
   }
 
   function removeAttachment(idx: number) {
-    setAttachments(attachments.filter((_, i) => i !== idx));
+    const newAttachments = attachments.filter((_, i) => i !== idx);
+    void saveDraft({ attachments: newAttachments });
+    setAttachments(newAttachments);
   }
 
   const editLink = (displayText: string | null, url: string) => {
@@ -216,7 +224,7 @@ export default function Tiptap({
       <div className="text-left mt-4 mb-2">
         <SimpleButton
           onClick={() => {
-            void saveDraft({ content: editor.getHTML() });
+            // void saveDraft({ content: editor.getHTML() });
             void sendEmail(editor.getHTML());
           }}
           loading={sendingEmail}

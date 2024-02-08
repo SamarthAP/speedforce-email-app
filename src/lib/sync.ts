@@ -33,6 +33,7 @@ import {
   moveMessage as mMoveMessage,
   starMessage as mStarMessage,
 } from "../api/outlook/users/threads";
+import { list as mThreadList } from "../api/outlook/reactQuery/reactQueryHelperFunctions";
 import {
   sendEmail as mSendEmail,
   sendEmailWithAttachments as mSendEmailWithAttachments,
@@ -775,14 +776,13 @@ export async function deleteThread(
       return;
     }
   } else if (provider === "outlook") {
-    const messages = await db.messages
-      .where("threadId")
-      .equals(threadId)
-      .toArray();
+    const messages = await mThreadList(
+      accessToken,
+      `messages?$select=id&$filter=conversationId eq '${threadId}'`
+    );
 
-    // console.log(threadId);
-    // console.log(messages);
-    const promises = messages.map((message) => {
+    if (!messages || !messages.value) return;
+    const promises = messages.value.map((message) => {
       return mDeleteMessage(accessToken, message.id);
     });
 
@@ -1078,14 +1078,14 @@ export async function createDraft(
   provider: "google" | "outlook",
   toRecipients: string[],
   subject: string,
-  content: string,
-  attachments: NewAttachment[]
+  content: string
+  // attachments: NewAttachment[]
 ) {
   if (
     toRecipients.length === 0 &&
     !subject &&
-    !content &&
-    attachments.length === 0
+    !content
+    // attachments.length === 0
   ) {
     dLog("Empty draft");
     return { data: null, error: "No recipients provided" };
@@ -1097,15 +1097,15 @@ export async function createDraft(
     // TODO: not implemented
   } else {
     try {
-      const draftId = await mDraftCreate(
+      const draft = await mDraftCreate(
         accessToken,
         toRecipients,
         subject,
-        content,
-        attachments
+        content
+        // attachments
       );
 
-      return { data: draftId, error: null };
+      return { data: draft, error: null };
     } catch (e) {
       dLog("Error creating draft");
       return { data: null, error: "Error creating draft" };
@@ -1121,8 +1121,8 @@ export async function updateDraft(
   messageId: string,
   toRecipients: string[],
   subject: string,
-  content: string,
-  attachments: NewAttachment[]
+  content: string
+  // attachments: NewAttachment[]
 ) {
   const accessToken = await getAccessToken(email);
 
@@ -1136,8 +1136,8 @@ export async function updateDraft(
         messageId,
         toRecipients,
         subject,
-        content,
-        attachments
+        content
+        // attachments
       );
 
       return { data, error: null };

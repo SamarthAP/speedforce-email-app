@@ -1,4 +1,4 @@
-import { NewAttachment } from "./users.attachment";
+// import { OutlookAttachmentDataType } from "./users.attachment";
 import { OutlookEmailAddress } from "./users.message";
 
 export interface OutlookDraftDataType {
@@ -30,9 +30,10 @@ export interface OutlookDraftDataType {
   bccRecipients?: {
     emailAddress: OutlookEmailAddress;
   }[];
-  attachments?: NewAttachment[];
+  // attachments?: OutlookAttachmentDataType[];
 }
 
 export interface OutlookDraftResponseDataType {
   id: string;
+  conversationId: string;
 }

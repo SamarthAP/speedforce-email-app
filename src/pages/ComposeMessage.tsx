@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { EmailSelectorInput } from "../components/EmailSelectorInput";
 import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
 import { ISelectedEmail, db } from "../lib/db";
@@ -8,7 +8,8 @@ import Sidebar from "../components/Sidebar";
 import Tiptap from "../components/Editors/TiptapEditor";
 import {
   createDraft,
-  sendDraft,
+  deleteMessage,
+  deleteThread,
   sendEmail,
   sendEmailWithAttachments,
   updateDraft,
@@ -16,8 +17,7 @@ import {
 import { dLog } from "../lib/noProd";
 import { NewAttachment } from "../api/model/users.attachment";
 import toast from "react-hot-toast";
-import { updateLabelIdsForEmailThread } from "../lib/util";
-import { FOLDER_IDS } from "../api/constants";
+import { deleteDexieThread } from "../lib/util";
 
 interface ComposeMessageProps {
   selectedEmail: ISelectedEmail;
@@ -38,15 +38,65 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
   const [contentHtml, setContentHtml] = useState(""); // TODO: Type this
 
   const [draft, setDraft] = useState<{
-    isCreated: boolean;
-    draftId: string | null;
-  }>({ isCreated: false, draftId: null }); // TODO: Type this
+    id: string;
+    conversationId: string;
+  }>({ id: "", conversationId: "" }); // TODO: Type this
   const navigate = useNavigate();
 
   const setToAndSaveDraft = (emails: string[]) => {
     setTo(emails);
     void saveDraft({ to: emails });
   };
+
+  const saveDraft = useCallback(
+    async (request: SendDraftRequestType) => {
+      if (draft.id && draft.conversationId) {
+        // Update draft
+        const { data, error } = await updateDraft(
+          selectedEmail.email,
+          selectedEmail.provider,
+          draft.id,
+          request.to || to,
+          request.subject || subject,
+          request.content || contentHtml
+          // request.attachments || attachments
+        );
+
+        if (error || !data) {
+          dLog(error);
+          return { error };
+        }
+      } else {
+        // Create draft
+        const { data, error } = await createDraft(
+          selectedEmail.email,
+          selectedEmail.provider,
+          request.to || to,
+          request.subject || subject,
+          request.content || contentHtml
+          // request.attachments || attachments
+        );
+
+        if (error || !data) {
+          dLog(error);
+          return { error };
+        }
+
+        setDraft(data);
+      }
+
+      return { error: null };
+    },
+    [
+      draft,
+      // attachments,
+      contentHtml,
+      subject,
+      to,
+      selectedEmail.email,
+      selectedEmail.provider,
+    ]
+  );
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -61,118 +111,67 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [navigate]);
-
-  const saveDraft = async (request: SendDraftRequestType) => {
-    console.log(
-      `saving draft: \n  to: ${request.to || to.join(",")}\n  subject: ${
-        request.subject || subject
-      }\n  content: ${request.content || contentHtml} \n  attachments: ${(
-        request.attachments || attachments
-      )
-        .map((x) => x.filename)
-        .join(",")}`
-    );
-    if (draft.isCreated && draft.draftId) {
-      // Update draft
-      const { data, error } = await updateDraft(
-        selectedEmail.email,
-        selectedEmail.provider,
-        draft.draftId,
-        request.to || to,
-        request.subject || subject,
-        request.content || contentHtml,
-        request.attachments || attachments
-      );
-
-      if (error || !data) {
-        dLog(error);
-        return { error };
-      }
-    } else {
-      // Create draft
-      const { data, error } = await createDraft(
-        selectedEmail.email,
-        selectedEmail.provider,
-        request.to || to,
-        request.subject || subject,
-        request.content || contentHtml,
-        request.attachments || attachments
-      );
-
-      if (error || !data) {
-        dLog(error);
-        return { error };
-      }
-
-      setDraft({ isCreated: true, draftId: data });
-    }
-
-    return { error: null };
-  };
+  }, [navigate, saveDraft]);
 
   const handleSendEmail = async (content: string) => {
-    if (draft.isCreated && draft.draftId) {
-      setSendingEmail(true);
-
-      const { data, error } = await sendDraft(
+    setSendingEmail(true);
+    if (attachments.length > 0) {
+      // send with attachments
+      const { error } = await sendEmailWithAttachments(
         selectedEmail.email,
         selectedEmail.provider,
-        draft.draftId
+        to.join(","),
+        subject,
+        content,
+        attachments
       );
+
+      // If send fails, try save draft and return
       if (error) {
+        await saveDraft({ content });
         toast.error("Error sending email");
         return setSendingEmail(false);
       }
 
-      const draftMessage = await db.messages
-        .where("id")
-        .equals(draft.draftId)
-        .first();
-
-      if (draftMessage) {
-        await updateLabelIdsForEmailThread(
-          draftMessage.threadId,
-          ["SENT"],
-          ["DRAFTS", FOLDER_IDS.DRAFTS]
+      // delete draft thread as there will be a new thread for the sent email
+      if (draft.conversationId) {
+        await deleteThread(
+          selectedEmail.email,
+          selectedEmail.provider,
+          draft.conversationId,
+          false
         );
+
+        await deleteDexieThread(draft.conversationId);
       }
-      setSendingEmail(false);
     } else {
-      toast.error("Unable to send email.");
-      return;
+      // send without attachments
+      const { error } = await sendEmail(
+        selectedEmail.email,
+        selectedEmail.provider,
+        to.join(","),
+        subject,
+        content
+      );
+
+      // If send fails, try save draft and return
+      if (error) {
+        await saveDraft({ content });
+        toast.error("Error sending email");
+        return setSendingEmail(false);
+      }
+
+      if (draft.conversationId) {
+        await deleteThread(
+          selectedEmail.email,
+          selectedEmail.provider,
+          draft.conversationId,
+          false
+        );
+
+        await deleteDexieThread(draft.conversationId);
+      }
     }
-
-    // if (attachments.length > 0) {
-    //   const { error } = await sendEmailWithAttachments(
-    //     selectedEmail.email,
-    //     selectedEmail.provider,
-    //     to.join(","),
-    //     subject,
-    //     content,
-    //     attachments
-    //   );
-
-    //   if (error) {
-    //     dLog(error);
-    //     toast.error("Error sending email");
-    //     return setSendingEmail(false);
-    //   }
-    // } else {
-    //   const { error } = await sendEmail(
-    //     selectedEmail.email,
-    //     selectedEmail.provider,
-    //     to.join(","),
-    //     subject,
-    //     content
-    //   );
-
-    //   if (error) {
-    //     dLog(error);
-    //     toast.error("Error sending email");
-    //     return setSendingEmail(false);
-    //   }
-    // }
 
     toast.success("Email sent");
     navigate(-1);
@@ -228,7 +227,6 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                   Body
                 </div>
                 <div className="w-full pl-10 overflow-scroll hide-scroll">
-                  {/* <EmailEditor editorRef={editorRef} ref={editorComponentRef} /> */}
                   <Tiptap
                     initialContent=""
                     attachments={attachments}
