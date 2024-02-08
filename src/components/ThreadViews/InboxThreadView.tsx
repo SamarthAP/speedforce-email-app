@@ -190,7 +190,7 @@ export default function InboxThreadView({
             }
       }
     >
-      {/* <PersonalAI show={showPersonalAi} /> */}
+      <PersonalAI show={showPersonalAi} hide={() => setShowPersonalAi(false)} />
       {isBackgroundOn && (
         <>
           <div className="absolute h-[100px] w-screen inset-0 bg-gradient-to-b from-black/50 to-transparent pointer-events-none"></div>
@@ -257,12 +257,12 @@ export default function InboxThreadView({
                 )}
               </nav>
               <div className="flex items-center">
-                {/* <button
+                <button
                   className="mr-3"
                   onMouseEnter={(event) => {
-                    handleMouseEnter(event, "AI");
+                    handleShowTooltip(event, "AI");
                   }}
-                  onMouseLeave={handleMouseLeave}
+                  onMouseLeave={handleHideTooltip}
                   onClick={() => {
                     setShowPersonalAi(true);
                   }}
@@ -275,7 +275,7 @@ export default function InboxThreadView({
                         : "text-black dark:text-white"
                     )}
                   />
-                </button> */}
+                </button>
                 <button
                   className="mr-3"
                   onMouseEnter={(event) => {

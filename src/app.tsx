@@ -11,6 +11,16 @@ import InitialLoadingScreen from "./components/InitialLoadingScreen";
 import { asyncWithLDProvider } from "launchdarkly-react-client-sdk";
 import { QueryClient, QueryClientProvider } from "react-query";
 
+function addThemeToBody(theme: string) {
+  if (theme === "dark") {
+    document.body.classList.add("dark");
+    document.body.classList.remove("light");
+  } else {
+    document.body.classList.add("light");
+    document.body.classList.remove("dark");
+  }
+}
+
 const queryClient = new QueryClient();
 
 function App() {
@@ -31,15 +41,19 @@ function App() {
   const [theme, setTheme] = useState(() => {
     const localTheme = localStorage.getItem("theme");
     if (localTheme === "dark") {
+      addThemeToBody("dark");
       return "dark";
     }
     if (localTheme === "light") {
+      addThemeToBody("light");
       return "light";
     }
     if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
       // theme isn't set, but OS is dark
+      addThemeToBody("dark");
       return "dark";
     }
+    addThemeToBody("light");
     return "light"; // default to light
   });
 
@@ -49,6 +63,8 @@ function App() {
       setTheme: (_theme: string) => {
         localStorage.setItem("theme", _theme); // save theme to localstorage
         setTheme(_theme); // set theme in react
+
+        addThemeToBody(_theme);
       },
     }),
     [theme, setTheme]

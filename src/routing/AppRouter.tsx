@@ -176,21 +176,30 @@ export default function AppRouter({ session }: AppRouterProps) {
   }, []);
 
   useEffect(() => {
-    // NOTE: checks if today's image already exists in dexie, if so, dont fetch
     async function getInboxZeroImage() {
-      const date = new Date().toISOString().split("T")[0];
-      const dailyImageMetadata = await db.dailyImageMetadata.get(1);
+      // get current date in YYYY-MM-DD format but don't use ISO string because it's in UTC
+      const currentDate = new Date();
 
-      if (dailyImageMetadata && dailyImageMetadata.date === date) {
-        dLog("daily image data already exists");
-        return {
-          dailyImageMetadata: {
-            date: dailyImageMetadata.date,
-            url: dailyImageMetadata.url,
-          },
-          dataAlreadyExists: true,
-        };
-      }
+      // Extract year, month, and date
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, "0"); // Adding 1 because month index starts from 0
+      const day = String(currentDate.getDate()).padStart(2, "0");
+
+      const date = `${year}-${month}-${day}`;
+
+      // const dailyImageMetadata = await db.dailyImageMetadata.get(1);
+
+      // if (dailyImageMetadata && dailyImageMetadata.date === date) {
+      //   dLog("daily image data already exists");
+      //   return {
+      //     dailyImageMetadata: {
+      //       date: dailyImageMetadata.date,
+      //       url: dailyImageMetadata.url,
+      //     },
+      //     dataAlreadyExists: true,
+      //   };
+      // }
+
       dLog("fetching daily image data");
 
       const accessToken = session.access_token;

@@ -1,22 +1,33 @@
-import { Transition } from "@headlessui/react";
+import { Dialog, Transition } from "@headlessui/react";
 import { classNames } from "../../lib/util";
-import { useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { getJWTHeaders } from "../../api/authHeader";
 import { getAccessToken } from "../../api/accessToken";
 import { useEmailPageOutletContext } from "../../pages/_emailPage";
-import { list } from "../../api/gmail/reactQuery/reactQueryHelperFunctions";
-import { handleNewThreadsGoogle } from "../../lib/sync";
+import { list as gList } from "../../api/gmail/reactQuery/reactQueryHelperFunctions";
+import { list as mList } from "../../api/outlook/reactQuery/reactQueryHelperFunctions";
+import {
+  handleNewThreadsGoogle,
+  handleNewThreadsOutlook,
+} from "../../lib/sync";
 import { useNavigate } from "react-router-dom";
+import { PaperAirplaneIcon } from "@heroicons/react/20/solid";
+import { IEmailThread, db } from "../../lib/db";
+import { OUTLOOK_SELECT_THREADLIST } from "../../api/outlook/constants";
+import { SPEEDFORCE_API_URL } from "../../api/constants";
 
 interface PersonalAIProps {
   show: boolean;
+  hide: () => void;
 }
 
-export default function PersonalAI({ show }: PersonalAIProps) {
+export default function PersonalAI({ show, hide }: PersonalAIProps) {
+  const messageContainerRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<AIMessage[]>([
     {
       role: "system",
-      content: "Hi, I'm your personal AI assistant.",
+      content:
+        "Hi, I'm your personal email assistant. I can help you look for emails that are tricky to find.",
     },
     // {
     //   role: "user",
@@ -26,7 +37,28 @@ export default function PersonalAI({ show }: PersonalAIProps) {
     //   role: "system",
     //   content:
     //     "I found some emails that might be relevant to your query. Check them out!",
-    //   relevantThreadIds: ["18d3d8f2295246c6"],
+    //   relevantThreads: [
+    //     {
+    //       id: "id1",
+    //       historyId: "historyId1",
+    //       email: "email1",
+    //       from: "from1",
+    //       subject: "Tech Roast Reservation",
+    //       snippet: "Your reservation for the tech roast is confirmed!",
+    //       date: new Date().getTime(),
+    //       unread: false,
+    //       labelIds: ["labelId1"],
+    //       hasAttachments: false,
+    //     },
+    //   ],
+    // },
+    // {
+    //   role: "user",
+    //   content: "Thanks!",
+    // },
+    // {
+    //   role: "system",
+    //   content: "No worries!",
     // },
   ]);
 
@@ -34,9 +66,18 @@ export default function PersonalAI({ show }: PersonalAIProps) {
   const [inputMessage, setInputMessage] = useState("");
   const { selectedEmail } = useEmailPageOutletContext();
 
+  useEffect(() => {
+    // scroll to the bottom of the message container when new messages are added
+    messageContainerRef.current?.scrollTo({
+      top: messageContainerRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [messages]);
+
   const sendMessage = async () => {
-    // setLoading(true);
-    setMessages([
+    setLoading(true);
+    setInputMessage("");
+    setMessages((messages) => [
       ...messages,
       {
         role: "user",
@@ -47,7 +88,7 @@ export default function PersonalAI({ show }: PersonalAIProps) {
     const authHeader = await getJWTHeaders();
     const accessToken = await getAccessToken(selectedEmail.email);
 
-    const res = await fetch("http://localhost:8080/llm/personalAIQuery", {
+    const res = await fetch(`${SPEEDFORCE_API_URL}/llm/personalAIQuery`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -56,70 +97,121 @@ export default function PersonalAI({ show }: PersonalAIProps) {
       body: JSON.stringify({
         user_query: inputMessage,
         provider: selectedEmail.provider,
+        date: new Date().toString(),
         accessToken,
       }),
     });
 
     const data = await res.json();
 
-    const listResponse = await list(accessToken, data.generatedQuery);
-    const threadIds = listResponse.threads?.map((thread) => thread.id) || [];
-    if (threadIds.length > 0) {
-      await handleNewThreadsGoogle(accessToken, selectedEmail.email, threadIds);
+    const threadIds = [];
+    if (selectedEmail.provider === "google") {
+      const listResponse = await gList(accessToken, `q=${data.generatedQuery}`);
+      threadIds.push(
+        ...(listResponse.threads?.map((thread) => thread.id) || [])
+      );
+
+      if (threadIds.length > 0) {
+        await handleNewThreadsGoogle(
+          accessToken,
+          selectedEmail.email,
+          threadIds
+        );
+      }
+    } else {
+      const listResponse = await mList(
+        accessToken,
+        `mailFolders/Inbox/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20&${data.generatedQuery}`
+      );
+      threadIds.push(...(listResponse.value?.map((thread) => thread.id) || []));
+
+      if (threadIds.length > 0) {
+        await handleNewThreadsOutlook(
+          accessToken,
+          selectedEmail.email,
+          threadIds
+        );
+      }
     }
 
-    setMessages([
+    // get the relevant emails from dexie
+    const relevantThreads = await db.emailThreads
+      .where("id")
+      .anyOf(threadIds)
+      .toArray();
+
+    setMessages((messages) => [
       ...messages,
       {
         role: "system",
         content:
           threadIds.length > 0
-            ? "I found some emails that might be relevant to your query. Check them out!"
+            ? "Here's what I found for you!"
             : "I couldn't find any emails that might be relevant to your query. Sorry!",
-        relevantThreadIds: threadIds,
+        relevantThreads: relevantThreads,
       },
     ]);
 
-    // setLoading(false);
+    setLoading(false);
   };
 
   return (
-    <Transition
-      enter="transition duration-100 ease-out"
-      enterFrom="transform scale-95 opacity-0"
-      enterTo="transform scale-100 opacity-100"
-      leave="transition duration-75 ease-out"
-      leaveFrom="transform scale-100 opacity-100"
-      leaveTo="transform scale-95 opacity-0"
-      className="absolute z-20"
-      show={show}
-    >
-      <div className="w-screen h-screen flex bg-black bg-opacity-60 items-center justify-center">
-        <div className="rounded-md bg-white dark:bg-zinc-900 w-[400px] h-[300px]">
-          <div className="h-full overflow-y-scroll hide-scroll">
-            {messages.map((message, idx) => (
-              <Message key={idx} {...message} />
-            ))}
-          </div>
-          <div className="flex">
-            <input
-              disabled={loading}
-              type="text"
-              className="w-full outline-none p-3"
-              placeholder="Type a message..."
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-            />
-            <button
-              disabled={loading}
-              onClick={() => void sendMessage()}
-              className="bg-zinc-700 text-white p-3"
+    <Transition appear show={show} as={Fragment}>
+      <Dialog as="div" className="relative z-10" onClose={hide}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/25" />
+        </Transition.Child>
+
+        <div className="fixed inset-0">
+          <div className="flex min-h-full items-center justify-center text-center">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
             >
-              Send
-            </button>
+              <Dialog.Panel className="h-auto max-h-[400px] w-full max-w-md flex flex-col rounded-2xl bg-white dark:bg-zinc-900 p-4 border border-slate-200 dark:border-zinc-700 text-left align-middle shadow-xl transition-all ease-in-out">
+                <div
+                  ref={messageContainerRef}
+                  className="h-full space-y-4 overflow-y-scroll hide-scroll transition-all"
+                >
+                  {messages.map((message, idx) => (
+                    <Message key={idx} {...message} />
+                  ))}
+                </div>
+                <div className="flex pt-4 mt-4 border-t border-t-slate-200 dark:border-t-zinc-700">
+                  <input
+                    disabled={loading}
+                    type="text"
+                    className="w-full min-w-0 outline-none text-md bg-transparent dark:text-white"
+                    placeholder={loading ? "Loading..." : "Type a message..."}
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                  />
+                  <button
+                    disabled={loading}
+                    onClick={() => void sendMessage()}
+                    className="dark:text-white"
+                  >
+                    <PaperAirplaneIcon className="w-6 h-6" />
+                  </button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
           </div>
         </div>
-      </div>
+      </Dialog>
     </Transition>
   );
 }
@@ -127,13 +219,18 @@ export default function PersonalAI({ show }: PersonalAIProps) {
 interface AIMessage {
   role: "user" | "system";
   content: string;
-  relevantThreadIds?: string[];
+  relevantThreads?: IEmailThread[];
 }
 
-function Message({ role, content, relevantThreadIds }: AIMessage) {
+function Message({ role, content, relevantThreads }: AIMessage) {
   const navigate = useNavigate();
   return (
-    <div className={classNames("p-3 my-2 mx-2")}>
+    <div
+      className={classNames(
+        "p-2 rounded-md",
+        role === "system" ? "border dark:border-zinc-700" : "text-right"
+      )}
+    >
       <p
         className={classNames(
           "dark:text-zinc-200",
@@ -142,15 +239,15 @@ function Message({ role, content, relevantThreadIds }: AIMessage) {
       >
         {content}
       </p>
-      {relevantThreadIds?.map((threadId) => (
+      {relevantThreads?.map((thread) => (
         <p
-          key={threadId}
-          className="text-blue-500 underline cursor-pointer"
+          key={thread.id}
+          className="text-blue-500 hover:text-blue-600 underline cursor-pointer"
           onClick={() => {
-            navigate(`/thread/${threadId}`);
+            navigate(`/thread/${thread.id}`);
           }}
         >
-          {threadId}
+          {thread.subject}
         </p>
       )) || <></>}
     </div>
