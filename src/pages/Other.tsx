@@ -36,8 +36,8 @@ export default function Other({ inboxZeroStartDate }: OtherProps) {
   const afterDate = new Date(selectedEmail.inboxZeroStartDate - 86400000)
     .toISOString()
     .split("T")[0];
-  // NOTE: we don't include q= at the start because getThreadsExhaustive assumes there is a query param
-  const gmailQueryParam = `label:INBOX -((category:personal) OR from:(${email}) OR from:"via Google") after:${afterDate}`;
+
+  const gmailQueryParam = `q=label:INBOX -((category:personal) OR from:(${email}) OR from:"via Google") after:${afterDate}`;
   const outlookQueryParam = `mailFolders/Inbox/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20&$filter=receivedDateTime ge ${afterDate}T00:00:00Z`;
   const {
     data,

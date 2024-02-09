@@ -126,18 +126,17 @@ export default function ThreadList({
       {threads?.map((thread, index) => {
         return (
           <div
-            // onClick={() => {
-            //   setScrollPosition(scrollRef.current?.scrollTop || 0);
-            //   setSelectedThread(thread.id);
-            //   if (thread.unread) {
-            //     void markRead(
-            //       selectedEmail.email,
-            //       selectedEmail.provider,
-            //       thread.id
-            //     );
-            //   }
-            // }}
-            // onMouseOver={() => setHoveredThread(thread)}
+            onClick={() => {
+              setScrollPosition(scrollRef.current?.scrollTop || 0);
+              if (thread.unread) {
+                void markRead(
+                  selectedEmail.email,
+                  selectedEmail.provider,
+                  thread.id
+                );
+              }
+            }}
+            onMouseOver={() => setHoveredThread(thread)}
             key={index}
           >
             {index === 0 && isToday(new Date(thread.date)) ? (
@@ -355,7 +354,7 @@ function ThreadListRow({
   });
 
   return (
-    <>
+    <div className="relative">
       <div
         onClick={() => handleThreadClick(thread)}
         onMouseOver={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -514,6 +513,6 @@ function ThreadListRow({
           threadSubject={thread.subject}
         />
       )}
-    </>
+    </div>
   );
 }

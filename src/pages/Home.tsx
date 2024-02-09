@@ -42,8 +42,8 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
     .split("T")[0];
 
   const outlookQueryParam = `mailFolders/Inbox/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20&$filter=receivedDateTime ge ${afterDate}T00:00:00Z`;
-  // NOTE: we don't include q= at the start because getThreadsExhaustive assumes there is a query param
-  const gmailQueryParam = `label:INBOX ((category:personal) OR from:(${email}) OR from:"via Google") after:${afterDate}`;
+
+  const gmailQueryParam = `q=label:INBOX ((category:personal) OR from:(${email}) OR from:"via Google") after:${afterDate}`;
 
   const {
     data,
