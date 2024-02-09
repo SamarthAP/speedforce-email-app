@@ -15,6 +15,7 @@ import { PaperAirplaneIcon } from "@heroicons/react/20/solid";
 import { IEmailThread, db } from "../../lib/db";
 import { OUTLOOK_SELECT_THREADLIST } from "../../api/outlook/constants";
 import { SPEEDFORCE_API_URL } from "../../api/constants";
+import _ from "lodash";
 
 interface PersonalAIProps {
   show: boolean;
@@ -123,7 +124,10 @@ export default function PersonalAI({ show, hide }: PersonalAIProps) {
         accessToken,
         `mailFolders/Inbox/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20&${data.generatedQuery}`
       );
-      threadIds.push(...(listResponse.value?.map((thread) => thread.id) || []));
+      threadIds.push(
+        ...(_.uniq(listResponse.value.map((thread) => thread.conversationId)) ||
+          [])
+      );
 
       if (threadIds.length > 0) {
         await handleNewThreadsOutlook(
