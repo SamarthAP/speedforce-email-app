@@ -85,7 +85,7 @@ export default function Tiptap({
     debounce((html) => {
       setContent(html);
       void saveDraft({ content: html });
-    }, 5000),
+    }, 2000),
     [saveDraft]
   );
 
