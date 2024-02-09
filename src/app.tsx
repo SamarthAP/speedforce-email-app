@@ -6,7 +6,7 @@ import supabase from "./lib/supabase";
 import Login from "./pages/Login";
 import { SessionContext } from "./contexts/SessionContext";
 import { Session } from "@supabase/supabase-js";
-import { Toaster } from "react-hot-toast";
+import toast, { Toaster, resolveValue } from "react-hot-toast";
 import InitialLoadingScreen from "./components/InitialLoadingScreen";
 import { asyncWithLDProvider } from "launchdarkly-react-client-sdk";
 import { QueryClient, QueryClientProvider } from "react-query";
@@ -83,7 +83,18 @@ function App() {
             ) : (
               <Login />
             )}
-            <Toaster position="bottom-center" reverseOrder={false} />
+            <Toaster position="bottom-center" reverseOrder={false}>
+              {(t) => (
+                <div
+                  onClick={() => {
+                    toast.remove(t.id);
+                  }}
+                  className="bg-white dark:bg-zinc-900 border dark:border-zinc-700 border-slate-200 dark:text-white text-xs select-none px-4 py-2 rounded-md fadeIn-animation-300 cursor-pointer"
+                >
+                  {resolveValue(t.message, t)}
+                </div>
+              )}
+            </Toaster>
           </QueryClientProvider>
         </ThemeContext.Provider>
       </div>
