@@ -1,104 +1,41 @@
 import { useCallback, useEffect, useState } from "react";
 import { EmailSelectorInput } from "../components/EmailSelectorInput";
 import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
-import { ISelectedEmail } from "../lib/db";
-import { useNavigate } from "react-router-dom";
+import { ISelectedEmail, db } from "../lib/db";
+import { useNavigate, useParams } from "react-router-dom";
 import Titlebar from "../components/Titlebar";
 import Sidebar from "../components/Sidebar";
-import Tiptap from "../components/Editors/TiptapEditor";
+import TiptapEditor from "../components/Editors/TiptapEditor";
+import { dLog } from "../lib/noProd";
+import { NewAttachment } from "../api/model/users.attachment";
 import {
-  createDraft,
+  deleteThread,
   sendEmail,
   sendEmailWithAttachments,
   updateDraft,
-  deleteDraft,
 } from "../lib/sync";
-import { dLog } from "../lib/noProd";
-import { NewAttachment } from "../api/model/users.attachment";
 import toast from "react-hot-toast";
+import { SendDraftRequestType } from "./ComposeMessage";
 import { deleteDexieThread } from "../lib/util";
 
-interface ComposeMessageProps {
+interface EditDraftProps {
   selectedEmail: ISelectedEmail;
 }
 
-export interface SendDraftRequestType {
-  to?: string[];
-  subject?: string;
-  content?: string;
-  attachments?: NewAttachment[];
-}
-
-export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
+export function EditDraft({ selectedEmail }: EditDraftProps) {
   const [to, setTo] = useState<string[]>([]);
   const [subject, setSubject] = useState("");
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [contentHtml, setContentHtml] = useState(""); // TODO: Type this
+  const [contentHtml, setContentHtml] = useState("");
 
-  const [draft, setDraft] = useState<{
-    id: string;
-    threadId: string;
-  }>({ id: "", threadId: "" }); // TODO: Type this
   const navigate = useNavigate();
+  const { threadId } = useParams();
 
   const setToAndSaveDraft = (emails: string[]) => {
     setTo(emails);
     void saveDraft({ to: emails });
   };
-
-  const saveDraft = useCallback(
-    async (request: SendDraftRequestType) => {
-      if (draft.id && draft.threadId) {
-        // Update draft
-        const { data, error } = await updateDraft(
-          selectedEmail.email,
-          selectedEmail.provider,
-          draft.id,
-          request.to || to,
-          request.subject || subject,
-          request.content || contentHtml
-          // request.attachments || attachments
-        );
-
-        if (error || !data) {
-          dLog(error);
-          return { error };
-        }
-      } else {
-        // Create draft
-        const { data, error } = await createDraft(
-          selectedEmail.email,
-          selectedEmail.provider,
-          request.to || to,
-          request.subject || subject,
-          request.content || contentHtml
-          // request.attachments || attachments
-        );
-
-        if (error || !data) {
-          dLog(error);
-          return { error };
-        }
-
-        setDraft({
-          id: data.id,
-          threadId: data.threadId,
-        });
-      }
-
-      return { error: null };
-    },
-    [
-      draft,
-      // attachments,
-      contentHtml,
-      subject,
-      to,
-      selectedEmail.email,
-      selectedEmail.provider,
-    ]
-  );
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -113,8 +50,84 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [navigate, saveDraft]);
+  }, [navigate]);
 
+  const loadDraft = async (threadId: string) => {
+    const thread = await db.emailThreads.get(threadId);
+    const message = await db.messages
+      .where("threadId")
+      .equals(threadId)
+      .first();
+
+    if (thread && message && message.id) {
+      setTo(message.toRecipients.filter((recipient) => recipient !== ""));
+      setSubject(thread.subject || "");
+      setContentHtml(message.htmlData || "");
+    } else {
+      dLog("Unable to load thread");
+      navigate(-1);
+    }
+  };
+
+  useEffect(() => {
+    if (threadId) {
+      void loadDraft(threadId);
+    } else {
+      dLog("Unable to load threadId");
+      navigate(-1);
+    }
+  }, [threadId]);
+
+  const saveDraft = useCallback(
+    async (request: SendDraftRequestType) => {
+      console.log(
+        `saving draft: \n  to: ${request.to || to.join(",")}\n  subject: ${
+          request.subject || subject
+        }\n  content: ${request.content || contentHtml} \n  attachments: ${(
+          request.attachments || attachments
+        )
+          .map((x) => x.filename)
+          .join(",")}`
+      );
+
+      const message = await db.messages
+        .where("threadId")
+        .equals(threadId || "")
+        .first();
+
+      if (!message || !message.id) {
+        return { error: "No message found" };
+      }
+
+      const { data, error } = await updateDraft(
+        selectedEmail.email,
+        selectedEmail.provider,
+        message.id,
+        request.to || to,
+        request.subject || subject,
+        request.content || contentHtml
+        // request.attachments || attachments
+      );
+
+      if (error || !data) {
+        dLog(error);
+        return { error };
+      }
+
+      return { error: null };
+    },
+    [
+      selectedEmail.email,
+      selectedEmail.provider,
+      subject,
+      to,
+      contentHtml,
+      threadId,
+      attachments,
+    ]
+  );
+
+  // content is passed in as live data from editor as it is only saved when the user stops typing for 5 seconds
   const handleSendEmail = async (content: string) => {
     setSendingEmail(true);
     if (attachments.length > 0) {
@@ -136,14 +149,15 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       }
 
       // delete draft thread as there will be a new thread for the sent email
-      if (draft.threadId) {
-        await deleteDraft(
+      if (threadId) {
+        await deleteThread(
           selectedEmail.email,
           selectedEmail.provider,
-          draft.threadId
+          threadId,
+          false
         );
 
-        await deleteDexieThread(draft.threadId);
+        await deleteDexieThread(threadId);
       }
     } else {
       // send without attachments
@@ -162,14 +176,15 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
         return setSendingEmail(false);
       }
 
-      if (draft.id && draft.threadId) {
-        await deleteDraft(
+      if (threadId) {
+        await deleteThread(
           selectedEmail.email,
           selectedEmail.provider,
-          draft.id
+          threadId,
+          false
         );
 
-        await deleteDexieThread(draft.threadId);
+        await deleteDexieThread(threadId);
       }
     }
 
@@ -188,6 +203,12 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
               className="flex flex-row cursor-pointer items-center"
               onClick={(e) => {
                 e.stopPropagation();
+                void saveDraft({
+                  to,
+                  subject,
+                  content: contentHtml,
+                  attachments,
+                });
                 navigate(-1);
               }}
             >
@@ -197,7 +218,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
               </p>
             </div>
           </div>
-          <div className="dark:text-white p-4 w-full">New Message</div>
+          <div className="dark:text-white p-4 w-full">Edit Draft</div>
           <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 mb-10 overflow-y-scroll hide-scroll">
             <div className="border border-slate-200 dark:border-zinc-700">
               <EmailSelectorInput
@@ -212,6 +233,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                   Subject
                 </div>
                 <input
+                  value={subject}
                   onChange={(event) => setSubject(event.target.value)}
                   onBlur={() => void saveDraft({ subject })}
                   type="text"
@@ -227,11 +249,11 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                   Body
                 </div>
                 <div className="w-full pl-10 overflow-scroll hide-scroll">
-                  <Tiptap
-                    initialContent=""
+                  <TiptapEditor
+                    canSendEmail={to.length > 0}
+                    initialContent={contentHtml}
                     attachments={attachments}
                     setAttachments={setAttachments}
-                    canSendEmail={to.length > 0}
                     sendingEmail={sendingEmail}
                     sendEmail={handleSendEmail}
                     setContent={setContentHtml}

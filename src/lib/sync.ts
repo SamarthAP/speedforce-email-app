@@ -33,6 +33,7 @@ import {
   moveMessage as mMoveMessage,
   starMessage as mStarMessage,
 } from "../api/outlook/users/threads";
+import { list as mThreadList } from "../api/outlook/reactQuery/reactQueryHelperFunctions";
 import {
   sendEmail as mSendEmail,
   sendEmailWithAttachments as mSendEmailWithAttachments,
@@ -58,9 +59,16 @@ import {
   // getOutlookHistoryIdFromDateTime,
   getOutlookSubscriptionExpirationDateTime,
 } from "../api/outlook/helpers";
-// import { list as gThreadList } from "../api/gmail/reactQuery/reactQueryHelperFunctions";
-// import { list as mThreadList } from "../api/outlook/reactQuery/reactQueryHelperFunctions";
-
+import {
+  create as gDraftCreate,
+  update as gDraftUpdate,
+  deleteDraft as gDraftDelete,
+} from "../api/gmail/users/drafts";
+import {
+  create as mDraftCreate,
+  update as mDraftUpdate,
+  send as mDraftSend,
+} from "../api/outlook/users/drafts";
 import { getAccessToken } from "../api/accessToken";
 import { IAttachment, IContact, IEmailThread, IMessage, db } from "./db";
 import {
@@ -72,18 +80,13 @@ import {
 } from "./util";
 import _ from "lodash";
 import { dLog } from "./noProd";
-// import {
-//   IThreadFilter,
-//   OutlookThreadsListDataType,
-// } from "../api/model/users.thread";
 import { FOLDER_IDS } from "../api/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { NewAttachment } from "../api/model/users.attachment";
 import toast from "react-hot-toast";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
-
-// const MAX_PARTIAL_SYNC_LOOPS = 10;
+import { CreateDraftResponseDataType } from "../api/model/users.draft";
 
 export async function handleNewThreadsGoogle(
   accessToken: string,
@@ -178,7 +181,9 @@ export async function handleNewThreadsGoogle(
           threadId: message.threadId,
           labelIds: message.labelIds,
           from: getMessageHeader(message.payload.headers, "From"),
-          toRecipients: [getMessageHeader(message.payload.headers, "To")],
+          toRecipients: getMessageHeader(message.payload.headers, "To")
+            .split(",")
+            .map((recipient) => recipient.trim()),
           snippet: message.snippet || "",
           headers: message.payload.headers,
           textData: decodeGoogleMessageData(textData),
@@ -226,7 +231,7 @@ export async function handleNewThreadsGoogle(
 async function batchGetThreads(
   accessToken: string,
   threadIds: string[],
-  batchSize = 4
+  batchSize = 3
 ) {
   const threads = [];
   const batches = _.chunk(threadIds, batchSize);
@@ -256,7 +261,7 @@ export async function handleNewThreadsOutlook(
 ) {
   try {
     // Outlook throttle limit is 4 concurrent requests
-    const threads = await batchGetThreads(accessToken, threadsIds, 4);
+    const threads = await batchGetThreads(accessToken, threadsIds, 3);
 
     const parsedThreads: IEmailThread[] = [];
     const parsedMessages: IMessage[] = [];
@@ -763,7 +768,8 @@ export async function sendEmailWithAttachments(
 export async function deleteThread(
   email: string,
   provider: "google" | "outlook",
-  threadId: string
+  threadId: string,
+  shouldToast = true
 ) {
   const accessToken = await getAccessToken(email);
 
@@ -774,12 +780,13 @@ export async function deleteThread(
       return;
     }
   } else if (provider === "outlook") {
-    const messages = await db.messages
-      .where("threadId")
-      .equals(threadId)
-      .toArray();
+    const messages = await mThreadList(
+      accessToken,
+      `messages?$select=id&$filter=conversationId eq '${threadId}'`
+    );
 
-    const promises = messages.map((message) => {
+    if (!messages || !messages.value) return;
+    const promises = messages.value.map((message) => {
       return mDeleteMessage(accessToken, message.id);
     });
 
@@ -790,7 +797,9 @@ export async function deleteThread(
     }
   }
 
-  toast("Deleted thread");
+  if (shouldToast) {
+    toast.success("Deleted thread");
+  }
 }
 
 export async function trashThread(
@@ -837,7 +846,7 @@ export async function trashThread(
     }
   }
 
-  toast("Trashed thread");
+  toast.success("Trashed thread");
   return { data: null, error: null };
 }
 
@@ -1066,4 +1075,153 @@ export async function search(
   // }
 
   return { data: [], error: null };
+}
+
+export async function createDraft(
+  email: string,
+  provider: "google" | "outlook",
+  toRecipients: string[],
+  subject: string,
+  content: string
+  // attachments: NewAttachment[]
+) {
+  if (
+    toRecipients.length === 0 &&
+    !subject &&
+    !content
+    // attachments.length === 0
+  ) {
+    dLog("Empty draft");
+    return { data: null, error: "No recipients provided" };
+  }
+
+  let resp: CreateDraftResponseDataType | null = null;
+
+  const accessToken = await getAccessToken(email);
+  if (provider === "google") {
+    const { data, error } = await gDraftCreate(
+      accessToken,
+      email,
+      toRecipients.join(","),
+      subject,
+      content
+      // attachments
+    );
+
+    if (error || !data) {
+      dLog("Error creating draft");
+      return { data: null, error: "Error creating draft" };
+    }
+
+    resp = {
+      id: data.id || "",
+      threadId: data.message?.threadId || "",
+    };
+  } else {
+    try {
+      const draft = await mDraftCreate(
+        accessToken,
+        toRecipients,
+        subject,
+        content
+        // attachments
+      );
+
+      if (!draft) return { data: null, error: "Error creating draft" };
+
+      resp = {
+        id: draft.id || "",
+        threadId: draft.conversationId || "",
+      };
+    } catch (e) {
+      dLog("Error creating draft");
+      return { data: null, error: "Error creating draft" };
+    }
+  }
+
+  return { data: resp, error: null };
+}
+
+export async function updateDraft(
+  email: string,
+  provider: "google" | "outlook",
+  messageId: string,
+  toRecipients: string[],
+  subject: string,
+  content: string
+  // attachments: NewAttachment[]
+) {
+  const accessToken = await getAccessToken(email);
+
+  if (provider === "google") {
+    return await gDraftUpdate(
+      accessToken,
+      messageId,
+      email,
+      toRecipients.join(","),
+      subject,
+      content
+      // attachments
+    );
+  } else {
+    try {
+      const data = await mDraftUpdate(
+        accessToken,
+        messageId,
+        toRecipients,
+        subject,
+        content
+        // attachments
+      );
+
+      return { data, error: null };
+    } catch (e) {
+      dLog("Error updating draft");
+      return { data: null, error: "Error updating draft" };
+    }
+  }
+}
+
+export async function deleteDraft(
+  email: string,
+  provider: "google" | "outlook",
+  messageId: string
+) {
+  const accessToken = await getAccessToken(email);
+
+  if (provider === "google") {
+    return await gDraftDelete(accessToken, messageId);
+  } else {
+    try {
+      await mDeleteMessage(accessToken, messageId);
+
+      return { data: null, error: null };
+    } catch (e) {
+      dLog("Error deleting draft");
+      return { data: null, error: "Error deleting draft" };
+    }
+  }
+}
+
+export async function sendDraft(
+  email: string,
+  provider: "google" | "outlook",
+  messageId: string
+) {
+  const accessToken = await getAccessToken(email);
+
+  if (provider === "google") {
+    // TODO: not implemented
+  } else {
+    try {
+      await mDraftSend(accessToken, messageId);
+
+      return { data: null, error: null };
+    } catch (e) {
+      dLog("Error sending draft");
+      return { data: null, error: "Error sending draft" };
+    }
+  }
+
+  return { data: null, error: null };
 }
