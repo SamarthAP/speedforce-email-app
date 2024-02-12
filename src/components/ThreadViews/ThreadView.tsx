@@ -8,11 +8,9 @@ import AssistBar from "../AssistBar";
 import AccountActionsMenu from "../AccountActionsMenu";
 import {
   PencilSquareIcon,
-  ArrowPathIcon,
   MagnifyingGlassIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
-import SelectedThreadBar from "../SelectedThreadBar";
 import TooltipPopover from "../TooltipPopover";
 import { useTooltip } from "../UseTooltip";
 import { classNames } from "../../lib/util";
@@ -27,6 +25,7 @@ import {
   InfiniteQueryObserverResult,
 } from "react-query";
 import Titlebar from "../Titlebar";
+import PersonalAI from "../AI/PersonalAI";
 
 interface ThreadViewProps {
   data: ClientInboxTabType;
@@ -55,6 +54,7 @@ export default function ThreadView({
   const scrollRef = useRef<HTMLDivElement>(null);
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const navigate = useNavigate();
+  const [showPersonalAi, setShowPersonalAi] = useState(false);
 
   const renderCounter = useRef(0);
   renderCounter.current = renderCounter.current + 1;
@@ -120,6 +120,7 @@ export default function ThreadView({
       className={`overflow-hidden h-screen w-screen flex flex-col fadeIn-animation bg-cover bg-center`}
     >
       <Titlebar />
+      <PersonalAI show={showPersonalAi} hide={() => setShowPersonalAi(false)} />
 
       <div className="w-full h-full flex overflow-hidden">
         <Sidebar />
@@ -153,6 +154,25 @@ export default function ThreadView({
               )}
             </nav>
             <div className="flex items-center">
+              {selectedEmail.provider === "google" && (
+                <button
+                  className="mr-3"
+                  onMouseEnter={(event) => {
+                    handleShowTooltip(event, "AI");
+                  }}
+                  onMouseLeave={handleHideTooltip}
+                  onClick={() => {
+                    setShowPersonalAi(true);
+                  }}
+                >
+                  <SparklesIcon
+                    className={classNames(
+                      "h-5 w-5 shrink-0",
+                      "text-black dark:text-white"
+                    )}
+                  />
+                </button>
+              )}
               <button
                 className="mr-3"
                 onMouseEnter={(event) => {
