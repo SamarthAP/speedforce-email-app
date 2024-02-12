@@ -1,5 +1,5 @@
 import UnreadDot from "./UnreadDot";
-import { IEmailThread, ISelectedEmail } from "../lib/db";
+import { IEmailThread, ISelectedEmail, db } from "../lib/db";
 import he from "he";
 import React, { useState } from "react";
 import {
@@ -31,6 +31,7 @@ import _ from "lodash";
 import { ConfirmModal } from "./modals/ConfirmModal";
 import { useNavigate } from "react-router-dom";
 import ThreadSummaryHoverCard from "./ThreadSummaryHoverCard";
+import { useLiveQuery } from "dexie-react-hooks";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -73,10 +74,10 @@ interface ThreadListProps {
   setScrollPosition: (position: number) => void;
   handleScroll: (event: React.UIEvent<HTMLDivElement, UIEvent>) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
-  // folderId: string;
   canArchiveThread?: boolean;
   canTrashThread?: boolean;
   canPermanentlyDeleteThread?: boolean;
+  isDrafts?: boolean;
 }
 
 export default function ThreadList({
@@ -89,6 +90,7 @@ export default function ThreadList({
   canArchiveThread = false,
   canTrashThread = false,
   canPermanentlyDeleteThread = false,
+  isDrafts = false,
 }: ThreadListProps) {
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
 
@@ -124,18 +126,17 @@ export default function ThreadList({
       {threads?.map((thread, index) => {
         return (
           <div
-            // onClick={() => {
-            //   setScrollPosition(scrollRef.current?.scrollTop || 0);
-            //   setSelectedThread(thread.id);
-            //   if (thread.unread) {
-            //     void markRead(
-            //       selectedEmail.email,
-            //       selectedEmail.provider,
-            //       thread.id
-            //     );
-            //   }
-            // }}
-            // onMouseOver={() => setHoveredThread(thread)}
+            onClick={() => {
+              setScrollPosition(scrollRef.current?.scrollTop || 0);
+              if (thread.unread) {
+                void markRead(
+                  selectedEmail.email,
+                  selectedEmail.provider,
+                  thread.id
+                );
+              }
+            }}
+            onMouseOver={() => setHoveredThread(thread)}
             key={index}
           >
             {index === 0 && isToday(new Date(thread.date)) ? (
@@ -179,6 +180,7 @@ export default function ThreadList({
               canArchiveThread={canArchiveThread}
               canTrashThread={canTrashThread}
               canPermanentlyDeleteThread={canPermanentlyDeleteThread}
+              isDrafts={isDrafts}
               setHoveredThread={setHoveredThread}
               setDeleteThreadModalData={setDeleteThreadModalData}
               handleShowTooltip={handleShowTooltip}
@@ -221,6 +223,7 @@ interface ThreadListRowProps {
   canArchiveThread: boolean;
   canTrashThread: boolean;
   canPermanentlyDeleteThread: boolean;
+  isDrafts: boolean;
   setHoveredThread: (thread: IEmailThread | null) => void;
   setDeleteThreadModalData: (data: DeleteThreadModalData) => void;
   handleShowTooltip: (
@@ -236,6 +239,7 @@ function ThreadListRow({
   canArchiveThread,
   canTrashThread,
   canPermanentlyDeleteThread,
+  isDrafts,
   setHoveredThread,
   setDeleteThreadModalData,
   handleShowTooltip,
@@ -243,6 +247,19 @@ function ThreadListRow({
 }: ThreadListRowProps) {
   const navigate = useNavigate();
   const [showSummaryCard, setShowSummaryCard] = useState(false);
+
+  function handleThreadClick(thread: IEmailThread) {
+    // setScrollPosition(scrollRef.current?.scrollTop || 0);
+    if (isDrafts) {
+      navigate(`/draft/${thread.id}`);
+    } else {
+      if (thread.unread) {
+        void markRead(selectedEmail.email, selectedEmail.provider, thread.id);
+      }
+
+      navigate(`/thread/${thread.id}`);
+    }
+  }
 
   async function handleStarClick(thread: IEmailThread) {
     if (thread.labelIds.includes("STARRED")) {
@@ -332,20 +349,14 @@ function ThreadListRow({
     );
   }
 
+  const message = useLiveQuery(() => {
+    return db.messages.where("threadId").equals(thread.id).first();
+  });
+
   return (
-    <>
+    <div className="relative">
       <div
-        onClick={() => {
-          // setScrollPosition(scrollRef.current?.scrollTop || 0);
-          if (thread.unread) {
-            void markRead(
-              selectedEmail.email,
-              selectedEmail.provider,
-              thread.id
-            );
-          }
-          navigate(`/thread/${thread.id}`);
-        }}
+        onClick={() => handleThreadClick(thread)}
         onMouseOver={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
           setHoveredThread(thread);
           setShowSummaryCard(true);
@@ -398,7 +409,16 @@ function ThreadListRow({
           </div>
 
           <span className="truncate text-black dark:text-zinc-100">
-            {thread.from.slice(0, thread.from.lastIndexOf("<"))}
+            {
+              // TODO: Should we make a DraftThreadView or DraftThreadList component to avoid need for live query?
+              isDrafts
+                ? message?.toRecipients
+                    .map((recipient) =>
+                      recipient.slice(0, recipient.lastIndexOf("<"))
+                    )
+                    .join(", ")
+                : thread.from.slice(0, thread.from.lastIndexOf("<"))
+            }
           </span>
         </div>
         <div className="col-span-8 flex overflow-hidden">
@@ -443,7 +463,10 @@ function ThreadListRow({
                 {canTrashThread && (
                   <button
                     onMouseEnter={(event) => {
-                      handleShowTooltip(event, "Delete");
+                      handleShowTooltip(
+                        event,
+                        isDrafts ? "Discard Draft" : "Delete"
+                      );
                     }}
                     onMouseLeave={handleHideTooltip}
                     onClick={(
@@ -490,6 +513,6 @@ function ThreadListRow({
           threadSubject={thread.subject}
         />
       )}
-    </>
+    </div>
   );
 }

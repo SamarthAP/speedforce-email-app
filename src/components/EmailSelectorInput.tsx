@@ -52,8 +52,17 @@ export function EmailSelectorInput({
     }
   };
 
-  const onEmailKeyUp = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter" || event.key === "," || event.key === " ") {
+  const onEmailKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      event.key === "Enter" ||
+      event.key === "," ||
+      event.key === " " ||
+      event.key === "Tab"
+    ) {
+      if (event.key === "Tab" && emailText.length > 0) {
+        event.preventDefault();
+      }
+
       // Validate email and add to send list
       if (isValidEmail(emailText)) {
         setEmails([...emails, emailText]);
@@ -130,7 +139,7 @@ export function EmailSelectorInput({
               pattern=""
               value={emailText}
               onChange={(event) => void onEmailTextChange(event)}
-              onKeyUp={onEmailKeyUp}
+              onKeyDown={onEmailKeyDown}
             />
 
             {filteredContacts.length > 0 && (

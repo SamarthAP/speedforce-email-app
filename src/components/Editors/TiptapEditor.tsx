@@ -16,16 +16,13 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
 import ImagePlugin from "./ImagePlugin";
 import SimpleButton from "../SimpleButton";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { XCircleIcon } from "@heroicons/react/20/solid";
 import { classNames } from "../../lib/util";
-import { dLog } from "../../lib/noProd";
-import { ISelectedEmail } from "../../lib/db";
-import { sendEmail, sendEmailWithAttachments } from "../../lib/sync";
-import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
 import { EditLinkModal } from "../modals/EditLinkModal";
 import { NewAttachment } from "../../api/model/users.attachment";
+import { debounce } from "lodash";
+import { SendDraftRequestType } from "../../pages/ComposeMessage";
 
 // define your extension array
 const extensions = [
@@ -55,26 +52,58 @@ const extensions = [
 const content = "";
 
 interface TiptapProps {
-  selectedEmail: ISelectedEmail;
-  to: string[];
-  subject: string;
+  initialContent: string;
+  attachments: NewAttachment[];
+  setAttachments: (attachments: NewAttachment[]) => void;
+  sendEmail: (content: string) => Promise<void>;
+  setContent: (content: string) => void;
+  saveDraft: (
+    request: SendDraftRequestType
+  ) => Promise<{ error: string | null }>;
+  canSendEmail: boolean;
+  sendingEmail: boolean;
 }
 
-export default function Tiptap({ selectedEmail, to, subject }: TiptapProps) {
-  const [attachments, setAttachments] = useState<NewAttachment[]>([]);
-  const [sendingEmail, setSendingEmail] = useState(false);
+export default function Tiptap({
+  initialContent,
+  attachments,
+  setAttachments,
+  sendEmail,
+  setContent,
+  saveDraft,
+  canSendEmail,
+  sendingEmail,
+}: TiptapProps) {
   const [selectedLink, setSelectedLink] = useState<{
     displayText: string;
     link: string;
   } | null>(null);
   const [isEditLinkModalOpen, setIsEditLinkModalOpen] = useState(false);
-  const navigate = useNavigate();
+
+  // debounced save draft function. save draft when user stops typing for 5 seconds
+  const debouncedSaveDraft = useCallback(
+    debounce((html) => {
+      setContent(html);
+      void saveDraft({ content: html });
+    }, 2000),
+    [saveDraft]
+  );
 
   const editor = useEditor({
     extensions,
     content,
+    onUpdate: ({ editor }) => {
+      // Call the debounced save draft function with the current HTML content of the editor
+      debouncedSaveDraft(editor.getHTML());
+    },
   });
 
+  // Clean up the debounced save draft function so that it doesn't run after the component is unmounted
+  useEffect(() => {
+    return () => debouncedSaveDraft.cancel();
+  }, [debouncedSaveDraft]);
+
+  // Clicking link handler to open the edit link modal
   useEffect(() => {
     if (editor) {
       const handleClick = (event: MouseEvent) => {
@@ -97,19 +126,28 @@ export default function Tiptap({ selectedEmail, to, subject }: TiptapProps) {
     }
   }, [editor]);
 
+  // For existing drafts, set the initial content
+  useEffect(() => {
+    if (editor && initialContent) {
+      editor.commands.setContent(initialContent);
+    }
+  }, [editor, initialContent]);
+
   if (!editor) return null;
 
   // Add addAttachments functionality
   async function addAttachments() {
-    const attachments = await window.electron.ipcRenderer.invoke(
-      "add-attachments"
-    );
+    const newAttachments: NewAttachment[] =
+      await window.electron.ipcRenderer.invoke("add-attachments");
 
-    setAttachments((prev) => [...prev, ...attachments]);
+    void saveDraft({ attachments: [...attachments, ...newAttachments] });
+    setAttachments([...attachments, ...newAttachments]);
   }
 
   function removeAttachment(idx: number) {
-    setAttachments((prev) => prev.filter((_, i) => i !== idx));
+    const newAttachments = attachments.filter((_, i) => i !== idx);
+    void saveDraft({ attachments: newAttachments });
+    setAttachments(newAttachments);
   }
 
   const editLink = (displayText: string | null, url: string) => {
@@ -154,44 +192,6 @@ export default function Tiptap({ selectedEmail, to, subject }: TiptapProps) {
     editor.view.dispatch(transaction);
   };
 
-  const handleSendEmail = async () => {
-    setSendingEmail(true);
-    const html = editor.getHTML();
-
-    if (attachments.length > 0) {
-      const { error } = await sendEmailWithAttachments(
-        selectedEmail.email,
-        selectedEmail.provider,
-        to.join(","),
-        subject,
-        html,
-        attachments
-      );
-
-      if (error) {
-        dLog(error);
-        toast.error("Error sending email");
-        return setSendingEmail(false);
-      }
-    } else {
-      const { error } = await sendEmail(
-        selectedEmail.email,
-        selectedEmail.provider,
-        to.join(","),
-        subject,
-        html
-      );
-
-      if (error) {
-        dLog(error);
-        toast.error("Error sending email");
-        return setSendingEmail(false);
-      }
-    }
-
-    navigate(-1);
-  };
-
   return (
     <div>
       <TiptapMenuBar editor={editor} addAttachments={addAttachments} />
@@ -223,11 +223,14 @@ export default function Tiptap({ selectedEmail, to, subject }: TiptapProps) {
 
       <div className="text-left mt-4 mb-2">
         <SimpleButton
-          onClick={() => void handleSendEmail()}
+          onClick={() => {
+            // void saveDraft({ content: editor.getHTML() });
+            void sendEmail(editor.getHTML());
+          }}
           loading={sendingEmail}
           text="Send"
           width="w-16"
-          disabled={to.length === 0}
+          disabled={!canSendEmail}
         />
       </div>
       <EditLinkModal

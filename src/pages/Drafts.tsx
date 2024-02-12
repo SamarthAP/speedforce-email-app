@@ -59,8 +59,8 @@ export default function Drafts() {
       data={{
         title: "Drafts",
         filterThreadsFnc: filterThreadsFnc,
-        canArchiveThread: true,
         canTrashThread: true,
+        isDraftMode: true,
       }}
       fetchNextPage={fetchNextPage}
       hasNextPage={hasNextPage}

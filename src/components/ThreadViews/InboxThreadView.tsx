@@ -190,7 +190,7 @@ export default function InboxThreadView({
             }
       }
     >
-      {/* <PersonalAI show={showPersonalAi} /> */}
+      <PersonalAI show={showPersonalAi} hide={() => setShowPersonalAi(false)} />
       {isBackgroundOn && (
         <>
           <div className="absolute h-[100px] w-screen inset-0 bg-gradient-to-b from-black/50 to-transparent pointer-events-none"></div>
@@ -257,25 +257,27 @@ export default function InboxThreadView({
                 )}
               </nav>
               <div className="flex items-center">
-                {/* <button
-                  className="mr-3"
-                  onMouseEnter={(event) => {
-                    handleMouseEnter(event, "AI");
-                  }}
-                  onMouseLeave={handleMouseLeave}
-                  onClick={() => {
-                    setShowPersonalAi(true);
-                  }}
-                >
-                  <SparklesIcon
-                    className={classNames(
-                      "h-5 w-5 shrink-0",
-                      isBackgroundOn
-                        ? "text-white"
-                        : "text-black dark:text-white"
-                    )}
-                  />
-                </button> */}
+                {selectedEmail.provider === "google" && (
+                  <button
+                    className="mr-3"
+                    onMouseEnter={(event) => {
+                      handleShowTooltip(event, "AI");
+                    }}
+                    onMouseLeave={handleHideTooltip}
+                    onClick={() => {
+                      setShowPersonalAi(true);
+                    }}
+                  >
+                    <SparklesIcon
+                      className={classNames(
+                        "h-5 w-5 shrink-0",
+                        isBackgroundOn
+                          ? "text-white"
+                          : "text-black dark:text-white"
+                      )}
+                    />
+                  </button>
+                )}
                 <button
                   className="mr-3"
                   onMouseEnter={(event) => {

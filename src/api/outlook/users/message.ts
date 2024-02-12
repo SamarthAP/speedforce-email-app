@@ -31,6 +31,10 @@ export const sendEmail = async (
   subject: string,
   messageContent: string
 ) => {
+  const toRecipients = to.split(",").map((email) => ({
+    emailAddress: { address: email.trim() },
+  }));
+
   const response = await fetch(`${OUTLOOK_API_URL}/me/sendmail`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -44,13 +48,7 @@ export const sendEmail = async (
           contentType: "html",
           content: messageContent,
         },
-        toRecipients: [
-          {
-            emailAddress: {
-              address: to,
-            },
-          },
-        ],
+        toRecipients,
       },
     }),
   });
@@ -68,6 +66,10 @@ export const sendEmailWithAttachments = async (
   messageContent: string,
   attachments: NewAttachment[]
 ) => {
+  const toRecipients = to.split(",").map((email) => ({
+    emailAddress: { address: email.trim() },
+  }));
+
   const response = await fetch(`${OUTLOOK_API_URL}/me/sendmail`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -81,13 +83,7 @@ export const sendEmailWithAttachments = async (
           contentType: "html",
           content: messageContent,
         },
-        toRecipients: [
-          {
-            emailAddress: {
-              address: to,
-            },
-          },
-        ],
+        toRecipients,
         attachments: attachments.map((attachment) => {
           return {
             "@odata.type": "#microsoft.graph.fileAttachment",
