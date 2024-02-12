@@ -24,6 +24,8 @@ interface EditDraftProps {
 
 export function EditDraft({ selectedEmail }: EditDraftProps) {
   const [to, setTo] = useState<string[]>([]);
+  const [cc, setCc] = useState<string[]>([]);
+  const [bcc, setBcc] = useState<string[]>([]);
   const [subject, setSubject] = useState("");
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -37,20 +39,15 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     void saveDraft({ to: emails });
   };
 
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        void saveDraft({});
-        navigate(-1);
-      }
-    };
+  const setCcAndSaveDraft = (emails: string[]) => {
+    setCc(emails);
+    void saveDraft({ cc: emails });
+  };
 
-    window.addEventListener("keydown", handleKeyPress);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyPress);
-    };
-  }, [navigate]);
+  const setBccAndSaveDraft = (emails: string[]) => {
+    setBcc(emails);
+    void saveDraft({ bcc: emails });
+  };
 
   const loadDraft = async (threadId: string) => {
     const thread = await db.emailThreads.get(threadId);
@@ -68,15 +65,6 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       navigate(-1);
     }
   };
-
-  useEffect(() => {
-    if (threadId) {
-      void loadDraft(threadId);
-    } else {
-      dLog("Unable to load threadId");
-      navigate(-1);
-    }
-  }, [threadId]);
 
   const saveDraft = useCallback(
     async (request: SendDraftRequestType) => {
@@ -104,6 +92,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         selectedEmail.provider,
         message.id,
         request.to || to,
+        request.cc || cc,
+        request.bcc || bcc,
         request.subject || subject,
         request.content || contentHtml
         // request.attachments || attachments
@@ -121,6 +111,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       selectedEmail.provider,
       subject,
       to,
+      cc,
+      bcc,
       contentHtml,
       threadId,
       attachments,
@@ -135,7 +127,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       const { error } = await sendEmailWithAttachments(
         selectedEmail.email,
         selectedEmail.provider,
-        to.join(","),
+        to,
+        cc,
+        bcc,
         subject,
         content,
         attachments
@@ -164,7 +158,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       const { error } = await sendEmail(
         selectedEmail.email,
         selectedEmail.provider,
-        to.join(","),
+        to,
+        cc,
+        bcc,
         subject,
         content
       );
@@ -192,6 +188,30 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     navigate(-1);
   };
 
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        void saveDraft({});
+        navigate(-1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress);
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    if (threadId) {
+      void loadDraft(threadId);
+    } else {
+      dLog("Unable to load threadId");
+      navigate(-1);
+    }
+  }, [threadId]);
+
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col dark:bg-zinc-900">
       <Titlebar />
@@ -205,8 +225,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                 e.stopPropagation();
                 void saveDraft({
                   to,
+                  cc,
+                  bcc,
                   subject,
-                  content: contentHtml,
                   attachments,
                 });
                 navigate(-1);
@@ -219,17 +240,27 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
             </div>
           </div>
           <div className="dark:text-white p-4 w-full">Edit Draft</div>
-          <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 mb-10 overflow-y-scroll hide-scroll">
+          <div className="h-full w-full flex flex-col space-y-2 pt-2 px-4 pb-4 mb-10 overflow-y-scroll hide-scroll">
             <div className="border border-slate-200 dark:border-zinc-700">
               <EmailSelectorInput
-                text="To"
                 selectedEmail={selectedEmail}
-                emails={to}
-                setEmails={setToAndSaveDraft}
+                toProps={{
+                  text: "To",
+                  emails: to,
+                  setEmails: setToAndSaveDraft,
+                }}
+                ccProps={{
+                  emails: cc,
+                  setEmails: setCcAndSaveDraft,
+                }}
+                bccProps={{
+                  emails: bcc,
+                  setEmails: setBccAndSaveDraft,
+                }}
               />
-              <div className="flex pb-2 border-b border-b-slate-200 dark:border-b-zinc-700">
+              <div className="flex py-2 border-b border-b-slate-200 dark:border-b-zinc-700">
                 {/* Input */}
-                <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center justify-end">
+                <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center pl-2">
                   Subject
                 </div>
                 <input
@@ -239,7 +270,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                   type="text"
                   name="subject"
                   id="subject"
-                  className="w-full block bg-transparent border-0 pl-10 pr-20 dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
+                  className="w-full block bg-transparent border-0 pl-5 pr-20 dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
                   placeholder="..."
                 />
               </div>
@@ -250,7 +281,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                 </div>
                 <div className="w-full pl-10 overflow-scroll hide-scroll">
                   <TiptapEditor
-                    canSendEmail={to.length > 0}
+                    canSendEmail={
+                      to.length > 0 || cc.length > 0 || bcc.length > 0
+                    }
                     initialContent={contentHtml}
                     attachments={attachments}
                     setAttachments={setAttachments}
