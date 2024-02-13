@@ -101,7 +101,9 @@ export const get = async (accessToken: string, threadId: string) => {
 export const forward = async (
   accessToken: string,
   messageId: string,
-  toRecipients: string[]
+  toRecipients: string[],
+  ccRecipients: string[],
+  bccRecipients: string[]
 ) => {
   const response = await fetch(
     `${OUTLOOK_API_URL}/me/messages/${messageId}/forward`,
@@ -113,13 +115,15 @@ export const forward = async (
       method: "POST",
       body: JSON.stringify({
         comment: "--- Forwarded message ---",
-        toRecipients: toRecipients.map((email) => {
-          return {
-            emailAddress: {
-              address: email,
-            },
-          };
-        }),
+        toRecipients: toRecipients.map((email) => ({
+          emailAddress: { address: email.trim() },
+        })),
+        ccRecipients: ccRecipients.map((email) => ({
+          emailAddress: { address: email.trim() },
+        })),
+        bccRecipients: bccRecipients.map((email) => ({
+          emailAddress: { address: email.trim() },
+        })),
       }),
     }
   );

@@ -19,6 +19,7 @@ import toast from "react-hot-toast";
 import { EmailSelectorInput } from "./EmailSelectorInput";
 import Tiptap from "./Editors/TiptapEditor";
 import { NewAttachment } from "../api/model/users.attachment";
+import { dLog } from "../lib/noProd";
 
 interface MessageProps {
   message: IMessage;
@@ -36,6 +37,8 @@ export default function Message({ message, selectedEmail }: MessageProps) {
     "reply" | "replyAll" | "forward" | "none"
   >("none");
   const [forwardTo, setForwardTo] = useState<string[]>([]);
+  const [forwardToCc, setForwardToCc] = useState<string[]>([]);
+  const [forwardToBcc, setForwardToBcc] = useState<string[]>([]);
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
 
   const replyRef = createRef<HTMLDivElement>();
@@ -194,24 +197,53 @@ export default function Message({ message, selectedEmail }: MessageProps) {
           ) : editorMode === "forward" ? (
             <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
               <EmailSelectorInput
-                text="Fwd To"
                 selectedEmail={selectedEmail}
-                emails={forwardTo}
-                setEmails={setForwardTo}
+                toProps={{
+                  text: "Fwd To",
+                  emails: forwardTo,
+                  setEmails: setForwardTo,
+                }}
+                ccProps={{
+                  emails: forwardToCc,
+                  setEmails: setForwardToCc,
+                }}
+                bccProps={{
+                  emails: forwardToBcc,
+                  setEmails: setForwardToBcc,
+                }}
               />
             </div>
           ) : // <span className="flex flex-row items-center">
           // </span>
           null}
 
-          <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
+          <Tiptap
+            initialContent=""
+            attachments={attachments}
+            setAttachments={setAttachments}
+            canSendEmail={
+              editorMode === "reply" ||
+              editorMode === "replyAll" ||
+              forwardTo.length > 0 ||
+              forwardToCc.length > 0 ||
+              forwardToBcc.length > 0
+            }
+            sendEmail={handleSendReply}
+            sendingEmail={sendingReply}
+            saveDraft={async () => {
+              return { error: null };
+            }}
+            setContent={() => dLog("setContent")}
+          />
+
+          {/* <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
 
           <SimpleButton
             onClick={() => void handleSendReply()}
             loading={sendingReply}
             text="Send"
             width="w-16"
-          />
+          /> */}
         </div>
       )}
 

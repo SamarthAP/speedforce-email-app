@@ -5,6 +5,8 @@ import { OUTLOOK_API_URL } from "../constants";
 export const create = async (
   accessToken: string,
   toRecipients: string[],
+  ccRecipients: string[],
+  bccRecipients: string[],
   subject: string,
   content: string
   // attachments: NewAttachment[]
@@ -17,6 +19,17 @@ export const create = async (
       emailAddress: { address: email },
     }));
   }
+  if (ccRecipients.length > 0) {
+    body.ccRecipients = ccRecipients.map((email) => ({
+      emailAddress: { address: email },
+    }));
+  }
+  if (bccRecipients.length > 0) {
+    body.bccRecipients = bccRecipients.map((email) => ({
+      emailAddress: { address: email },
+    }));
+  }
+
   if (subject) {
     body.subject = subject;
   }
@@ -54,6 +67,8 @@ export const update = async (
   accessToken: string,
   messageId: string,
   toRecipients: string[],
+  ccRecipients: string[],
+  bccRecipients: string[],
   subject: string,
   content: string
   // attachments: NewAttachment[]
@@ -64,6 +79,17 @@ export const update = async (
       emailAddress: { address: email },
     }));
   }
+  if (ccRecipients.length > 0) {
+    body.ccRecipients = ccRecipients.map((email) => ({
+      emailAddress: { address: email },
+    }));
+  }
+  if (bccRecipients.length > 0) {
+    body.bccRecipients = bccRecipients.map((email) => ({
+      emailAddress: { address: email },
+    }));
+  }
+
   if (subject) {
     body.subject = subject;
   }

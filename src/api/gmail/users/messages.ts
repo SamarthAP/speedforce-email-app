@@ -43,6 +43,8 @@ export const sendEmail = async (
   accessToken: string,
   from: string,
   to: string,
+  cc: string | null,
+  bcc: string | null,
   subject: string,
   messageContent: string
 ) => {
@@ -56,7 +58,11 @@ export const sendEmail = async (
         "Content-Transfer-Encoding: 7bit\n" +
         `Subject: =?UTF-8?B?${Base64.encode(subject)}?=\n` +
         `From: ${from}\n` +
-        `To: ${to}\n\n` +
+        // `To: ${to}\n\n` +
+        (to ? `To: ${to}\n` : "") +
+        (cc ? `Cc: ${cc}\n` : "") +
+        (bcc ? `Bcc: ${bcc}\n` : "") +
+        "\n" +
         messageContent
     )
       .replace(/\+/g, "-")
@@ -87,9 +93,11 @@ export const sendEmail = async (
 };
 
 export const sendEmailWithAttachments = async (
-  accesToken: string,
+  accessToken: string,
   from: string,
   to: string,
+  cc: string | null,
+  bcc: string | null,
   subject: string,
   messageContent: string,
   attachments: NewAttachment[]
@@ -109,7 +117,11 @@ export const sendEmailWithAttachments = async (
         "Content-Transfer-Encoding: 7bit\n" +
         `Subject: =?UTF-8?B?${Base64.encode(subject)}?=\n` +
         `From: ${from}\n` +
-        `To: ${to}\n\n` +
+        // `To: ${to}\n\n` +
+        (to ? `To: ${to}\n` : "") +
+        (cc ? `Cc: ${cc}\n` : "") +
+        (bcc ? `Bcc: ${bcc}\n` : "") +
+        "\n" +
         `--spdfrce\n` +
         `Content-Type: text/html; charset="UTF-8"\n` +
         "MIME-Version: 1.0\n" +
@@ -140,7 +152,7 @@ export const sendEmailWithAttachments = async (
         method: "POST",
         headers: {
           "Content-Type": "message/rfc822",
-          Authorization: `Bearer ${accesToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           raw: encodedReply,
@@ -164,7 +176,9 @@ export const sendEmailWithAttachments = async (
 export const forward = async (
   accessToken: string,
   from: string,
-  to: string[],
+  to: string,
+  cc: string | null,
+  bcc: string | null,
   subject: string,
   messageContent: string
 ) => {
@@ -178,7 +192,11 @@ export const forward = async (
         "Content-Transfer-Encoding: 7bit\n" +
         `Subject: Fwd: =?UTF-8?B?${Base64.encode(subject)}?=\n` +
         `From: ${from}\n` +
-        `To: ${to}\n\n` +
+        // `To: ${to}\n\n` +
+        (to ? `To: ${to}\n` : "") +
+        (cc ? `Cc: ${cc}\n` : "") +
+        (bcc ? `Bcc: ${bcc}\n` : "") +
+        "\n" +
         messageContent
     )
       .replace(/\+/g, "-")

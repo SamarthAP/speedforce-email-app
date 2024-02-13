@@ -6,6 +6,8 @@ export const create = async (
   accessToken: string,
   from: string,
   to: string,
+  cc: string | null,
+  bcc: string | null,
   subject: string,
   messageContent: string
 ) => {
@@ -18,7 +20,11 @@ export const create = async (
       "Content-Transfer-Encoding: 7bit\n" +
       `Subject: =?UTF-8?B?${Base64.encode(subject)}?=\n` +
       `From: ${from}\n` +
-      `To: ${to}\n\n` +
+      // `To: ${to}\n\n` +
+      (to ? `To: ${to}\n` : "") +
+      (cc ? `Cc: ${cc}\n` : "") +
+      (bcc ? `Bcc: ${bcc}\n` : "") +
+      "\n" +
       messageContent
   )
     .replace(/\+/g, "-")
@@ -57,6 +63,8 @@ export const update = async (
   draftId: string,
   from: string,
   to: string,
+  cc: string | null,
+  bcc: string | null,
   subject: string,
   messageContent: string
 ) => {
@@ -69,7 +77,11 @@ export const update = async (
       "Content-Transfer-Encoding: 7bit\n" +
       `Subject: =?UTF-8?B?${Base64.encode(subject)}?=\n` +
       `From: ${from}\n` +
-      `To: ${to}\n\n` +
+      // `To: ${to}\n\n` +
+      (to ? `To: ${to}\n` : "") +
+      (cc ? `Cc: ${cc}\n` : "") +
+      (bcc ? `Bcc: ${bcc}\n` : "") +
+      "\n" +
       messageContent
   )
     .replace(/\+/g, "-")
