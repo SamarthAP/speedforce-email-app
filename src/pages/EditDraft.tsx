@@ -261,7 +261,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
               />
               <div className="flex py-2 border-b border-b-slate-200 dark:border-b-zinc-700">
                 {/* Input */}
-                <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center pl-2">
+                <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center justify-end">
                   Subject
                 </div>
                 <input
