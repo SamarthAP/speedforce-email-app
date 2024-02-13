@@ -7,11 +7,7 @@ import {
   ArrowUturnLeftIcon,
   ArrowUturnRightIcon,
 } from "@heroicons/react/24/outline";
-import EmailEditor, { EditorComponentRef } from "./EmailEditor";
-import { Editor } from "draft-js";
-import { stateToHTML } from "draft-js-export-html";
 import { sendReply, sendReplyAll, forward } from "../lib/sync";
-import SimpleButton from "./SimpleButton";
 import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
@@ -19,6 +15,7 @@ import toast from "react-hot-toast";
 import { EmailSelectorInput } from "./EmailSelectorInput";
 import Tiptap from "./Editors/TiptapEditor";
 import { NewAttachment } from "../api/model/users.attachment";
+import { dLog } from "../lib/noProd";
 
 interface MessageProps {
   message: IMessage;
@@ -36,11 +33,10 @@ export default function Message({ message, selectedEmail }: MessageProps) {
     "reply" | "replyAll" | "forward" | "none"
   >("none");
   const [forwardTo, setForwardTo] = useState<string[]>([]);
+  const [forwardToCc, setForwardToCc] = useState<string[]>([]);
+  const [forwardToBcc, setForwardToBcc] = useState<string[]>([]);
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
-
   const replyRef = createRef<HTMLDivElement>();
-  const editorRef = createRef<Editor>();
-  const editorComponentRef = createRef<EditorComponentRef>();
 
   const handleClickReply = () => {
     setShowReply((prev) => !prev || editorMode !== "reply");
@@ -57,44 +53,41 @@ export default function Message({ message, selectedEmail }: MessageProps) {
     setEditorMode("forward");
   };
 
-  const handleSendReply = async () => {
+  const handleSendReply = async (content: string) => {
     let error: string | null = null;
 
     setSendingReply(true);
-    if (editorComponentRef.current) {
-      const editorState = editorComponentRef.current.getEditorState();
-      const context = editorState.getCurrentContent();
-      const html = stateToHTML(context);
-
-      if (editorMode === "reply") {
-        ({ error } = await sendReply(
-          selectedEmail.email,
-          selectedEmail.provider,
-          message,
-          html
-        ));
-      } else if (editorMode === "replyAll") {
-        ({ error } = await sendReplyAll(
-          selectedEmail.email,
-          selectedEmail.provider,
-          message,
-          html
-        ));
-      } else {
-        ({ error } = await forward(
-          selectedEmail.email,
-          selectedEmail.provider,
-          message,
-          forwardTo,
-          html
-        ));
-      }
+    if (editorMode === "reply") {
+      ({ error } = await sendReply(
+        selectedEmail.email,
+        selectedEmail.provider,
+        message,
+        content
+      ));
+    } else if (editorMode === "replyAll") {
+      ({ error } = await sendReplyAll(
+        selectedEmail.email,
+        selectedEmail.provider,
+        message,
+        content
+      ));
+    } else {
+      ({ error } = await forward(
+        selectedEmail.email,
+        selectedEmail.provider,
+        message,
+        forwardTo,
+        forwardToCc,
+        forwardToBcc,
+        content
+      ));
     }
 
     if (error) {
       toast("Error sending messsage", { icon: "❌", duration: 5000 });
     } else {
       setShowReply(false);
+      toast("Message sent", { icon: "📤", duration: 5000 });
     }
     setSendingReply(false);
   };
@@ -184,33 +177,55 @@ export default function Message({ message, selectedEmail }: MessageProps) {
           ref={replyRef}
         >
           {editorMode === "reply" ? (
-            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
+            <div className="text-sm dark:text-zinc-400 text-slate-500 my-2">
               Write reply to {message.from}
             </div>
           ) : editorMode === "replyAll" ? (
-            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
+            <div className="text-sm dark:text-zinc-400 text-slate-500 my-2">
               Write reply to all
             </div>
           ) : editorMode === "forward" ? (
-            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-2">
+            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-0.5">
               <EmailSelectorInput
-                text="Fwd To"
                 selectedEmail={selectedEmail}
-                emails={forwardTo}
-                setEmails={setForwardTo}
+                alignLabels="left"
+                disableCC={selectedEmail.provider === "outlook"}
+                toProps={{
+                  text: "Fwd To",
+                  emails: forwardTo,
+                  setEmails: setForwardTo,
+                }}
+                ccProps={{
+                  emails: forwardToCc,
+                  setEmails: setForwardToCc,
+                }}
+                bccProps={{
+                  emails: forwardToBcc,
+                  setEmails: setForwardToBcc,
+                }}
               />
             </div>
           ) : // <span className="flex flex-row items-center">
           // </span>
           null}
 
-          <EmailEditor editorRef={editorRef} ref={editorComponentRef} />
-
-          <SimpleButton
-            onClick={() => void handleSendReply()}
-            loading={sendingReply}
-            text="Send"
-            width="w-16"
+          <Tiptap
+            initialContent=""
+            attachments={attachments}
+            setAttachments={setAttachments}
+            canSendEmail={
+              editorMode === "reply" ||
+              editorMode === "replyAll" ||
+              forwardTo.length > 0 ||
+              forwardToCc.length > 0 ||
+              forwardToBcc.length > 0
+            }
+            sendEmail={handleSendReply}
+            sendingEmail={sendingReply}
+            saveDraft={async () => {
+              return { error: null };
+            }}
+            setContent={() => dLog("setContent")}
           />
         </div>
       )}

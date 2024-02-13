@@ -27,14 +27,12 @@ export const get = async (
 
 export const sendEmail = async (
   accessToken: string,
-  to: string,
+  toRecipients: string[],
+  ccRecipients: string[],
+  bccRecipients: string[],
   subject: string,
   messageContent: string
 ) => {
-  const toRecipients = to.split(",").map((email) => ({
-    emailAddress: { address: email.trim() },
-  }));
-
   const response = await fetch(`${OUTLOOK_API_URL}/me/sendmail`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -48,7 +46,15 @@ export const sendEmail = async (
           contentType: "html",
           content: messageContent,
         },
-        toRecipients,
+        toRecipients: toRecipients.map((email) => ({
+          emailAddress: { address: email.trim() },
+        })),
+        ccRecipients: ccRecipients.map((email) => ({
+          emailAddress: { address: email.trim() },
+        })),
+        bccRecipients: bccRecipients.map((email) => ({
+          emailAddress: { address: email.trim() },
+        })),
       },
     }),
   });
@@ -61,15 +67,13 @@ export const sendEmail = async (
 
 export const sendEmailWithAttachments = async (
   accessToken: string,
-  to: string,
+  toRecipients: string[],
+  ccRecipients: string[],
+  bccRecipients: string[],
   subject: string,
   messageContent: string,
   attachments: NewAttachment[]
 ) => {
-  const toRecipients = to.split(",").map((email) => ({
-    emailAddress: { address: email.trim() },
-  }));
-
   const response = await fetch(`${OUTLOOK_API_URL}/me/sendmail`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -83,7 +87,15 @@ export const sendEmailWithAttachments = async (
           contentType: "html",
           content: messageContent,
         },
-        toRecipients,
+        toRecipients: toRecipients.map((email) => ({
+          emailAddress: { address: email.trim() },
+        })),
+        ccRecipients: ccRecipients.map((email) => ({
+          emailAddress: { address: email.trim() },
+        })),
+        bccRecipients: bccRecipients.map((email) => ({
+          emailAddress: { address: email.trim() },
+        })),
         attachments: attachments.map((attachment) => {
           return {
             "@odata.type": "#microsoft.graph.fileAttachment",

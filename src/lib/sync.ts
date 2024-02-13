@@ -676,6 +676,8 @@ export async function forward(
   provider: "google" | "outlook",
   message: IMessage,
   toRecipients: string[],
+  ccRecipients: string[],
+  bccRecipients: string[],
   html: string
 ) {
   const accessToken = await getAccessToken(email);
@@ -687,13 +689,21 @@ export async function forward(
     return await gForward(
       accessToken,
       from,
-      toRecipients,
+      toRecipients.join(","),
+      ccRecipients.join(","),
+      bccRecipients.join(","),
       subject,
       decodeURIComponent(encodeURIComponent(forwardHTML))
     );
   } else if (provider === "outlook") {
     try {
-      await mForward(accessToken, message.id, toRecipients);
+      await mForward(
+        accessToken,
+        message.id,
+        toRecipients,
+        ccRecipients,
+        bccRecipients
+      );
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error forwarding message" };
@@ -706,17 +716,34 @@ export async function forward(
 export async function sendEmail(
   email: string,
   provider: "google" | "outlook",
-  to: string,
+  toRecipients: string[],
+  ccRecipients: string[],
+  bccRecipients: string[],
   subject: string,
   html: string
 ) {
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    return await gSendEmail(accessToken, email, to, subject, html);
+    return await gSendEmail(
+      accessToken,
+      email,
+      toRecipients.join(","),
+      ccRecipients.join(","),
+      bccRecipients.join(","),
+      subject,
+      html
+    );
   } else if (provider === "outlook") {
     try {
-      await mSendEmail(accessToken, to, subject, html);
+      await mSendEmail(
+        accessToken,
+        toRecipients,
+        ccRecipients,
+        bccRecipients,
+        subject,
+        html
+      );
 
       return { data: null, error: null };
     } catch (e) {
@@ -730,7 +757,9 @@ export async function sendEmail(
 export async function sendEmailWithAttachments(
   email: string,
   provider: "google" | "outlook",
-  to: string,
+  toRecipients: string[],
+  ccRecipients: string[],
+  bccRecipients: string[],
   subject: string,
   html: string,
   attachments: NewAttachment[]
@@ -741,7 +770,9 @@ export async function sendEmailWithAttachments(
     return await gSendEmailWithAttachments(
       accessToken,
       email,
-      to,
+      toRecipients.join(","),
+      ccRecipients.join(","),
+      bccRecipients.join(","),
       subject,
       html,
       attachments
@@ -750,7 +781,9 @@ export async function sendEmailWithAttachments(
     try {
       await mSendEmailWithAttachments(
         accessToken,
-        to,
+        toRecipients,
+        ccRecipients,
+        bccRecipients,
         subject,
         html,
         attachments
@@ -1081,6 +1114,8 @@ export async function createDraft(
   email: string,
   provider: "google" | "outlook",
   toRecipients: string[],
+  ccRecipients: string[],
+  bccRecipients: string[],
   subject: string,
   content: string
   // attachments: NewAttachment[]
@@ -1103,6 +1138,8 @@ export async function createDraft(
       accessToken,
       email,
       toRecipients.join(","),
+      ccRecipients.join(","),
+      bccRecipients.join(","),
       subject,
       content
       // attachments
@@ -1122,6 +1159,8 @@ export async function createDraft(
       const draft = await mDraftCreate(
         accessToken,
         toRecipients,
+        ccRecipients,
+        bccRecipients,
         subject,
         content
         // attachments
@@ -1147,6 +1186,8 @@ export async function updateDraft(
   provider: "google" | "outlook",
   messageId: string,
   toRecipients: string[],
+  ccRecipients: string[],
+  bccRecipients: string[],
   subject: string,
   content: string
   // attachments: NewAttachment[]
@@ -1159,6 +1200,8 @@ export async function updateDraft(
       messageId,
       email,
       toRecipients.join(","),
+      ccRecipients.join(","),
+      bccRecipients.join(","),
       subject,
       content
       // attachments
@@ -1169,6 +1212,8 @@ export async function updateDraft(
         accessToken,
         messageId,
         toRecipients,
+        ccRecipients,
+        bccRecipients,
         subject,
         content
         // attachments

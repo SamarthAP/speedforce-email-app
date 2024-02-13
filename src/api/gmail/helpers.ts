@@ -29,9 +29,9 @@ export function addTabbedMessageToForwardedHTML(
   const to =
     getMessageHeader(message.headers, "To").match(/[\w.-]+@[\w.-]+/g)?.[0] ||
     "";
+  const cc = getMessageHeader(message.headers, "Cc");
   const subject = getMessageHeader(message.headers, "Subject");
   const date = getMessageHeader(message.headers, "Date");
-  // TODO: consider other fields here, including cc, bcc, etc.
 
   if (!from || !date) {
     return { beforeString, afterString };
@@ -48,6 +48,7 @@ export function addTabbedMessageToForwardedHTML(
                     <div>Date: ${formattedDate}</div>
                     <div>Subject: ${subject}</div>
                     <div>To: ${to}</div>
+                    ${cc ? "<div>Cc: " + cc + "</div>" : ""}
                     <br/>
                     ${htmlData}
                     <br/>`,

@@ -24,6 +24,8 @@ interface ComposeMessageProps {
 
 export interface SendDraftRequestType {
   to?: string[];
+  cc?: string[];
+  bcc?: string[];
   subject?: string;
   content?: string;
   attachments?: NewAttachment[];
@@ -31,20 +33,32 @@ export interface SendDraftRequestType {
 
 export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
   const [to, setTo] = useState<string[]>([]);
+  const [cc, setCc] = useState<string[]>([]);
+  const [bcc, setBcc] = useState<string[]>([]);
   const [subject, setSubject] = useState("");
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [contentHtml, setContentHtml] = useState(""); // TODO: Type this
-
   const [draft, setDraft] = useState<{
     id: string;
     threadId: string;
   }>({ id: "", threadId: "" }); // TODO: Type this
+
   const navigate = useNavigate();
 
   const setToAndSaveDraft = (emails: string[]) => {
     setTo(emails);
     void saveDraft({ to: emails });
+  };
+
+  const setCcAndSaveDraft = (emails: string[]) => {
+    setCc(emails);
+    void saveDraft({ cc: emails });
+  };
+
+  const setBccAndSaveDraft = (emails: string[]) => {
+    setBcc(emails);
+    void saveDraft({ bcc: emails });
   };
 
   const saveDraft = useCallback(
@@ -56,6 +70,8 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
           selectedEmail.provider,
           draft.id,
           request.to || to,
+          request.cc || cc,
+          request.bcc || bcc,
           request.subject || subject,
           request.content || contentHtml
           // request.attachments || attachments
@@ -71,6 +87,8 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
           selectedEmail.email,
           selectedEmail.provider,
           request.to || to,
+          request.cc || cc,
+          request.bcc || bcc,
           request.subject || subject,
           request.content || contentHtml
           // request.attachments || attachments
@@ -95,6 +113,8 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       contentHtml,
       subject,
       to,
+      cc,
+      bcc,
       selectedEmail.email,
       selectedEmail.provider,
     ]
@@ -122,7 +142,9 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       const { error } = await sendEmailWithAttachments(
         selectedEmail.email,
         selectedEmail.provider,
-        to.join(","),
+        to,
+        cc,
+        bcc,
         subject,
         content,
         attachments
@@ -150,7 +172,9 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       const { error } = await sendEmail(
         selectedEmail.email,
         selectedEmail.provider,
-        to.join(","),
+        to,
+        cc,
+        bcc,
         subject,
         content
       );
@@ -188,6 +212,13 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
               className="flex flex-row cursor-pointer items-center"
               onClick={(e) => {
                 e.stopPropagation();
+                void saveDraft({
+                  to,
+                  cc,
+                  bcc,
+                  subject,
+                  attachments,
+                });
                 navigate(-1);
               }}
             >
@@ -199,16 +230,27 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
           </div>
           <div className="dark:text-white p-4 w-full">New Message</div>
           <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 mb-10 overflow-y-scroll hide-scroll">
-            <div className="border border-slate-200 dark:border-zinc-700">
+            <div className="border border-slate-200 dark:border-zinc-700 pt-1">
               <EmailSelectorInput
-                text="To"
                 selectedEmail={selectedEmail}
-                emails={to}
-                setEmails={setToAndSaveDraft}
+                alignLabels="right"
+                toProps={{
+                  text: "To",
+                  emails: to,
+                  setEmails: setToAndSaveDraft,
+                }}
+                ccProps={{
+                  emails: cc,
+                  setEmails: setCcAndSaveDraft,
+                }}
+                bccProps={{
+                  emails: bcc,
+                  setEmails: setBccAndSaveDraft,
+                }}
               />
-              <div className="flex pb-2 border-b border-b-slate-200 dark:border-b-zinc-700">
+              <div className="flex pb-2 pt-1 border-b border-b-slate-200 dark:border-b-zinc-700">
                 {/* Input */}
-                <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center justify-end">
+                <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center pl-2">
                   Subject
                 </div>
                 <input
@@ -217,7 +259,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                   type="text"
                   name="subject"
                   id="subject"
-                  className="w-full block bg-transparent border-0 pl-10 pr-20 dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
+                  className="w-full block bg-transparent border-0 pl-5 pr-20 dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
                   placeholder="..."
                 />
               </div>
@@ -231,7 +273,9 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                     initialContent=""
                     attachments={attachments}
                     setAttachments={setAttachments}
-                    canSendEmail={to.length > 0}
+                    canSendEmail={
+                      to.length > 0 || cc.length > 0 || bcc.length > 0
+                    }
                     sendingEmail={sendingEmail}
                     sendEmail={handleSendEmail}
                     setContent={setContentHtml}
