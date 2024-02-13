@@ -33,10 +33,6 @@ export const sendEmail = async (
   subject: string,
   messageContent: string
 ) => {
-  // const toRecipients = to.split(",").map((email) => ({
-  //   emailAddress: { address: email.trim() },
-  // }));
-
   const response = await fetch(`${OUTLOOK_API_URL}/me/sendmail`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,

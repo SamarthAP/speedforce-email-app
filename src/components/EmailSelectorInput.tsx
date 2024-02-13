@@ -23,6 +23,7 @@ interface SelectorFieldProps {
   selectedEmail: ISelectedEmail;
   emails: string[];
   setEmails: (emails: string[]) => void;
+  alignLabels?: "left" | "right"; // Wthether to align To/CC/BCC labels left or right
 }
 
 function SelectorField({
@@ -30,6 +31,7 @@ function SelectorField({
   selectedEmail,
   emails,
   setEmails,
+  alignLabels = "right",
 }: SelectorFieldProps) {
   const [emailText, setEmailText] = useState("");
   const userContactsList = useLiveQuery(() => {
@@ -111,7 +113,12 @@ function SelectorField({
   return (
     <div className="flex pt-0.5">
       {/* Input */}
-      <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center pl-2 whitespace-nowrap">
+      <div
+        className={classNames(
+          "w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center whitespace-nowrap",
+          alignLabels === "left" ? "justify-start" : "justify-end"
+        )}
+      >
         {text}
       </div>
       <div className="flex flex-row flex-wrap pl-5">
@@ -193,6 +200,8 @@ interface EmailSelectorInputProps {
   toProps: SetEmailFieldProps;
   ccProps: SetEmailFieldProps;
   bccProps: SetEmailFieldProps;
+  alignLabels?: "left" | "right";
+  disableCC?: boolean;
 }
 
 export function EmailSelectorInput({
@@ -200,6 +209,8 @@ export function EmailSelectorInput({
   toProps,
   ccProps,
   bccProps,
+  alignLabels = "right",
+  disableCC = false,
 }: EmailSelectorInputProps) {
   const [ccExpanded, setCcExpanded] = useState(false);
 
@@ -212,32 +223,37 @@ export function EmailSelectorInput({
           selectedEmail={selectedEmail}
           emails={toProps.emails}
           setEmails={toProps.setEmails}
+          alignLabels={alignLabels}
         />
-        <div
-          className="w-4 h-4 flex-shrink-0 flex-grow-0"
-          onClick={() => setCcExpanded(!ccExpanded)}
-        >
-          <ChevronDownIcon
-            className={classNames(
-              "w-full dark:text-zinc-400 text-slate-500 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800",
-              ccExpanded ? "rotate-180" : ""
-            )}
-          />
-        </div>
+        {!disableCC && (
+          <div
+            className="w-4 h-4 flex-shrink-0 flex-grow-0"
+            onClick={() => setCcExpanded(!ccExpanded)}
+          >
+            <ChevronDownIcon
+              className={classNames(
+                "w-full dark:text-zinc-400 text-slate-500 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800",
+                ccExpanded ? "rotate-180" : ""
+              )}
+            />
+          </div>
+        )}
       </span>
-      {ccExpanded && (
+      {ccExpanded && !disableCC && (
         <React.Fragment>
           <SelectorField
             text="Cc"
             selectedEmail={selectedEmail}
             emails={ccProps.emails}
             setEmails={ccProps.setEmails}
+            alignLabels={alignLabels}
           />
           <SelectorField
             text="Bcc"
             selectedEmail={selectedEmail}
             emails={bccProps.emails}
             setEmails={bccProps.setEmails}
+            alignLabels={alignLabels}
           />
         </React.Fragment>
       )}

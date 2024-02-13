@@ -230,9 +230,10 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
           </div>
           <div className="dark:text-white p-4 w-full">New Message</div>
           <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 mb-10 overflow-y-scroll hide-scroll">
-            <div className="border border-slate-200 dark:border-zinc-700">
+            <div className="border border-slate-200 dark:border-zinc-700 pt-1">
               <EmailSelectorInput
                 selectedEmail={selectedEmail}
+                alignLabels="right"
                 toProps={{
                   text: "To",
                   emails: to,

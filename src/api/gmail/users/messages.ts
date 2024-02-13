@@ -58,8 +58,7 @@ export const sendEmail = async (
         "Content-Transfer-Encoding: 7bit\n" +
         `Subject: =?UTF-8?B?${Base64.encode(subject)}?=\n` +
         `From: ${from}\n` +
-        // `To: ${to}\n\n` +
-        (to ? `To: ${to}\n` : "") +
+        (to ? `To: ${to}\n` : "") + // To is technically an optional field if CC is provided
         (cc ? `Cc: ${cc}\n` : "") +
         (bcc ? `Bcc: ${bcc}\n` : "") +
         "\n" +
@@ -117,8 +116,7 @@ export const sendEmailWithAttachments = async (
         "Content-Transfer-Encoding: 7bit\n" +
         `Subject: =?UTF-8?B?${Base64.encode(subject)}?=\n` +
         `From: ${from}\n` +
-        // `To: ${to}\n\n` +
-        (to ? `To: ${to}\n` : "") +
+        (to ? `To: ${to}\n` : "") + // To is technically an optional field if CC is provided
         (cc ? `Cc: ${cc}\n` : "") +
         (bcc ? `Bcc: ${bcc}\n` : "") +
         "\n" +
