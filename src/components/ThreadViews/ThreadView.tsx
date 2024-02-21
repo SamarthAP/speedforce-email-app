@@ -116,9 +116,7 @@ export default function ThreadView({
   };
 
   return (
-    <div
-      className={`overflow-hidden h-screen w-screen flex flex-col fadeIn-animation bg-cover bg-center`}
-    >
+    <div className={`overflow-hidden h-screen w-screen flex flex-col`}>
       <Titlebar />
       <PersonalAI show={showPersonalAi} hide={() => setShowPersonalAi(false)} />
 
@@ -222,7 +220,6 @@ export default function ThreadView({
           <ThreadList
             selectedEmail={selectedEmail}
             threads={threads}
-            setHoveredThread={setHoveredThread}
             setScrollPosition={setScrollPosition}
             handleScroll={handleScroll}
             scrollRef={scrollRef}

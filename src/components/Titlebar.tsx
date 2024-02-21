@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import ThemeToggle from "./ThemeToggle";
-import Updater from "./Updater";
 import { useInboxZeroBackgroundContext } from "../contexts/InboxZeroBackgroundContext";
 
 export default function Titlebar() {

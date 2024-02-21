@@ -4,7 +4,10 @@ import { ISelectedEmail, db } from "../lib/db";
 import InboxThreadView from "../components/ThreadViews/InboxThreadView";
 import { useEmailPageOutletContext } from "./_emailPage";
 import { useInfiniteQuery } from "react-query";
+import { useHotkeys } from "react-hotkeys-hook";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
+import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
+import { useNavigate } from "react-router-dom";
 
 interface OtherProps {
   inboxZeroStartDate: number;
@@ -12,6 +15,7 @@ interface OtherProps {
 
 export default function Other({ inboxZeroStartDate }: OtherProps) {
   const { selectedEmail } = useEmailPageOutletContext();
+  const navigate = useNavigate();
   const email = selectedEmail.email;
 
   const filterThreadsFncOther = (selectedEmail: ISelectedEmail) =>
@@ -65,6 +69,10 @@ export default function Other({ inboxZeroStartDate }: OtherProps) {
       },
     }
   );
+
+  useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SWITCH_TAB], () => {
+    navigate("/");
+  });
 
   return (
     <InboxThreadView
