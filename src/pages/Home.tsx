@@ -4,7 +4,10 @@ import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
 import { useEmailPageOutletContext } from "./_emailPage";
 import { useInfiniteQuery } from "react-query";
+import { useHotkeys } from "react-hotkeys-hook";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
+import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
+import { useNavigate } from "react-router-dom";
 
 function getYesterdayDate() {
   const yesterday = new Date();
@@ -18,6 +21,7 @@ interface HomeProps {
 
 export default function Home({ inboxZeroStartDate }: HomeProps) {
   const { selectedEmail } = useEmailPageOutletContext();
+  const navigate = useNavigate();
   const email = selectedEmail.email;
 
   const filterThreadsFncImportant = (selectedEmail: ISelectedEmail) =>
@@ -71,6 +75,10 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
       },
     }
   );
+
+  useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SWITCH_TAB], () => {
+    navigate("/other");
+  });
 
   return (
     <InboxThreadView

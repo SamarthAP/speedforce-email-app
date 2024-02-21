@@ -10,6 +10,12 @@ import { ClientInboxTabType } from "../../api/model/client.inbox";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../SearchBar";
 import Titlebar from "../Titlebar";
+import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../../lib/shortcuts";
+import { markRead } from "../../lib/sync";
+import { useHotkeys } from "react-hotkeys-hook";
+import { handleStarClick } from "../../lib/asyncHelpers";
+import { HoveredThreadContext } from "../../contexts/HoveredThreadContext";
+
 interface SearchThreadViewProps {
   data: ClientInboxTabType;
   searchItems?: string[];
@@ -23,6 +29,7 @@ export default function SearchThreadView({
 }: SearchThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
   const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
+  const [hoveredThreadIndex, setHoveredThreadIndex] = useState<number>(-1);
   // const [selectedThread, setSelectedThread] = useState<string>("");
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -91,25 +98,102 @@ export default function SearchThreadView({
     return threads;
   }, [threadsList]);
 
-  useEffect(() => {
-    // If search mode, listen for escape key to exit search mode
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        navigate(-1);
+  const hoveredThreadContextValue = useMemo(
+    () => ({
+      thread: hoveredThread,
+      setThread: (thread: IEmailThread | null) => void setHoveredThread(thread),
+      threadIndex: hoveredThreadIndex,
+      setThreadIndex: (index: number) => void setHoveredThreadIndex(index),
+    }),
+    [hoveredThread, setHoveredThread, hoveredThreadIndex, setHoveredThreadIndex]
+  );
+
+  useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ESCAPE], () => {
+    navigate(-1);
+  });
+
+  useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE], () => {
+    navigate("/compose");
+  });
+
+  useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SEARCH], () => {
+    navigate("/search");
+  });
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR],
+    () => {
+      if (hoveredThreadIndex > -1) {
+        void handleStarClick(
+          threadsList[hoveredThreadIndex],
+          selectedEmail.email,
+          selectedEmail.provider
+        );
       }
-    };
+    },
+    [
+      hoveredThreadIndex,
+      threadsList,
+      selectedEmail.email,
+      selectedEmail.provider,
+    ]
+  );
 
-    window.addEventListener("keydown", handleKeyPress);
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SELECT],
+    () => {
+      if (hoveredThreadIndex > -1) {
+        const thread = threadsList[hoveredThreadIndex];
+        if (thread.unread) {
+          void markRead(selectedEmail.email, selectedEmail.provider, thread.id);
+        }
+        navigate(`/thread/${thread.id}`);
+      }
+    },
+    [
+      hoveredThreadIndex,
+      threadsList,
+      selectedEmail.email,
+      selectedEmail.provider,
+    ]
+  );
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyPress);
-    };
-  }, [navigate]);
+  // move hovered thread down
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
+    () => {
+      setHoveredThreadIndex((prev) => {
+        if (prev <= -1) {
+          return 0;
+        } else if (prev < threads.length - 1) {
+          return prev + 1;
+        } else {
+          return threads.length - 1;
+        }
+      });
+    },
+    [threads]
+  );
+
+  // move hovered thread up
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP],
+    () => {
+      setHoveredThreadIndex((prev) => {
+        if (prev <= -1) {
+          return 0;
+        } else if (prev > 0) {
+          return prev - 1;
+        } else {
+          return 0;
+        }
+      });
+    },
+    [threads]
+  );
 
   return (
-    <div
-      className={`overflow-hidden h-screen w-screen flex flex-col fadeIn-animation bg-cover bg-center`}
-    >
+    <div className={`overflow-hidden h-screen w-screen flex flex-col`}>
       <Titlebar />
 
       <div className="w-full h-full flex overflow-hidden">
@@ -129,18 +213,18 @@ export default function SearchThreadView({
             </nav>
             <SearchBar setSearchItems={setSearchItems || (() => void 0)} />
           </div>
-          <ThreadList
-            selectedEmail={selectedEmail}
-            threads={threads}
-            setHoveredThread={setHoveredThread}
-            setScrollPosition={setScrollPosition}
-            scrollRef={scrollRef}
-            // folderId={data.folderId}
-            handleScroll={handleScroll}
-            canArchiveThread={data.canArchiveThread}
-            canTrashThread={data.canTrashThread}
-            canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
-          />
+          <HoveredThreadContext.Provider value={hoveredThreadContextValue}>
+            <ThreadList
+              selectedEmail={selectedEmail}
+              threads={threads}
+              setScrollPosition={setScrollPosition}
+              scrollRef={scrollRef}
+              handleScroll={handleScroll}
+              canArchiveThread={data.canArchiveThread}
+              canTrashThread={data.canTrashThread}
+              canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
+            />
+          </HoveredThreadContext.Provider>
         </div>
         <AssistBar thread={hoveredThread} />
       </div>
