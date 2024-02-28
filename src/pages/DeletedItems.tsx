@@ -6,6 +6,7 @@ import { ISelectedEmail, db } from "../lib/db";
 import { useEmailPageOutletContext } from "./_emailPage";
 import { useInfiniteQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
+import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
 
 // const gmailFetchQuery = `&labelIds=${GMAIL_FOLDER_IDS_MAP.getValue(
 //   FOLDER_IDS.TRASH
@@ -59,18 +60,20 @@ export default function DeletedItems() {
   );
 
   return (
-    <ThreadView
-      data={{
-        title: "Deleted Items",
-        filterThreadsFnc: filterThreadsFnc,
-        canArchiveThread: true,
-        canDeletePermanentlyThread: true,
-      }}
-      fetchNextPage={fetchNextPage}
-      hasNextPage={hasNextPage}
-      isFetching={isFetching}
-      isFetchingNextPage={isFetchingNextPage}
-      reactQueryData={data}
-    />
+    <GoToPageHotkeys>
+      <ThreadView
+        data={{
+          title: "Deleted Items",
+          filterThreadsFnc: filterThreadsFnc,
+          canArchiveThread: true,
+          canDeletePermanentlyThread: true,
+        }}
+        fetchNextPage={fetchNextPage}
+        hasNextPage={hasNextPage}
+        isFetching={isFetching}
+        isFetchingNextPage={isFetchingNextPage}
+        reactQueryData={data}
+      />
+    </GoToPageHotkeys>
   );
 }

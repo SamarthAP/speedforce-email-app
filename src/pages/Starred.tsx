@@ -5,6 +5,7 @@ import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { useEmailPageOutletContext } from "./_emailPage";
 import { useInfiniteQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
+import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
 
 const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
   db.emailThreads
@@ -54,18 +55,20 @@ export default function Starred() {
   );
 
   return (
-    <ThreadView
-      data={{
-        title: "Starred",
-        filterThreadsFnc: filterThreadsFnc,
-        canArchiveThread: true,
-        canTrashThread: true,
-      }}
-      fetchNextPage={fetchNextPage}
-      hasNextPage={hasNextPage}
-      isFetching={isFetching}
-      isFetchingNextPage={isFetchingNextPage}
-      reactQueryData={data}
-    />
+    <GoToPageHotkeys>
+      <ThreadView
+        data={{
+          title: "Starred",
+          filterThreadsFnc: filterThreadsFnc,
+          canArchiveThread: true,
+          canTrashThread: true,
+        }}
+        fetchNextPage={fetchNextPage}
+        hasNextPage={hasNextPage}
+        isFetching={isFetching}
+        isFetchingNextPage={isFetchingNextPage}
+        reactQueryData={data}
+      />
+    </GoToPageHotkeys>
   );
 }

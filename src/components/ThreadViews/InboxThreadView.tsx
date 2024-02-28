@@ -32,6 +32,7 @@ import { markRead } from "../../lib/sync";
 import { useHotkeys } from "react-hotkeys-hook";
 import { HoveredThreadContext } from "../../contexts/HoveredThreadContext";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../../lib/shortcuts";
+import { useKeyPressContext } from "../../contexts/KeyPressContext";
 
 interface InboxThreadViewProps {
   data: ClientInboxTabType;
@@ -55,8 +56,8 @@ export default function InboxThreadView({
   reactQueryData,
 }: InboxThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
-  const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
   const [hoveredThreadIndex, setHoveredThreadIndex] = useState<number>(-1);
+  const { sequenceInitiated } = useKeyPressContext();
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const dailyImageMetadata = useLiveQuery(() => db.dailyImageMetadata.get(1));
   const [isBackgroundOn, setIsBackgroundOn] = useState(false);
@@ -93,25 +94,30 @@ export default function InboxThreadView({
     }
   };
 
-  const fetchEmailsIfScreenIsNotFilled = () => {
-    if (scrollRef.current) {
-      const { clientHeight, scrollHeight } = scrollRef.current;
-
-      if (
-        scrollHeight <= clientHeight &&
-        hasNextPage &&
-        !isFetchingNextPage &&
-        !isFetching
-      ) {
-        void fetchNextPage();
-      }
-    }
-  };
-
   useEffect(() => {
+    const fetchEmailsIfScreenIsNotFilled = () => {
+      if (scrollRef.current) {
+        const { clientHeight, scrollHeight } = scrollRef.current;
+
+        if (
+          scrollHeight <= clientHeight &&
+          hasNextPage &&
+          !isFetchingNextPage &&
+          !isFetching
+        ) {
+          void fetchNextPage();
+        }
+      }
+    };
     // fetches emails if the screen is not filled
     fetchEmailsIfScreenIsNotFilled();
-  }, [reactQueryData]);
+  }, [
+    reactQueryData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetching,
+  ]);
 
   // useEffect(() => {
   //   if (scrollRef.current) {
@@ -185,12 +191,10 @@ export default function InboxThreadView({
 
   const hoveredThreadContextValue = useMemo(
     () => ({
-      thread: hoveredThread,
-      setThread: (thread: IEmailThread | null) => void setHoveredThread(thread),
       threadIndex: hoveredThreadIndex,
       setThreadIndex: (index: number) => void setHoveredThreadIndex(index),
     }),
-    [hoveredThread, setHoveredThread, hoveredThreadIndex, setHoveredThreadIndex]
+    [hoveredThreadIndex, setHoveredThreadIndex]
   );
 
   useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE], () => {
@@ -204,7 +208,7 @@ export default function InboxThreadView({
   useHotkeys(
     DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR],
     () => {
-      if (hoveredThreadIndex > -1) {
+      if (hoveredThreadIndex > -1 && !sequenceInitiated) {
         void handleStarClick(
           threadsList[hoveredThreadIndex],
           selectedEmail.email,
@@ -217,6 +221,7 @@ export default function InboxThreadView({
       threadsList,
       selectedEmail.email,
       selectedEmail.provider,
+      sequenceInitiated,
     ]
   );
 

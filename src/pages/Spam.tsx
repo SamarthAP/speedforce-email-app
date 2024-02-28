@@ -5,6 +5,7 @@ import { ISelectedEmail, db } from "../lib/db";
 import { useEmailPageOutletContext } from "./_emailPage";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 import { useInfiniteQuery, useQuery } from "react-query";
+import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
 
 const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
   db.emailThreads
@@ -64,18 +65,20 @@ export default function Spam() {
   );
 
   return (
-    <ThreadView
-      data={{
-        title: "Spam",
-        filterThreadsFnc: filterThreadsFnc,
-        canArchiveThread: true,
-        canTrashThread: true,
-      }}
-      fetchNextPage={fetchNextPage}
-      hasNextPage={hasNextPage}
-      isFetching={isFetching}
-      isFetchingNextPage={isFetchingNextPage}
-      reactQueryData={data}
-    />
+    <GoToPageHotkeys>
+      <ThreadView
+        data={{
+          title: "Spam",
+          filterThreadsFnc: filterThreadsFnc,
+          canArchiveThread: true,
+          canTrashThread: true,
+        }}
+        fetchNextPage={fetchNextPage}
+        hasNextPage={hasNextPage}
+        isFetching={isFetching}
+        isFetchingNextPage={isFetchingNextPage}
+        reactQueryData={data}
+      />
+    </GoToPageHotkeys>
   );
 }

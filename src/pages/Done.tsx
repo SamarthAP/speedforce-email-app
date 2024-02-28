@@ -5,6 +5,7 @@ import { ISelectedEmail, db } from "../lib/db";
 import { useEmailPageOutletContext } from "./_emailPage";
 import { useInfiniteQuery } from "react-query";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
+import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
 
 const filterThreadsFnc = (selectedEmail: ISelectedEmail) => {
   if (selectedEmail.provider === "google") {
@@ -66,18 +67,20 @@ export default function Done() {
   );
 
   return (
-    <ThreadView
-      data={{
-        title: "Done",
-        filterThreadsFnc: filterThreadsFnc,
-        canArchiveThread: false,
-        canTrashThread: true,
-      }}
-      fetchNextPage={fetchNextPage}
-      hasNextPage={hasNextPage}
-      isFetching={isFetching}
-      isFetchingNextPage={isFetchingNextPage}
-      reactQueryData={data}
-    />
+    <GoToPageHotkeys>
+      <ThreadView
+        data={{
+          title: "Done",
+          filterThreadsFnc: filterThreadsFnc,
+          canArchiveThread: false,
+          canTrashThread: true,
+        }}
+        fetchNextPage={fetchNextPage}
+        hasNextPage={hasNextPage}
+        isFetching={isFetching}
+        isFetchingNextPage={isFetchingNextPage}
+        reactQueryData={data}
+      />
+    </GoToPageHotkeys>
   );
 }

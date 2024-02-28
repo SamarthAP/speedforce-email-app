@@ -1,5 +1,6 @@
 import { Outlet, useOutletContext } from "react-router-dom";
 import { ISelectedEmail } from "../lib/db";
+import { KeyPressProvider } from "../contexts/KeyPressContext";
 
 interface OutletContext {
   selectedEmail: ISelectedEmail;
@@ -12,7 +13,9 @@ interface EmailPageProps {
 export default function EmailPage({ selectedEmail }: EmailPageProps) {
   return (
     <main className="dark:bg-zinc-900">
-      <Outlet context={{ selectedEmail }} />
+      <KeyPressProvider>
+        <Outlet context={{ selectedEmail }} />
+      </KeyPressProvider>
     </main>
   );
 }

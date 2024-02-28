@@ -8,6 +8,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import { useNavigate } from "react-router-dom";
+import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
 
 interface OtherProps {
   inboxZeroStartDate: number;
@@ -75,28 +76,30 @@ export default function Other({ inboxZeroStartDate }: OtherProps) {
   });
 
   return (
-    <InboxThreadView
-      data={{
-        title: "Other",
-        filterThreadsFnc: filterThreadsFncOther,
-        canArchiveThread: true,
-        canTrashThread: true,
-      }}
-      tabs={[
-        {
-          title: "Important",
-          href: "/",
-        },
-        {
+    <GoToPageHotkeys>
+      <InboxThreadView
+        data={{
           title: "Other",
-          href: "/other",
-        },
-      ]}
-      fetchNextPage={fetchNextPage}
-      hasNextPage={hasNextPage}
-      isFetching={isFetching}
-      isFetchingNextPage={isFetchingNextPage}
-      reactQueryData={data}
-    />
+          filterThreadsFnc: filterThreadsFncOther,
+          canArchiveThread: true,
+          canTrashThread: true,
+        }}
+        tabs={[
+          {
+            title: "Important",
+            href: "/",
+          },
+          {
+            title: "Other",
+            href: "/other",
+          },
+        ]}
+        fetchNextPage={fetchNextPage}
+        hasNextPage={hasNextPage}
+        isFetching={isFetching}
+        isFetchingNextPage={isFetchingNextPage}
+        reactQueryData={data}
+      />
+    </GoToPageHotkeys>
   );
 }

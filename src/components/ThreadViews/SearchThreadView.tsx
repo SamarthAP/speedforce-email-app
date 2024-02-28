@@ -28,9 +28,7 @@ export default function SearchThreadView({
   setSearchItems,
 }: SearchThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
-  const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
   const [hoveredThreadIndex, setHoveredThreadIndex] = useState<number>(-1);
-  // const [selectedThread, setSelectedThread] = useState<string>("");
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -100,12 +98,10 @@ export default function SearchThreadView({
 
   const hoveredThreadContextValue = useMemo(
     () => ({
-      thread: hoveredThread,
-      setThread: (thread: IEmailThread | null) => void setHoveredThread(thread),
       threadIndex: hoveredThreadIndex,
       setThreadIndex: (index: number) => void setHoveredThreadIndex(index),
     }),
-    [hoveredThread, setHoveredThread, hoveredThreadIndex, setHoveredThreadIndex]
+    [hoveredThreadIndex, setHoveredThreadIndex]
   );
 
   useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ESCAPE], () => {
@@ -226,7 +222,7 @@ export default function SearchThreadView({
             />
           </HoveredThreadContext.Provider>
         </div>
-        <AssistBar thread={hoveredThread} />
+        <AssistBar thread={threads[hoveredThreadIndex]} />
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import { useNavigate } from "react-router-dom";
+import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
 
 function getYesterdayDate() {
   const yesterday = new Date();
@@ -81,28 +82,30 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
   });
 
   return (
-    <InboxThreadView
-      data={{
-        title: "Important",
-        filterThreadsFnc: filterThreadsFncImportant,
-        canArchiveThread: true,
-        canTrashThread: true,
-      }}
-      tabs={[
-        {
+    <GoToPageHotkeys>
+      <InboxThreadView
+        data={{
           title: "Important",
-          href: "/",
-        },
-        {
-          title: "Other",
-          href: "/other",
-        },
-      ]}
-      fetchNextPage={fetchNextPage}
-      hasNextPage={hasNextPage}
-      isFetching={isFetching}
-      isFetchingNextPage={isFetchingNextPage}
-      reactQueryData={data}
-    />
+          filterThreadsFnc: filterThreadsFncImportant,
+          canArchiveThread: true,
+          canTrashThread: true,
+        }}
+        tabs={[
+          {
+            title: "Important",
+            href: "/",
+          },
+          {
+            title: "Other",
+            href: "/other",
+          },
+        ]}
+        fetchNextPage={fetchNextPage}
+        hasNextPage={hasNextPage}
+        isFetching={isFetching}
+        isFetchingNextPage={isFetchingNextPage}
+        reactQueryData={data}
+      />
+    </GoToPageHotkeys>
   );
 }

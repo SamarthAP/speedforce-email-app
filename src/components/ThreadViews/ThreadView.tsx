@@ -2,7 +2,7 @@ import ThreadList from "../ThreadList";
 import Sidebar from "../Sidebar";
 import { IEmail, IEmailThread, db } from "../../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useEmailPageOutletContext } from "../../pages/_emailPage";
 import AssistBar from "../AssistBar";
 import AccountActionsMenu from "../AccountActionsMenu";
@@ -26,6 +26,7 @@ import {
 } from "react-query";
 import Titlebar from "../Titlebar";
 import PersonalAI from "../AI/PersonalAI";
+import { HoveredThreadContext } from "../../contexts/HoveredThreadContext";
 
 interface ThreadViewProps {
   data: ClientInboxTabType;
@@ -49,7 +50,7 @@ export default function ThreadView({
   reactQueryData,
 }: ThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
-  const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
+  const [hoveredThreadIndex, setHoveredThreadIndex] = useState<number>(-1);
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
@@ -72,25 +73,30 @@ export default function ThreadView({
     }
   };
 
-  const fetchEmailsIfScreenIsNotFilled = () => {
-    if (scrollRef.current) {
-      const { clientHeight, scrollHeight } = scrollRef.current;
-
-      if (
-        scrollHeight <= clientHeight &&
-        hasNextPage &&
-        !isFetchingNextPage &&
-        !isFetching
-      ) {
-        void fetchNextPage();
-      }
-    }
-  };
-
   useEffect(() => {
+    const fetchEmailsIfScreenIsNotFilled = () => {
+      if (scrollRef.current) {
+        const { clientHeight, scrollHeight } = scrollRef.current;
+
+        if (
+          scrollHeight <= clientHeight &&
+          hasNextPage &&
+          !isFetchingNextPage &&
+          !isFetching
+        ) {
+          void fetchNextPage();
+        }
+      }
+    };
     // fetches emails if the screen is not filled
     fetchEmailsIfScreenIsNotFilled();
-  }, [reactQueryData]);
+  }, [
+    reactQueryData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetching,
+  ]);
 
   const threads = useLiveQuery(
     () => {
@@ -114,6 +120,14 @@ export default function ThreadView({
       inboxZeroStartDate: email.inboxZeroStartDate,
     });
   };
+
+  const hoveredThreadContextValue = useMemo(
+    () => ({
+      threadIndex: hoveredThreadIndex,
+      setThreadIndex: (index: number) => void setHoveredThreadIndex(index),
+    }),
+    [hoveredThreadIndex, setHoveredThreadIndex]
+  );
 
   return (
     <div className={`overflow-hidden h-screen w-screen flex flex-col`}>
@@ -217,19 +231,21 @@ export default function ThreadView({
               />
             </div>
           </div>
-          <ThreadList
-            selectedEmail={selectedEmail}
-            threads={threads}
-            setScrollPosition={setScrollPosition}
-            handleScroll={handleScroll}
-            scrollRef={scrollRef}
-            canArchiveThread={data.canArchiveThread}
-            canTrashThread={data.canTrashThread}
-            canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
-            isDrafts={data.isDraftMode}
-          />
+          <HoveredThreadContext.Provider value={hoveredThreadContextValue}>
+            <ThreadList
+              selectedEmail={selectedEmail}
+              threads={threads}
+              setScrollPosition={setScrollPosition}
+              handleScroll={handleScroll}
+              scrollRef={scrollRef}
+              canArchiveThread={data.canArchiveThread}
+              canTrashThread={data.canTrashThread}
+              canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
+              isDrafts={data.isDraftMode}
+            />
+          </HoveredThreadContext.Provider>
         </div>
-        <AssistBar thread={hoveredThread} />
+        <AssistBar thread={threads[hoveredThreadIndex]} />
       </div>
     </div>
   );
