@@ -26,6 +26,8 @@ import { ComposeMessage } from "../pages/ComposeMessage";
 import ThreadPage from "../pages/ThreadPage";
 import Other from "../pages/Other";
 import { EditDraft } from "../pages/EditDraft";
+import SharedDrafts from "../pages/SharedDrafts";
+import SharedDraftThreadPage from "../pages/SharedDraftThreadPage";
 
 interface AppRouterProps {
   session: Session;
@@ -356,6 +358,19 @@ export default function AppRouter({ session }: AppRouterProps) {
             <Route
               path="/thread/:threadId"
               element={<ThreadPage selectedEmail={selectedEmail} />}
+            ></Route>
+            <Route
+              path="/sharedDrafts"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route
+                index
+                element={<SharedDrafts selectedEmail={selectedEmail} />}
+              />
+            </Route>
+            <Route
+              path="/sharedDraft/:draftId"
+              element={<SharedDraftThreadPage selectedEmail={selectedEmail} />}
             ></Route>
           </>
         )}

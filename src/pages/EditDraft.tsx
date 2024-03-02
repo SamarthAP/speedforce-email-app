@@ -17,6 +17,8 @@ import {
 import toast from "react-hot-toast";
 import { SendDraftRequestType } from "./ComposeMessage";
 import { deleteDexieThread } from "../lib/util";
+import SimpleButton from "../components/SimpleButton";
+import { SharedDraftModal } from "../components/modals/ShareDraftModal";
 
 interface EditDraftProps {
   selectedEmail: ISelectedEmail;
@@ -27,9 +29,12 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   const [cc, setCc] = useState<string[]>([]);
   const [bcc, setBcc] = useState<string[]>([]);
   const [subject, setSubject] = useState("");
+  const [snippet, setSnippet] = useState("");
+  const [date, setDate] = useState(0);
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [contentHtml, setContentHtml] = useState("");
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const navigate = useNavigate();
   const { threadId } = useParams();
@@ -60,6 +65,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       setTo(message.toRecipients.filter((recipient) => recipient !== ""));
       setSubject(thread.subject || "");
       setContentHtml(message.htmlData || "");
+      setSnippet(thread.snippet || "");
+      setDate(thread.date || 0);
     } else {
       dLog("Unable to load thread");
       navigate(-1);
@@ -68,16 +75,6 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
   const saveDraft = useCallback(
     async (request: SendDraftRequestType) => {
-      console.log(
-        `saving draft: \n  to: ${request.to || to.join(",")}\n  subject: ${
-          request.subject || subject
-        }\n  content: ${request.content || contentHtml} \n  attachments: ${(
-          request.attachments || attachments
-        )
-          .map((x) => x.filename)
-          .join(",")}`
-      );
-
       const message = await db.messages
         .where("threadId")
         .equals(threadId || "")
@@ -115,7 +112,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       bcc,
       contentHtml,
       threadId,
-      attachments,
+      // attachments,
     ]
   );
 
@@ -191,8 +188,12 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        void saveDraft({});
-        navigate(-1);
+        if (isShareModalOpen) {
+          setIsShareModalOpen(false);
+        } else {
+          void saveDraft({});
+          navigate(-1);
+        }
       }
     };
 
@@ -201,7 +202,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [navigate]);
+  }, [navigate, isShareModalOpen, saveDraft]);
 
   useEffect(() => {
     if (threadId) {
@@ -239,7 +240,14 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
               </p>
             </div>
           </div>
-          <div className="dark:text-white p-4 w-full">Edit Draft</div>
+          <span className="flex flex-rw items-start justify-between px-4">
+            <div className="dark:text-white py-4 w-full">Edit Draft</div>
+            <SimpleButton
+              text="Share"
+              loading={false}
+              onClick={() => setIsShareModalOpen(true)}
+            />
+          </span>
           <div className="h-full w-full flex flex-col space-y-2 pt-2 px-4 pb-4 mb-10 overflow-y-scroll hide-scroll">
             <div className="border border-slate-200 dark:border-zinc-700 pt-1">
               <EmailSelectorInput
@@ -299,6 +307,19 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
           </div>
         </div>
       </div>
+      <SharedDraftModal
+        selectedEmail={selectedEmail}
+        draftId={threadId || ""}
+        recipients={to}
+        cc={cc}
+        bcc={bcc}
+        subject={subject}
+        snippet={snippet}
+        date={date}
+        html={contentHtml}
+        isDialogOpen={isShareModalOpen}
+        setIsDialogOpen={setIsShareModalOpen}
+      />
     </div>
   );
 }
