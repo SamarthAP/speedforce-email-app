@@ -7,6 +7,7 @@ import { useQuery } from "react-query";
 import { EmailSelectorInput } from "../components/EmailSelectorInput";
 import ShadowDom from "../components/ShadowDom";
 import { getSharedDraft } from "../api/sharedDrafts";
+import CommentSection from "../components/SharedDrafts/CommentSection";
 
 interface SharedDraftThreadPageProps {
   selectedEmail: ISelectedEmail;
@@ -46,7 +47,7 @@ export default function SharedDraftThreadPage({
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col dark:bg-zinc-900">
       <Titlebar />
-      <div className="w-full h-full flex overflow-hidden">
+      <div className="w-full h-full flex flex-col overflow-hidden">
         {/* <Sidebar /> */}
         <div className="w-full h-full flex flex-col overflow-hidden">
           <div className="flex px-4 pt-4">
@@ -122,6 +123,12 @@ export default function SharedDraftThreadPage({
                   </p>
                 )}
               </div>
+              <CommentSection
+                selectedEmail={selectedEmail}
+                draftId={draftId || ""}
+                comments={data?.comments || []}
+                editMode
+              />
             </div>
           )}
         </div>

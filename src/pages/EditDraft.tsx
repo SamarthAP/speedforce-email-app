@@ -19,6 +19,7 @@ import { SendDraftRequestType } from "./ComposeMessage";
 import { deleteDexieThread } from "../lib/util";
 import SimpleButton from "../components/SimpleButton";
 import { SharedDraftModal } from "../components/modals/ShareDraftModal";
+import { saveSharedDraft } from "../api/sharedDrafts";
 
 interface EditDraftProps {
   selectedEmail: ISelectedEmail;
@@ -96,6 +97,17 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         // request.attachments || attachments
       );
 
+      await saveSharedDraft(selectedEmail.email, {
+        id: threadId || "",
+        recipients: to,
+        cc,
+        bcc,
+        subject,
+        html: contentHtml,
+        snippet,
+        date,
+      });
+
       if (error || !data) {
         dLog(error);
         return { error };
@@ -112,6 +124,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       bcc,
       contentHtml,
       threadId,
+      snippet,
+      date,
       // attachments,
     ]
   );

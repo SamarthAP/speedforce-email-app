@@ -18,3 +18,10 @@ export interface SharedDraftDataType {
   snippet: string;
   html: string;
 }
+
+export interface SharedDraftCommentType {
+  id: string;
+  email: string;
+  date: number;
+  comment: string;
+}

@@ -5,6 +5,40 @@ import {
   SharedDraftParticipantType,
 } from "./model/users.shared.draft";
 
+export const saveSharedDraft = async (
+  email: string,
+  draftData: SharedDraftDataType
+) => {
+  try {
+    const clientId = await window.electron.ipcRenderer.invoke(
+      "store-get",
+      "client.id"
+    );
+
+    const authHeader = await getJWTHeaders();
+    const res = await fetch(`${SPEEDFORCE_API_URL}/drafts`, {
+      method: "POST",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+        "speedforce-client-id": clientId,
+      },
+      body: JSON.stringify({
+        email,
+        draftData,
+      }),
+    });
+
+    if (!res.ok) {
+      return { data: null, error: "Error saving draft" };
+    } else {
+      return { data: null, error: null };
+    }
+  } catch (e) {
+    return { data: null, error: "Error saving draft" };
+  }
+};
+
 export const shareDraft = async (
   email: string,
   draftData: SharedDraftDataType,
@@ -17,7 +51,7 @@ export const shareDraft = async (
     );
 
     const authHeader = await getJWTHeaders();
-    const res = await fetch(`${SPEEDFORCE_API_URL}/drafts`, {
+    const res = await fetch(`${SPEEDFORCE_API_URL}/drafts/participants`, {
       method: "POST",
       headers: {
         ...authHeader,
@@ -146,4 +180,36 @@ export const loadParticipantsForDraft = async (
     })),
     error: null,
   };
+};
+
+export const addCommentToDraft = async (
+  draftId: string,
+  email: string,
+  content: string
+) => {
+  const authHeader = await getJWTHeaders();
+  const clientId = await window.electron.ipcRenderer.invoke(
+    "store-get",
+    "client.id"
+  );
+
+  const res = await fetch(`${SPEEDFORCE_API_URL}/drafts/comment`, {
+    method: "POST",
+    headers: {
+      ...authHeader,
+      "Content-Type": "application/json",
+      "speedforce-client-id": clientId,
+    },
+    body: JSON.stringify({
+      draftId,
+      email,
+      content,
+    }),
+  });
+
+  if (!res.ok) {
+    return { data: null, error: "Error adding comment" };
+  } else {
+    return { data: null, error: null };
+  }
 };
