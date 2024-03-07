@@ -378,7 +378,6 @@ function ThreadListRow({
           setShowSummaryCard(true);
         }}
         onMouseLeave={() => {
-          hoveredThreadContext.setThreadIndex(-1);
           setShowSummaryCard(false);
         }}
         className={`relative grid grid-cols-10 py-1 cursor-default group ${
@@ -432,13 +431,14 @@ function ThreadListRow({
           <span className="truncate text-black dark:text-zinc-100">
             {
               // TODO: Should we make a DraftThreadView or DraftThreadList component to avoid need for live query?
-              isDrafts
+              (isDrafts
                 ? message?.toRecipients
                     .map((recipient) =>
                       recipient.slice(0, recipient.lastIndexOf("<"))
                     )
                     .join(", ")
-                : thread.from.slice(0, thread.from.lastIndexOf("<"))
+                : thread.from.slice(0, thread.from.lastIndexOf("<"))) ||
+                "(no sender)"
             }
           </span>
         </div>

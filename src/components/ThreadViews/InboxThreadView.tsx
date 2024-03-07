@@ -33,6 +33,8 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { HoveredThreadContext } from "../../contexts/HoveredThreadContext";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../../lib/shortcuts";
 import { useKeyPressContext } from "../../contexts/KeyPressContext";
+import { useCommandBarOpenContext } from "../../contexts/CommandBarContext";
+import CommandBar from "../CommandBar";
 
 interface InboxThreadViewProps {
   data: ClientInboxTabType;
@@ -56,6 +58,7 @@ export default function InboxThreadView({
   reactQueryData,
 }: InboxThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
+  const { commandBarIsOpen } = useCommandBarOpenContext();
   const [hoveredThreadIndex, setHoveredThreadIndex] = useState<number>(-1);
   const { sequenceInitiated } = useKeyPressContext();
   const [scrollPosition, setScrollPosition] = useState<number>(0);
@@ -248,18 +251,24 @@ export default function InboxThreadView({
   useHotkeys(
     DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SELECT],
     () => {
-      if (hoveredThreadIndex > -1) {
-        const thread = threadsList[hoveredThreadIndex];
-        if (thread.unread) {
-          void markRead(selectedEmail.email, selectedEmail.provider, thread.id);
+      if (!commandBarIsOpen) {
+        if (hoveredThreadIndex > -1) {
+          const thread = threadsList[hoveredThreadIndex];
+          if (thread.unread) {
+            void markRead(
+              selectedEmail.email,
+              selectedEmail.provider,
+              thread.id
+            );
+          }
+          navigate(
+            `/${
+              data.title === "Important"
+                ? "importantThreadFeed"
+                : "otherThreadFeed"
+            }/${hoveredThreadIndex}`
+          );
         }
-        navigate(
-          `/${
-            data.title === "Important"
-              ? "importantThreadFeed"
-              : "otherThreadFeed"
-          }/${hoveredThreadIndex}`
-        );
       }
     },
     [
@@ -267,41 +276,52 @@ export default function InboxThreadView({
       threadsList,
       selectedEmail.email,
       selectedEmail.provider,
+      commandBarIsOpen,
     ]
   );
 
   // move hovered thread down
   useHotkeys(
-    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_DOWN],
+    ],
     () => {
-      setHoveredThreadIndex((prev) => {
-        if (prev <= -1) {
-          return 0;
-        } else if (prev < threads.length - 1) {
-          return prev + 1;
-        } else {
-          return threads.length - 1;
-        }
-      });
+      if (!commandBarIsOpen) {
+        setHoveredThreadIndex((prev) => {
+          if (prev <= -1) {
+            return 0;
+          } else if (prev < threads.length - 1) {
+            return prev + 1;
+          } else {
+            return threads.length - 1;
+          }
+        });
+      }
     },
-    [threads]
+    [threads, commandBarIsOpen, setHoveredThreadIndex]
   );
 
   // move hovered thread up
   useHotkeys(
-    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP],
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_UP],
+    ],
     () => {
-      setHoveredThreadIndex((prev) => {
-        if (prev <= -1) {
-          return 0;
-        } else if (prev > 0) {
-          return prev - 1;
-        } else {
-          return 0;
-        }
-      });
+      if (!commandBarIsOpen) {
+        setHoveredThreadIndex((prev) => {
+          if (prev <= -1) {
+            return 0;
+          } else if (prev > 0) {
+            return prev - 1;
+          } else {
+            return 0;
+          }
+        });
+      }
     },
-    [threads]
+    [threads, commandBarIsOpen, setHoveredThreadIndex]
   );
 
   return (
@@ -478,6 +498,28 @@ export default function InboxThreadView({
           <AssistBar thread={threads[hoveredThreadIndex]} />
         </div>
       </InboxZeroBackgroundContext.Provider>
+      <CommandBar
+        data={[]}
+        // data={[
+        //   {
+        //     title: "Email Commands",
+        //     commands: [
+        //       {
+        //         icon: StarIcon,
+        //         description: "Star",
+        //         action: () => {
+        //           // star thread
+        //           toast("Starred");
+        //         },
+        //         keybind: {
+        //           keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
+        //           isSequential: false,
+        //         },
+        //       },
+        //     ],
+        //   },
+        // ]}
+      />
     </div>
   );
 }
