@@ -2,7 +2,7 @@ import ThreadList from "../ThreadList";
 import Sidebar from "../Sidebar";
 import { IEmail, IEmailThread, db } from "../../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useEmailPageOutletContext } from "../../pages/_emailPage";
 import AssistBar from "../AssistBar";
 import AccountActionsMenu from "../AccountActionsMenu";
@@ -11,6 +11,7 @@ import {
   MagnifyingGlassIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
+import { useHotkeys } from "react-hotkeys-hook";
 import TooltipPopover from "../TooltipPopover";
 import { useTooltip } from "../UseTooltip";
 import { classNames } from "../../lib/util";
@@ -26,6 +27,13 @@ import {
 } from "react-query";
 import Titlebar from "../Titlebar";
 import PersonalAI from "../AI/PersonalAI";
+import { HoveredThreadContext } from "../../contexts/HoveredThreadContext";
+import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../../lib/shortcuts";
+import { markRead } from "../../lib/sync";
+import { handleStarClick } from "../../lib/asyncHelpers";
+import { useCommandBarOpenContext } from "../../contexts/CommandBarContext";
+import { useKeyPressContext } from "../../contexts/KeyPressContext";
+import CommandBar from "../CommandBar";
 
 interface ThreadViewProps {
   data: ClientInboxTabType;
@@ -49,7 +57,9 @@ export default function ThreadView({
   reactQueryData,
 }: ThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
-  const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
+  const { commandBarIsOpen } = useCommandBarOpenContext();
+  const [hoveredThreadIndex, setHoveredThreadIndex] = useState<number>(-1);
+  const { sequenceInitiated } = useKeyPressContext();
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
@@ -72,25 +82,30 @@ export default function ThreadView({
     }
   };
 
-  const fetchEmailsIfScreenIsNotFilled = () => {
-    if (scrollRef.current) {
-      const { clientHeight, scrollHeight } = scrollRef.current;
-
-      if (
-        scrollHeight <= clientHeight &&
-        hasNextPage &&
-        !isFetchingNextPage &&
-        !isFetching
-      ) {
-        void fetchNextPage();
-      }
-    }
-  };
-
   useEffect(() => {
+    const fetchEmailsIfScreenIsNotFilled = () => {
+      if (scrollRef.current) {
+        const { clientHeight, scrollHeight } = scrollRef.current;
+
+        if (
+          scrollHeight <= clientHeight &&
+          hasNextPage &&
+          !isFetchingNextPage &&
+          !isFetching
+        ) {
+          void fetchNextPage();
+        }
+      }
+    };
     // fetches emails if the screen is not filled
     fetchEmailsIfScreenIsNotFilled();
-  }, [reactQueryData]);
+  }, [
+    reactQueryData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetching,
+  ]);
 
   const threads = useLiveQuery(
     () => {
@@ -114,6 +129,121 @@ export default function ThreadView({
       inboxZeroStartDate: email.inboxZeroStartDate,
     });
   };
+
+  const hoveredThreadContextValue = useMemo(
+    () => ({
+      threadIndex: hoveredThreadIndex,
+      setThreadIndex: (index: number) => void setHoveredThreadIndex(index),
+    }),
+    [hoveredThreadIndex, setHoveredThreadIndex]
+  );
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE],
+    () => {
+      navigate("/compose");
+    },
+    [navigate]
+  );
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SEARCH],
+    () => {
+      navigate("/search");
+    },
+    [navigate]
+  );
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR],
+    () => {
+      if (hoveredThreadIndex > -1 && !sequenceInitiated) {
+        void handleStarClick(
+          threads[hoveredThreadIndex],
+          selectedEmail.email,
+          selectedEmail.provider
+        );
+      }
+    },
+    [
+      hoveredThreadIndex,
+      threads,
+      selectedEmail.email,
+      selectedEmail.provider,
+      sequenceInitiated,
+    ]
+  );
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SELECT],
+    () => {
+      if (commandBarIsOpen) return;
+
+      if (hoveredThreadIndex > -1) {
+        const thread = threads[hoveredThreadIndex];
+        if (thread.unread) {
+          void markRead(selectedEmail.email, selectedEmail.provider, thread.id);
+        }
+        if (data.isDraftMode) {
+          navigate(`/draft/${thread.id}`);
+        } else {
+          navigate(`/thread/${thread.id}`);
+        }
+      }
+    },
+    [
+      hoveredThreadIndex,
+      threads,
+      selectedEmail.email,
+      selectedEmail.provider,
+      commandBarIsOpen,
+      navigate,
+    ]
+  );
+
+  // move hovered thread down
+  useHotkeys(
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_DOWN],
+    ],
+    () => {
+      if (commandBarIsOpen) return;
+
+      setHoveredThreadIndex((prev) => {
+        if (prev <= -1) {
+          return 0;
+        } else if (prev < threads.length - 1) {
+          return prev + 1;
+        } else {
+          return threads.length - 1;
+        }
+      });
+    },
+    [threads, commandBarIsOpen, setHoveredThreadIndex]
+  );
+
+  // move hovered thread up
+  useHotkeys(
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_UP],
+    ],
+    () => {
+      if (commandBarIsOpen) return;
+
+      setHoveredThreadIndex((prev) => {
+        if (prev <= -1) {
+          return 0;
+        } else if (prev > 0) {
+          return prev - 1;
+        } else {
+          return 0;
+        }
+      });
+    },
+    [threads, commandBarIsOpen, setHoveredThreadIndex]
+  );
 
   return (
     <div className={`overflow-hidden h-screen w-screen flex flex-col`}>
@@ -217,20 +347,44 @@ export default function ThreadView({
               />
             </div>
           </div>
-          <ThreadList
-            selectedEmail={selectedEmail}
-            threads={threads}
-            setScrollPosition={setScrollPosition}
-            handleScroll={handleScroll}
-            scrollRef={scrollRef}
-            canArchiveThread={data.canArchiveThread}
-            canTrashThread={data.canTrashThread}
-            canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
-            isDrafts={data.isDraftMode}
-          />
+          <HoveredThreadContext.Provider value={hoveredThreadContextValue}>
+            <ThreadList
+              selectedEmail={selectedEmail}
+              threads={threads}
+              setScrollPosition={setScrollPosition}
+              handleScroll={handleScroll}
+              scrollRef={scrollRef}
+              canArchiveThread={data.canArchiveThread}
+              canTrashThread={data.canTrashThread}
+              canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
+              isDrafts={data.isDraftMode}
+            />
+          </HoveredThreadContext.Provider>
         </div>
-        <AssistBar thread={hoveredThread} />
+        <AssistBar thread={threads[hoveredThreadIndex]} />
       </div>
+      <CommandBar
+        data={[]}
+        // data={[
+        //   {
+        //     title: "Email Commands",
+        //     commands: [
+        //       {
+        //         icon: StarIcon,
+        //         description: "Star",
+        //         action: () => {
+        //           // star thread
+        //           toast("Starred");
+        //         },
+        //         keybind: {
+        //           keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
+        //           isSequential: false,
+        //         },
+        //       },
+        //     ],
+        //   },
+        // ]}
+      />
     </div>
   );
 }

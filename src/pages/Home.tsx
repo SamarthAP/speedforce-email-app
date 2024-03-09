@@ -8,6 +8,8 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import { useNavigate } from "react-router-dom";
+import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
+import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
 
 function getYesterdayDate() {
   const yesterday = new Date();
@@ -76,33 +78,76 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
     }
   );
 
-  useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SWITCH_TAB], () => {
-    navigate("/other");
-  });
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SWITCH_TAB],
+    () => {
+      navigate("/other");
+    },
+    [navigate]
+  );
 
   return (
-    <InboxThreadView
-      data={{
-        title: "Important",
-        filterThreadsFnc: filterThreadsFncImportant,
-        canArchiveThread: true,
-        canTrashThread: true,
-      }}
-      tabs={[
-        {
+    <GoToPageHotkeys>
+      <InboxThreadView
+        data={{
           title: "Important",
-          href: "/",
-        },
-        {
-          title: "Other",
-          href: "/other",
-        },
-      ]}
-      fetchNextPage={fetchNextPage}
-      hasNextPage={hasNextPage}
-      isFetching={isFetching}
-      isFetchingNextPage={isFetchingNextPage}
-      reactQueryData={data}
-    />
+          filterThreadsFnc: filterThreadsFncImportant,
+          canArchiveThread: true,
+          canTrashThread: true,
+        }}
+        tabs={[
+          {
+            title: "Important",
+            href: "/",
+          },
+          {
+            title: "Other",
+            href: "/other",
+          },
+        ]}
+        fetchNextPage={fetchNextPage}
+        hasNextPage={hasNextPage}
+        isFetching={isFetching}
+        isFetchingNextPage={isFetchingNextPage}
+        reactQueryData={data}
+      />
+      <ShortcutsFloater
+        items={[
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN]],
+            description: "Move Down",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP]],
+            description: "Move Up",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MARK_DONE]],
+            description: "Mark Done",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
+            description: "Star",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SELECT]],
+            description: "View Thread",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SEARCH]],
+            description: "Search",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE]],
+            description: "Compose",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "s"],
+            isSequential: true,
+            description: "Go to Starred",
+          },
+        ]}
+      />
+    </GoToPageHotkeys>
   );
 }

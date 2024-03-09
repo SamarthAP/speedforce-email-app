@@ -152,6 +152,12 @@ export default function ThreadList({
               </div>
             ) : null}
 
+            {index === 0 && isOlderThanSevenDays(new Date(thread.date)) ? (
+              <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 mb-2">
+                Past Month And Older
+              </div>
+            ) : null}
+
             {index > 0 &&
             isLastSevenDaysButNotToday(new Date(thread.date)) &&
             isToday(new Date(threads[index - 1].date)) ? (
@@ -160,8 +166,10 @@ export default function ThreadList({
               </div>
             ) : null}
 
-            {index === 0 && isOlderThanSevenDays(new Date(thread.date)) ? (
-              <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 mb-2">
+            {index > 0 &&
+            isOlderThanSevenDays(new Date(thread.date)) &&
+            isToday(new Date(threads[index - 1].date)) ? (
+              <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 my-2">
                 Past Month And Older
               </div>
             ) : null}
@@ -370,7 +378,6 @@ function ThreadListRow({
           setShowSummaryCard(true);
         }}
         onMouseLeave={() => {
-          hoveredThreadContext.setThreadIndex(-1);
           setShowSummaryCard(false);
         }}
         className={`relative grid grid-cols-10 py-1 cursor-default group ${
@@ -424,13 +431,14 @@ function ThreadListRow({
           <span className="truncate text-black dark:text-zinc-100">
             {
               // TODO: Should we make a DraftThreadView or DraftThreadList component to avoid need for live query?
-              isDrafts
+              (isDrafts
                 ? message?.toRecipients
                     .map((recipient) =>
                       recipient.slice(0, recipient.lastIndexOf("<"))
                     )
                     .join(", ")
-                : thread.from.slice(0, thread.from.lastIndexOf("<"))
+                : thread.from.slice(0, thread.from.lastIndexOf("<"))) ||
+                "(no sender)"
             }
           </span>
         </div>
@@ -443,7 +451,16 @@ function ThreadListRow({
 
           <div className="flex flex-grow overflow-hidden">
             <div className="text-sm truncate text-slate-400 dark:text-zinc-500 w-full">
-              {he.decode(thread.snippet)}
+              {/* 
+                NOTE: Some emails append &zwnj; to the snippet (at least on Gmail, idk about Outlook). This is called a Zero Width Non-Joiner.
+                It has the same effect as a space character. You can see it inside the HTML as &zwnj;, but when you console log it, it just shows up as spaces.
+                This causes the truncate dots (...) to come up on the thread row, because the spaces make it truncate.
+                You cannot .replace(/&zwnj;/g, "") to remove the &zwnj; from the snippet, because you actually need to use the unicode character (U+200C) to remove it.
+              */}
+              {he
+                .decode(thread.snippet)
+                .replace(/\u200C/g, "")
+                .trim()}
             </div>
             <div className="text-sm pl-2 pr-4 flex-shrink-0 text-slate-400 dark:text-zinc-500 font-medium flex flex-col justify-center">
               <span className="group-hover:hidden block">

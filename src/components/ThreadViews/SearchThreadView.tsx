@@ -15,6 +15,9 @@ import { markRead } from "../../lib/sync";
 import { useHotkeys } from "react-hotkeys-hook";
 import { handleStarClick } from "../../lib/asyncHelpers";
 import { HoveredThreadContext } from "../../contexts/HoveredThreadContext";
+import { useCommandBarOpenContext } from "../../contexts/CommandBarContext";
+import { useKeyPressContext } from "../../contexts/KeyPressContext";
+import CommandBar from "../CommandBar";
 
 interface SearchThreadViewProps {
   data: ClientInboxTabType;
@@ -28,9 +31,9 @@ export default function SearchThreadView({
   setSearchItems,
 }: SearchThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
-  const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
+  const { commandBarIsOpen } = useCommandBarOpenContext();
   const [hoveredThreadIndex, setHoveredThreadIndex] = useState<number>(-1);
-  // const [selectedThread, setSelectedThread] = useState<string>("");
+  const { sequenceInitiated } = useKeyPressContext();
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -61,7 +64,7 @@ export default function SearchThreadView({
       .where("email")
       .equals(selectedEmail.email)
       .primaryKeys();
-  });
+  }, [selectedEmail.email]);
 
   // Message list used for search
   const messages = useLiveQuery(async () => {
@@ -82,7 +85,7 @@ export default function SearchThreadView({
 
       return [];
     },
-    [selectedEmail, data, searchItems],
+    [selectedEmail, data, searchItems, messages],
     []
   );
 
@@ -100,30 +103,41 @@ export default function SearchThreadView({
 
   const hoveredThreadContextValue = useMemo(
     () => ({
-      thread: hoveredThread,
-      setThread: (thread: IEmailThread | null) => void setHoveredThread(thread),
       threadIndex: hoveredThreadIndex,
       setThreadIndex: (index: number) => void setHoveredThreadIndex(index),
     }),
-    [hoveredThread, setHoveredThread, hoveredThreadIndex, setHoveredThreadIndex]
+    [hoveredThreadIndex, setHoveredThreadIndex]
   );
 
-  useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ESCAPE], () => {
-    navigate(-1);
-  });
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ESCAPE],
+    () => {
+      if (commandBarIsOpen) return;
+      navigate(-1);
+    },
+    [navigate, commandBarIsOpen]
+  );
 
-  useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE], () => {
-    navigate("/compose");
-  });
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE],
+    () => {
+      navigate("/compose");
+    },
+    [navigate]
+  );
 
-  useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SEARCH], () => {
-    navigate("/search");
-  });
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SEARCH],
+    () => {
+      navigate("/search");
+    },
+    [navigate]
+  );
 
   useHotkeys(
     DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR],
     () => {
-      if (hoveredThreadIndex > -1) {
+      if (hoveredThreadIndex > -1 && !sequenceInitiated) {
         void handleStarClick(
           threadsList[hoveredThreadIndex],
           selectedEmail.email,
@@ -136,12 +150,15 @@ export default function SearchThreadView({
       threadsList,
       selectedEmail.email,
       selectedEmail.provider,
+      sequenceInitiated,
     ]
   );
 
   useHotkeys(
     DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SELECT],
     () => {
+      if (commandBarIsOpen) return;
+
       if (hoveredThreadIndex > -1) {
         const thread = threadsList[hoveredThreadIndex];
         if (thread.unread) {
@@ -155,13 +172,20 @@ export default function SearchThreadView({
       threadsList,
       selectedEmail.email,
       selectedEmail.provider,
+      commandBarIsOpen,
+      navigate,
     ]
   );
 
   // move hovered thread down
   useHotkeys(
-    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_DOWN],
+    ],
     () => {
+      if (commandBarIsOpen) return;
+
       setHoveredThreadIndex((prev) => {
         if (prev <= -1) {
           return 0;
@@ -172,13 +196,18 @@ export default function SearchThreadView({
         }
       });
     },
-    [threads]
+    [threads, commandBarIsOpen, setHoveredThreadIndex]
   );
 
   // move hovered thread up
   useHotkeys(
-    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP],
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_UP],
+    ],
     () => {
+      if (commandBarIsOpen) return;
+
       setHoveredThreadIndex((prev) => {
         if (prev <= -1) {
           return 0;
@@ -189,7 +218,7 @@ export default function SearchThreadView({
         }
       });
     },
-    [threads]
+    [threads, commandBarIsOpen, setHoveredThreadIndex]
   );
 
   return (
@@ -226,8 +255,30 @@ export default function SearchThreadView({
             />
           </HoveredThreadContext.Provider>
         </div>
-        <AssistBar thread={hoveredThread} />
+        <AssistBar thread={threads[hoveredThreadIndex]} />
       </div>
+      <CommandBar
+        data={[]}
+        // data={[
+        //   {
+        //     title: "Email Commands",
+        //     commands: [
+        //       {
+        //         icon: StarIcon,
+        //         description: "Star",
+        //         action: () => {
+        //           // star thread
+        //           toast("Starred");
+        //         },
+        //         keybind: {
+        //           keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
+        //           isSequential: false,
+        //         },
+        //       },
+        //     ],
+        //   },
+        // ]}
+      />
     </div>
   );
 }

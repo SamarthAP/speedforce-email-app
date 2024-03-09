@@ -1,6 +1,6 @@
 import { IEmailThread, ISelectedEmail, db } from "../lib/db";
 import Titlebar from "../components/Titlebar";
-import { ArrowSmallLeftIcon } from "@heroicons/react/20/solid";
+import { ArrowSmallLeftIcon, StarIcon } from "@heroicons/react/20/solid";
 import SelectedThreadBar from "../components/SelectedThreadBar";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -8,6 +8,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import Message from "../components/Message";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import { handleArchiveClick } from "../lib/asyncHelpers";
+import { useMemo, useState } from "react";
+import { KeyPressProvider } from "../contexts/KeyPressContext";
+import { CommandBarOpenContext } from "../contexts/CommandBarContext";
+import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
+import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
+import toast from "react-hot-toast";
+import CommandBar from "../components/CommandBar";
 
 interface GenericThreadFeedPageProps {
   selectedEmail: ISelectedEmail;
@@ -25,6 +32,15 @@ export default function GenericThreadFeedPage({
   const navigate = useNavigate();
   const { index } = useParams();
   const indexNumber = parseInt(index || "0"); // NOTE: use this for index
+  const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
+
+  const commandBarContextValue = useMemo(
+    () => ({
+      commandBarIsOpen: commandBarIsOpen,
+      setCommandBarIsOpen: (isOpen: boolean) => setCommandBarIsOpen(isOpen),
+    }),
+    [commandBarIsOpen, setCommandBarIsOpen]
+  );
 
   // mark thread as done
   useHotkeys(
@@ -43,8 +59,13 @@ export default function GenericThreadFeedPage({
 
   // move hovered thread down
   useHotkeys(
-    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_DOWN],
+    ],
     () => {
+      if (commandBarIsOpen) return;
+
       if (indexNumber <= -1) {
         navigate(`${navigationUrl}/0`);
       } else if (threads && indexNumber < threads.length - 1) {
@@ -58,8 +79,13 @@ export default function GenericThreadFeedPage({
 
   // move hovered thread up
   useHotkeys(
-    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP],
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_DOWN],
+    ],
     () => {
+      if (commandBarIsOpen) return;
+
       if (indexNumber <= -1) {
         navigate(`${navigationUrl}/0`);
       } else if (indexNumber > 0) {
@@ -74,9 +100,11 @@ export default function GenericThreadFeedPage({
   useHotkeys(
     DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ESCAPE],
     () => {
-      navigate(originalPageUrl);
+      if (!commandBarIsOpen) {
+        navigate(originalPageUrl);
+      }
     },
-    [navigate]
+    [navigate, commandBarIsOpen]
   );
 
   if (threads === undefined) {
@@ -122,12 +150,72 @@ export default function GenericThreadFeedPage({
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col dark:bg-zinc-900">
-      <Titlebar />
-      <ThreadFeedSection
-        thread={threads[indexNumber]}
-        selectedEmail={selectedEmail}
-        originalPageUrl={originalPageUrl}
-      />
+      <KeyPressProvider>
+        <CommandBarOpenContext.Provider value={commandBarContextValue}>
+          <GoToPageHotkeys>
+            <Titlebar />
+            <ThreadFeedSection
+              thread={threads[indexNumber]}
+              selectedEmail={selectedEmail}
+              originalPageUrl={originalPageUrl}
+            />
+            <ShortcutsFloater
+              items={[
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN]],
+                  description: "Move Down",
+                },
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP]],
+                  description: "Move Up",
+                },
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MARK_DONE]],
+                  description: "Mark Done",
+                },
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
+                  description: "Star",
+                },
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SEARCH]],
+                  description: "Search",
+                },
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE]],
+                  description: "Compose",
+                },
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "s"],
+                  isSequential: true,
+                  description: "Go to Starred",
+                },
+              ]}
+            />
+            <CommandBar
+              data={[
+                {
+                  title: "Email Commands",
+                  commands: [
+                    {
+                      icon: StarIcon,
+                      description: "Star",
+                      action: () => {
+                        // star thread
+                        toast("Starred");
+                      },
+                      keybind: {
+                        keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
+                        isSequential: false,
+                      },
+                    },
+                  ],
+                },
+              ]}
+            />
+          </GoToPageHotkeys>
+        </CommandBarOpenContext.Provider>
+      </KeyPressProvider>
     </div>
   );
 }
