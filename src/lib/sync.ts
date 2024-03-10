@@ -87,6 +87,7 @@ import { NewAttachment } from "../api/model/users.attachment";
 import toast from "react-hot-toast";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 import { CreateDraftResponseDataType } from "../api/model/users.draft";
+import { SENT_FROM_SPEEDFORCE_HTML } from "../api/templates/sentFromSpeedforce";
 
 export async function handleNewThreadsGoogle(
   accessToken: string,
@@ -616,14 +617,19 @@ export async function sendReply(
       subject,
       headerMessageId,
       threadId,
-      html
+      html.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
   } else if (provider === "outlook") {
     const subject = getMessageHeader(message.headers, "Subject");
     const messageId = message.id;
 
     try {
-      await mSendReply(accessToken, subject, messageId, html);
+      await mSendReply(
+        accessToken,
+        subject,
+        messageId,
+        html.concat(SENT_FROM_SPEEDFORCE_HTML)
+      );
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error sending reply" };
@@ -654,14 +660,19 @@ export async function sendReplyAll(
       subject,
       headerMessageId,
       threadId,
-      html
+      html.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
   } else if (provider === "outlook") {
     const subject = getMessageHeader(message.headers, "Subject");
     const messageId = message.id;
 
     try {
-      await mSendReplyAll(accessToken, subject, messageId, html);
+      await mSendReplyAll(
+        accessToken,
+        subject,
+        messageId,
+        html.concat(SENT_FROM_SPEEDFORCE_HTML)
+      );
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error sending reply" };
@@ -693,10 +704,13 @@ export async function forward(
       ccRecipients.join(","),
       bccRecipients.join(","),
       subject,
-      decodeURIComponent(encodeURIComponent(forwardHTML))
+      decodeURIComponent(
+        encodeURIComponent(forwardHTML.concat(SENT_FROM_SPEEDFORCE_HTML))
+      )
     );
   } else if (provider === "outlook") {
     try {
+      // TODO: rework to use MIME instead of endpoint
       await mForward(
         accessToken,
         message.id,
@@ -732,7 +746,7 @@ export async function sendEmail(
       ccRecipients.join(","),
       bccRecipients.join(","),
       subject,
-      html
+      html.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
   } else if (provider === "outlook") {
     try {
@@ -742,7 +756,7 @@ export async function sendEmail(
         ccRecipients,
         bccRecipients,
         subject,
-        html
+        html.concat(SENT_FROM_SPEEDFORCE_HTML)
       );
 
       return { data: null, error: null };
@@ -774,7 +788,7 @@ export async function sendEmailWithAttachments(
       ccRecipients.join(","),
       bccRecipients.join(","),
       subject,
-      html,
+      html.concat(SENT_FROM_SPEEDFORCE_HTML),
       attachments
     );
   } else if (provider === "outlook") {
@@ -785,7 +799,7 @@ export async function sendEmailWithAttachments(
         ccRecipients,
         bccRecipients,
         subject,
-        html,
+        html.concat(SENT_FROM_SPEEDFORCE_HTML),
         attachments
       );
 
