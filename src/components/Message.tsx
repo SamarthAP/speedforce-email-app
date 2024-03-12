@@ -6,7 +6,9 @@ import ShadowDom from "./ShadowDom";
 import {
   ArrowUturnLeftIcon,
   ArrowUturnRightIcon,
+  StarIcon as StarIconSolid,
 } from "@heroicons/react/24/outline";
+import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import { sendReply, sendReplyAll, forward } from "../lib/sync";
 import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
@@ -104,6 +106,30 @@ export default function Message({ message, selectedEmail }: MessageProps) {
         <div className="flex items-center">
           {showBody && (
             <>
+              {/* <div
+                onMouseEnter={(event) => {
+                  handleShowTooltip(event, "Star");
+                }}
+                onMouseLeave={handleHideTooltip}
+              >
+                {message.labelIds.includes("STARRED") ? (
+                  <StarIconSolid
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // star the message, not thread.
+                    }}
+                    className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
+                  />
+                ) : (
+                  <StarIconOutline
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // star the message, not thread.
+                    }}
+                    className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
+                  />
+                )}
+              </div> */}
               <div
                 onMouseEnter={(event) => {
                   handleShowTooltip(event, "Reply");
