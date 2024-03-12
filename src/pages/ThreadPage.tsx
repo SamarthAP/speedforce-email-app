@@ -1,17 +1,24 @@
 import { ISelectedEmail, db } from "../lib/db";
 import Titlebar from "../components/Titlebar";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
+import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowSmallLeftIcon } from "@heroicons/react/20/solid";
 import Message from "../components/Message";
+import { useHotkeys } from "react-hotkeys-hook";
 import SelectedThreadBar from "../components/SelectedThreadBar";
-import { KeyPressProvider } from "../contexts/KeyPressContext";
+import {
+  KeyPressProvider,
+  useKeyPressContext,
+} from "../contexts/KeyPressContext";
 import { CommandBarOpenContext } from "../contexts/CommandBarContext";
 import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
 import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import CommandBar from "../components/CommandBar";
+import { handleStarClick } from "../lib/asyncHelpers";
 
 interface ThreadPageProps {
   selectedEmail: ISelectedEmail;
@@ -19,6 +26,7 @@ interface ThreadPageProps {
 
 export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
   const navigate = useNavigate();
+  const { sequenceInitiated } = useKeyPressContext();
   const { threadId } = useParams();
   const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
 
@@ -55,6 +63,20 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
     [commandBarIsOpen, setCommandBarIsOpen]
   );
 
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR],
+    () => {
+      if (thread && !sequenceInitiated) {
+        void handleStarClick(
+          thread,
+          selectedEmail.email,
+          selectedEmail.provider
+        );
+      }
+    },
+    [thread, selectedEmail.email, selectedEmail.provider, sequenceInitiated]
+  );
+
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col dark:bg-zinc-900">
       <KeyPressProvider>
@@ -78,8 +100,39 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
                     </p>
                   </div>
                 </div>
-                <div className="dark:text-white p-4 w-full">
-                  {thread?.subject}
+                <div className="p-4 w-full flex justify-between">
+                  <div className="dark:text-white">{thread?.subject}</div>
+                  <div className="pl-2">
+                    {thread ? (
+                      thread.labelIds.includes("STARRED") ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleStarClick(
+                              thread,
+                              selectedEmail.email,
+                              selectedEmail.provider
+                            );
+                          }}
+                        >
+                          <StarIconSolid className="h-4 w-4 text-yellow-400" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleStarClick(
+                              thread,
+                              selectedEmail.email,
+                              selectedEmail.provider
+                            );
+                          }}
+                        >
+                          <StarIconOutline className="h-4 w-4 dark:text-zinc-400 text-slate-500" />
+                        </button>
+                      )
+                    ) : null}
+                  </div>
                 </div>
                 <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll">
                   {messages?.map((message) => {
@@ -107,10 +160,6 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
                 {
                   keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP]],
                   description: "Move Up",
-                },
-                {
-                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MARK_DONE]],
-                  description: "Mark Done",
                 },
                 {
                   keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
