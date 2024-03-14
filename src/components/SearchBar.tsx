@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { search } from "../lib/sync";
 import { classNames, parseSearchQuery } from "../lib/util";
@@ -6,6 +6,7 @@ import { MagnifyingGlassIcon, ClockIcon } from "@heroicons/react/24/outline";
 import { Combobox } from "@headlessui/react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../lib/db";
+import { useTimeout } from "usehooks-ts";
 
 interface SearchBarProps {
   setSearchItems: (searchItems: string[]) => void;
@@ -14,6 +15,9 @@ interface SearchBarProps {
 export default function SearchBar({ setSearchItems }: SearchBarProps) {
   const [searchText, setSearchText] = useState<string>("");
   const { selectedEmail } = useEmailPageOutletContext();
+
+  const comboInputRef = useRef<HTMLInputElement>(null);
+  const comboButtonRef = useRef<HTMLButtonElement>(null);
 
   // Pull search history from indexeddb
   const searchQueries = useLiveQuery(() => {
@@ -61,19 +65,27 @@ export default function SearchBar({ setSearchItems }: SearchBarProps) {
   const onKeyUp = async (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       void triggerSearch(searchText);
+      // unselect input
+
+      if (comboInputRef.current) {
+        comboInputRef.current.blur();
+      }
+    } else if (event.key === "Escape") {
+      if (comboInputRef.current) {
+        comboInputRef.current.blur();
+      }
     }
   };
 
-  const comboInputRef = useRef<HTMLInputElement>(null);
-  const comboButtonRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    // focus on textinput on first render
+  // using timeout because otherwise the focus get set immediately
+  // and when you use the / shortcut, it catches the / keyboard event
+  // and puts it in the search input
+  useTimeout(() => {
     if (comboInputRef.current && comboButtonRef.current) {
       comboInputRef.current.focus();
       comboButtonRef.current.click();
     }
-  }, []);
+  }, 100);
 
   return (
     <div className="flex w-full items-center mr-8">

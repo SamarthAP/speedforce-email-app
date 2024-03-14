@@ -28,6 +28,8 @@ import Other from "../pages/Other";
 import { EditDraft } from "../pages/EditDraft";
 import SharedDrafts from "../pages/SharedDrafts";
 import SharedDraftThreadPage from "../pages/SharedDraftThreadPage";
+import ImportantThreadFeedPage from "../pages/ImportantThreadFeedPage";
+import OtherThreadFeedPage from "../pages/OtherThreadFeedPage";
 
 interface AppRouterProps {
   session: Session;
@@ -372,6 +374,24 @@ export default function AppRouter({ session }: AppRouterProps) {
               path="/sharedDraft/:draftId"
               element={<SharedDraftThreadPage selectedEmail={selectedEmail} />}
             ></Route>
+            <Route
+              path="/importantThreadFeed/:index"
+              element={
+                <ImportantThreadFeedPage
+                  selectedEmail={selectedEmail}
+                  inboxZeroStartDate={selectedEmail.inboxZeroStartDate}
+                />
+              }
+            />
+            <Route
+              path="/otherThreadFeed/:index"
+              element={
+                <OtherThreadFeedPage
+                  selectedEmail={selectedEmail}
+                  inboxZeroStartDate={selectedEmail.inboxZeroStartDate}
+                />
+              }
+            />
           </>
         )}
       </Routes>

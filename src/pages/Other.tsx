@@ -4,7 +4,12 @@ import { ISelectedEmail, db } from "../lib/db";
 import InboxThreadView from "../components/ThreadViews/InboxThreadView";
 import { useEmailPageOutletContext } from "./_emailPage";
 import { useInfiniteQuery } from "react-query";
+import { useHotkeys } from "react-hotkeys-hook";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
+import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
+import { useNavigate } from "react-router-dom";
+import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
+import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
 
 interface OtherProps {
   inboxZeroStartDate: number;
@@ -12,6 +17,7 @@ interface OtherProps {
 
 export default function Other({ inboxZeroStartDate }: OtherProps) {
   const { selectedEmail } = useEmailPageOutletContext();
+  const navigate = useNavigate();
   const email = selectedEmail.email;
 
   const filterThreadsFncOther = (selectedEmail: ISelectedEmail) =>
@@ -66,29 +72,76 @@ export default function Other({ inboxZeroStartDate }: OtherProps) {
     }
   );
 
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SWITCH_TAB],
+    () => {
+      navigate("/");
+    },
+    [navigate]
+  );
+
   return (
-    <InboxThreadView
-      data={{
-        title: "Other",
-        filterThreadsFnc: filterThreadsFncOther,
-        canArchiveThread: true,
-        canTrashThread: true,
-      }}
-      tabs={[
-        {
-          title: "Important",
-          href: "/",
-        },
-        {
+    <GoToPageHotkeys>
+      <InboxThreadView
+        data={{
           title: "Other",
-          href: "/other",
-        },
-      ]}
-      fetchNextPage={fetchNextPage}
-      hasNextPage={hasNextPage}
-      isFetching={isFetching}
-      isFetchingNextPage={isFetchingNextPage}
-      reactQueryData={data}
-    />
+          filterThreadsFnc: filterThreadsFncOther,
+          canArchiveThread: true,
+          canTrashThread: true,
+        }}
+        tabs={[
+          {
+            title: "Important",
+            href: "/",
+          },
+          {
+            title: "Other",
+            href: "/other",
+          },
+        ]}
+        fetchNextPage={fetchNextPage}
+        hasNextPage={hasNextPage}
+        isFetching={isFetching}
+        isFetchingNextPage={isFetchingNextPage}
+        reactQueryData={data}
+      />
+      <ShortcutsFloater
+        items={[
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN]],
+            description: "Move Down",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP]],
+            description: "Move Up",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MARK_DONE]],
+            description: "Mark Done",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
+            description: "Star",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SELECT]],
+            description: "View Thread",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SEARCH]],
+            description: "Search",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE]],
+            description: "Compose",
+          },
+          {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "s"],
+            isSequential: true,
+            description: "Go to Starred",
+          },
+        ]}
+      />
+    </GoToPageHotkeys>
   );
 }

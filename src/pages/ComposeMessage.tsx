@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmailSelectorInput } from "../components/EmailSelectorInput";
 import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
 import { ISelectedEmail } from "../lib/db";
@@ -17,6 +17,12 @@ import { dLog } from "../lib/noProd";
 import { NewAttachment } from "../api/model/users.attachment";
 import toast from "react-hot-toast";
 import { deleteDexieThread } from "../lib/util";
+import { KeyPressProvider } from "../contexts/KeyPressContext";
+import { CommandBarOpenContext } from "../contexts/CommandBarContext";
+import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
+import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
+import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
+import CommandBar from "../components/CommandBar";
 
 interface ComposeMessageProps {
   selectedEmail: ISelectedEmail;
@@ -43,6 +49,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
     id: string;
     threadId: string;
   }>({ id: "", threadId: "" }); // TODO: Type this
+  const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -60,6 +67,14 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
     setBcc(emails);
     void saveDraft({ bcc: emails });
   };
+
+  const commandBarContextValue = useMemo(
+    () => ({
+      commandBarIsOpen: commandBarIsOpen,
+      setCommandBarIsOpen: (isOpen: boolean) => setCommandBarIsOpen(isOpen),
+    }),
+    [commandBarIsOpen, setCommandBarIsOpen]
+  );
 
   const saveDraft = useCallback(
     async (request: SendDraftRequestType) => {
@@ -122,7 +137,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !commandBarIsOpen) {
         void saveDraft({});
         navigate(-1);
       }
@@ -133,7 +148,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [navigate, saveDraft]);
+  }, [navigate, saveDraft, commandBarIsOpen]);
 
   const handleSendEmail = async (content: string) => {
     setSendingEmail(true);
@@ -203,90 +218,155 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col dark:bg-zinc-900">
-      <Titlebar />
-      <div className="w-full h-full flex overflow-hidden">
-        <Sidebar />
-        <div className="w-full h-full flex flex-col overflow-hidden">
-          <div className="flex px-4 pt-4">
-            <div
-              className="flex flex-row cursor-pointer items-center"
-              onClick={(e) => {
-                e.stopPropagation();
-                void saveDraft({
-                  to,
-                  cc,
-                  bcc,
-                  subject,
-                  attachments,
-                });
-                navigate(-1);
-              }}
-            >
-              <ArrowSmallLeftIcon className="h-4 w-4 dark:text-zinc-400 text-slate-500" />
-              <p className="dark:text-zinc-400 text-slate-500 text-xs px-1">
-                Back
-              </p>
-            </div>
-          </div>
-          <div className="dark:text-white p-4 w-full">New Message</div>
-          <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 mb-10 overflow-y-scroll hide-scroll">
-            <div className="border border-slate-200 dark:border-zinc-700 pt-1">
-              <EmailSelectorInput
-                selectedEmail={selectedEmail}
-                alignLabels="right"
-                toProps={{
-                  text: "To",
-                  emails: to,
-                  setEmails: setToAndSaveDraft,
-                }}
-                ccProps={{
-                  emails: cc,
-                  setEmails: setCcAndSaveDraft,
-                }}
-                bccProps={{
-                  emails: bcc,
-                  setEmails: setBccAndSaveDraft,
-                }}
-              />
-              <div className="flex pb-2 pt-1 border-b border-b-slate-200 dark:border-b-zinc-700">
-                {/* Input */}
-                <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center justify-end">
-                  Subject
+      <KeyPressProvider>
+        <CommandBarOpenContext.Provider value={commandBarContextValue}>
+          <GoToPageHotkeys>
+            <Titlebar />
+            <div className="w-full h-full flex overflow-hidden">
+              <Sidebar />
+              <div className="w-full h-full flex flex-col overflow-hidden">
+                <div className="flex px-4 pt-4">
+                  <div
+                    className="flex flex-row cursor-pointer items-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void saveDraft({
+                        to,
+                        cc,
+                        bcc,
+                        subject,
+                        attachments,
+                      });
+                      navigate(-1);
+                    }}
+                  >
+                    <ArrowSmallLeftIcon className="h-4 w-4 dark:text-zinc-400 text-slate-500" />
+                    <p className="dark:text-zinc-400 text-slate-500 text-xs px-1">
+                      Back
+                    </p>
+                  </div>
                 </div>
-                <input
-                  onChange={(event) => setSubject(event.target.value)}
-                  onBlur={() => void saveDraft({ subject })}
-                  type="text"
-                  name="subject"
-                  id="subject"
-                  className="w-full block bg-transparent border-0 pl-5 pr-20 dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
-                  placeholder="..."
-                />
+                <div className="dark:text-white p-4 w-full">New Message</div>
+                <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 mb-10 overflow-y-scroll hide-scroll">
+                  <div className="border border-slate-200 dark:border-zinc-700 pt-1">
+                    <EmailSelectorInput
+                      selectedEmail={selectedEmail}
+                      alignLabels="right"
+                      toProps={{
+                        text: "To",
+                        emails: to,
+                        setEmails: setToAndSaveDraft,
+                      }}
+                      ccProps={{
+                        emails: cc,
+                        setEmails: setCcAndSaveDraft,
+                      }}
+                      bccProps={{
+                        emails: bcc,
+                        setEmails: setBccAndSaveDraft,
+                      }}
+                    />
+                    <div className="flex pb-2 pt-1 border-b border-b-slate-200 dark:border-b-zinc-700">
+                      {/* Input */}
+                      <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center justify-end">
+                        Subject
+                      </div>
+                      <input
+                        onChange={(event) => setSubject(event.target.value)}
+                        onBlur={() => void saveDraft({ subject })}
+                        type="text"
+                        name="subject"
+                        id="subject"
+                        className="w-full block bg-transparent border-0 pl-5 pr-20 dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
+                        placeholder="..."
+                      />
+                    </div>
+                    <div className="flex py-2">
+                      {/* Input */}
+                      <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-start justify-end">
+                        Body
+                      </div>
+                      <div className="w-full pl-10 overflow-scroll hide-scroll">
+                        <Tiptap
+                          initialContent=""
+                          attachments={attachments}
+                          setAttachments={setAttachments}
+                          canSendEmail={
+                            to.length > 0 || cc.length > 0 || bcc.length > 0
+                          }
+                          sendingEmail={sendingEmail}
+                          sendEmail={handleSendEmail}
+                          setContent={setContentHtml}
+                          saveDraft={saveDraft}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="flex py-2">
-                {/* Input */}
-                <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-start justify-end">
-                  Body
-                </div>
-                <div className="w-full pl-10 overflow-scroll hide-scroll">
-                  <Tiptap
-                    initialContent=""
-                    attachments={attachments}
-                    setAttachments={setAttachments}
-                    canSendEmail={
-                      to.length > 0 || cc.length > 0 || bcc.length > 0
-                    }
-                    sendingEmail={sendingEmail}
-                    sendEmail={handleSendEmail}
-                    setContent={setContentHtml}
-                    saveDraft={saveDraft}
-                  />
-                </div>
-              </div>
             </div>
-          </div>
-        </div>
-      </div>
+            <ShortcutsFloater
+              items={[
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN]],
+                  description: "Move Down",
+                },
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP]],
+                  description: "Move Up",
+                },
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MARK_DONE]],
+                  description: "Mark Done",
+                },
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
+                  description: "Star",
+                },
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SELECT]],
+                  description: "View Thread",
+                },
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SEARCH]],
+                  description: "Search",
+                },
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE]],
+                  description: "Compose",
+                },
+                {
+                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "s"],
+                  isSequential: true,
+                  description: "Go to Starred",
+                },
+              ]}
+            />
+            <CommandBar
+              data={[]}
+              // data={[
+              //   {
+              //     title: "Email Commands",
+              //     commands: [
+              //       {
+              //         icon: StarIcon,
+              //         description: "Star",
+              //         action: () => {
+              //           // star thread
+              //           toast("Starred");
+              //         },
+              //         keybind: {
+              //           keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
+              //           isSequential: false,
+              //         },
+              //       },
+              //     ],
+              //   },
+              // ]}
+            />
+          </GoToPageHotkeys>
+        </CommandBarOpenContext.Provider>
+      </KeyPressProvider>
     </div>
   );
 }
