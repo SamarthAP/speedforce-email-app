@@ -5,7 +5,10 @@ import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowSmallLeftIcon } from "@heroicons/react/20/solid";
+import {
+  ArchiveBoxXMarkIcon,
+  ArrowSmallLeftIcon,
+} from "@heroicons/react/20/solid";
 import Message from "../components/Message";
 import { useHotkeys } from "react-hotkeys-hook";
 import SelectedThreadBar from "../components/SelectedThreadBar";
@@ -19,6 +22,7 @@ import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import CommandBar from "../components/CommandBar";
 import { handleStarClick } from "../lib/asyncHelpers";
+import { getMessageHeader, listUnsubscribe } from "../lib/util";
 
 interface ThreadPageProps {
   selectedEmail: ISelectedEmail;
@@ -36,6 +40,10 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
       .equals(threadId || "")
       .sortBy("date");
   }, [threadId]);
+
+  const listUnsubscribeHeader = messages?.length
+    ? getMessageHeader(messages[0].headers, "List-Unsubscribe")
+    : "";
 
   const thread = useLiveQuery(() => {
     return db.emailThreads.get(threadId || "");
@@ -76,6 +84,33 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
     },
     [thread, selectedEmail.email, selectedEmail.provider, sequenceInitiated]
   );
+
+  useHotkeys(
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMMAND],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.UNSUBSCRIBE],
+    ],
+    () => {
+      if (listUnsubscribeHeader) {
+        void listUnsubscribe(
+          listUnsubscribeHeader,
+          selectedEmail.email,
+          selectedEmail.provider
+        );
+      }
+    },
+    [selectedEmail.email, selectedEmail.provider, listUnsubscribeHeader]
+  );
+
+  const unsubscribeFromList = () => {
+    if (listUnsubscribeHeader) {
+      void listUnsubscribe(
+        listUnsubscribeHeader,
+        selectedEmail.email,
+        selectedEmail.provider
+      );
+    }
+  };
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col dark:bg-zinc-900">
@@ -185,7 +220,31 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
               ]}
             />
             <CommandBar
-              data={[]}
+              data={
+                listUnsubscribeHeader
+                  ? [
+                      {
+                        title: "Email Actions",
+                        commands: [
+                          {
+                            icon: ArchiveBoxXMarkIcon,
+                            description: "Unsubscribe from email list",
+                            action: () => {
+                              unsubscribeFromList();
+                            },
+                            keybind: {
+                              keystrokes: [
+                                "⌘",
+                                DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.UNSUBSCRIBE],
+                              ],
+                              isSequential: false,
+                            },
+                          },
+                        ],
+                      },
+                    ]
+                  : []
+              }
               // data={[
               //   {
               //     title: "Email Commands",
