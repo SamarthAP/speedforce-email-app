@@ -373,7 +373,7 @@ function ThreadListRow({
     <div className="relative">
       <div
         onClick={() => handleThreadClick(thread)}
-        onMouseOver={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        onMouseEnter={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
           hoveredThreadContext.setThreadIndex(threadIndex);
           setShowSummaryCard(true);
         }}

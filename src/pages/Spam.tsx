@@ -92,10 +92,6 @@ export default function Spam() {
             description: "Move Up",
           },
           {
-            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MARK_DONE]],
-            description: "Mark Done",
-          },
-          {
             keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
             description: "Star",
           },

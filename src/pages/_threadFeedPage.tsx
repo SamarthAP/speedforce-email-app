@@ -1,19 +1,23 @@
 import { IEmailThread, ISelectedEmail, db } from "../lib/db";
 import Titlebar from "../components/Titlebar";
-import { ArrowSmallLeftIcon, StarIcon } from "@heroicons/react/20/solid";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
+import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
+import { ArrowSmallLeftIcon } from "@heroicons/react/20/solid";
 import SelectedThreadBar from "../components/SelectedThreadBar";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useParams } from "react-router-dom";
 import Message from "../components/Message";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
-import { handleArchiveClick } from "../lib/asyncHelpers";
+import { handleArchiveClick, handleStarClick } from "../lib/asyncHelpers";
 import { useMemo, useState } from "react";
-import { KeyPressProvider } from "../contexts/KeyPressContext";
+import {
+  KeyPressProvider,
+  useKeyPressContext,
+} from "../contexts/KeyPressContext";
 import { CommandBarOpenContext } from "../contexts/CommandBarContext";
 import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
 import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
-import toast from "react-hot-toast";
 import CommandBar from "../components/CommandBar";
 
 interface GenericThreadFeedPageProps {
@@ -80,8 +84,8 @@ export default function GenericThreadFeedPage({
   // move hovered thread up
   useHotkeys(
     [
-      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
-      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_DOWN],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_UP],
     ],
     () => {
       if (commandBarIsOpen) return;
@@ -105,6 +109,22 @@ export default function GenericThreadFeedPage({
       }
     },
     [navigate, commandBarIsOpen]
+  );
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE],
+    () => {
+      navigate("/compose");
+    },
+    [navigate]
+  );
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SEARCH],
+    () => {
+      navigate("/search");
+    },
+    [navigate]
   );
 
   if (threads === undefined) {
@@ -192,27 +212,7 @@ export default function GenericThreadFeedPage({
                 },
               ]}
             />
-            <CommandBar
-              data={[
-                {
-                  title: "Email Commands",
-                  commands: [
-                    {
-                      icon: StarIcon,
-                      description: "Star",
-                      action: () => {
-                        // star thread
-                        toast("Starred");
-                      },
-                      keybind: {
-                        keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
-                        isSequential: false,
-                      },
-                    },
-                  ],
-                },
-              ]}
-            />
+            <CommandBar data={[]} />
           </GoToPageHotkeys>
         </CommandBarOpenContext.Provider>
       </KeyPressProvider>
@@ -230,6 +230,7 @@ function ThreadFeedSection({
   originalPageUrl: string;
 }) {
   const navigate = useNavigate();
+  const { sequenceInitiated } = useKeyPressContext();
   const threadId = thread.id;
 
   const messages = useLiveQuery(() => {
@@ -237,7 +238,21 @@ function ThreadFeedSection({
       .where("threadId")
       .equals(threadId || "")
       .sortBy("date");
-  }, [threadId]);
+  }, [thread]);
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR],
+    () => {
+      if (!sequenceInitiated) {
+        void handleStarClick(
+          thread,
+          selectedEmail.email,
+          selectedEmail.provider
+        );
+      }
+    },
+    [thread, selectedEmail.email, selectedEmail.provider, sequenceInitiated]
+  );
 
   return (
     <div className="w-full h-full flex overflow-hidden">
@@ -257,7 +272,38 @@ function ThreadFeedSection({
             </p>
           </div>
         </div>
-        <div className="dark:text-white p-4 w-full">{thread?.subject}</div>
+        <div className="p-4 w-full flex justify-between">
+          <div className="dark:text-white">{thread?.subject}</div>
+          <div className="pl-2">
+            {thread.labelIds.includes("STARRED") ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void handleStarClick(
+                    thread,
+                    selectedEmail.email,
+                    selectedEmail.provider
+                  );
+                }}
+              >
+                <StarIconSolid className="h-4 w-4 text-yellow-400" />
+              </button>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void handleStarClick(
+                    thread,
+                    selectedEmail.email,
+                    selectedEmail.provider
+                  );
+                }}
+              >
+                <StarIconOutline className="h-4 w-4 dark:text-zinc-400 text-slate-500" />
+              </button>
+            )}
+          </div>
+        </div>
         <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll">
           {messages?.map((message) => {
             return (

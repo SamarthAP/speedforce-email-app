@@ -82,10 +82,6 @@ export default function Starred() {
             description: "Move Up",
           },
           {
-            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MARK_DONE]],
-            description: "Mark Done",
-          },
-          {
             keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
             description: "Star",
           },
