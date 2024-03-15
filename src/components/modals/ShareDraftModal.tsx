@@ -1,5 +1,5 @@
-import { Transition, Dialog, Popover } from "@headlessui/react";
-import { ISelectedEmail } from "../../lib/db";
+import { Transition, Dialog, Popover, Combobox } from "@headlessui/react";
+import { IContact, ISelectedEmail, db } from "../../lib/db";
 import React, { useCallback, useEffect, useState } from "react";
 import { SharedDraftAccessType } from "../../api/model/users.shared.draft";
 import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/24/outline";
@@ -7,6 +7,7 @@ import { classNames } from "../../lib/util";
 import toast from "react-hot-toast";
 import { string } from "zod";
 import { loadParticipantsForDraft, shareDraft } from "../../api/sharedDrafts";
+import { useLiveQuery } from "dexie-react-hooks";
 
 const emailSchema = string().email({ message: "Invalid email" });
 
@@ -48,11 +49,11 @@ const SharedDraftParticipant = ({
   setParticipants,
 }: SharedDraftParticipantProps) => {
   return (
-    <span className="flex flex-row items-center justify-between">
+    <span className="ml-2 flex flex-row items-center justify-between">
       <div className="text-base">{email}</div>
       <Popover>
         <div className="relative mt-1 w-32">
-          <Popover.Button className="relative w-full py-2 pl-3 pr-10 text-left bg-white rounded-lg shadow-md cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-opacity-75 focus-visible:ring-white focus-visible:ring-offset-orange-300 focus-visible:ring-offset-2 sm:text-sm">
+          <Popover.Button className="relative w-full py-2 pl-3 pr-10 text-left bg-white rounded-lg shadow-md cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-opacity-75 focus-visible:ring-white sm:text-sm">
             <span className="block truncate">
               {getAccessTypeString(accessType)}
             </span>
@@ -78,11 +79,12 @@ const SharedDraftParticipant = ({
                 >
                   <>
                     <span
-                      className={`block truncate ${
+                      className={classNames(
+                        "block truncate",
                         accessType === SharedDraftAccessType.VIEW
                           ? "font-medium"
                           : "font-normal"
-                      }`}
+                      )}
                     >
                       Read Only
                     </span>
@@ -105,11 +107,12 @@ const SharedDraftParticipant = ({
                 >
                   <>
                     <span
-                      className={`block truncate ${
+                      className={classNames(
+                        "block truncate",
                         accessType === SharedDraftAccessType.EDIT
                           ? "font-medium"
                           : "font-normal"
-                      }`}
+                      )}
                     >
                       Editor
                     </span>
@@ -174,10 +177,55 @@ export const SharedDraftModal = ({
   >([]);
   const [emailText, setEmailText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const userContactsList = useLiveQuery(() => {
+    return db.contacts.where("email").equals(selectedEmail.email).toArray();
+  }, []);
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
+  // TODO: build a sophisticated rank algo with recent interactions (non-contacts)
+  const filteredContacts =
+    emailText === "" || !userContactsList
+      ? []
+      : userContactsList
+          .filter((contact) => {
+            return (
+              (contact.contactEmailAddress
+                .toLowerCase()
+                .includes(emailText.toLowerCase()) ||
+                contact.contactName
+                  .toLowerCase()
+                  .includes(emailText.toLowerCase())) &&
+              !participants.find(
+                (p) => p.email === contact.contactEmailAddress
+              ) &&
+              isValidEmail(
+                participants.map((p) => p.email).concat(selectedEmail.email),
+                contact.contactEmailAddress
+              )
+            );
+          })
+          .slice(0, 5);
+
+  // const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  //   if (e.key === "Enter") {
+  //     e.preventDefault();
+  //     if (
+  //       isValidEmail(
+  //         participants.map((p) => p.email).concat(selectedEmail.email),
+  //         emailText
+  //       )
+  //     ) {
+  //       setParticipants([
+  //         ...participants,
+  //         { email: emailText, accessType: SharedDraftAccessType.VIEW },
+  //       ]);
+  //       setEmailText("");
+  //     }
+  //   }
+  // };
+
+  const onEmailKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      // Validate email and add to send list
       if (
         isValidEmail(
           participants.map((p) => p.email).concat(selectedEmail.email),
@@ -186,29 +234,40 @@ export const SharedDraftModal = ({
       ) {
         setParticipants([
           ...participants,
-          { email: emailText, accessType: SharedDraftAccessType.VIEW },
+          { email: emailText, accessType: SharedDraftAccessType.EDIT },
         ]);
         setEmailText("");
       }
     }
   };
 
-  const loadParticipants = async () => {
-    const { data, error } = await loadParticipantsForDraft(
-      draftId,
-      selectedEmail.email
-    );
-
-    if (error) {
-      toast.error("Error loading editor");
-      setIsDialogOpen(false);
-      return;
-    } else {
-      setParticipants(data);
-    }
+  const onSearchSelect = (contact: IContact) => {
+    setParticipants([
+      ...participants,
+      {
+        email: contact.contactEmailAddress,
+        accessType: SharedDraftAccessType.EDIT,
+      },
+    ]);
+    setEmailText("");
   };
 
   useEffect(() => {
+    const loadParticipants = async () => {
+      const { data, error } = await loadParticipantsForDraft(
+        draftId,
+        selectedEmail.email
+      );
+
+      if (error) {
+        toast.error("Error loading editor");
+        setIsDialogOpen(false);
+        return;
+      } else {
+        setParticipants(data);
+      }
+    };
+
     if (isDialogOpen) {
       setParticipants([]);
       setEmailText("");
@@ -217,7 +276,7 @@ export const SharedDraftModal = ({
     } else {
       setParticipants([]);
     }
-  }, [isDialogOpen]);
+  }, [isDialogOpen, draftId, selectedEmail.email, setIsDialogOpen]);
 
   const handleOnClickDone = useCallback(async () => {
     setSubmitting(true);
@@ -297,17 +356,69 @@ export const SharedDraftModal = ({
                   </Dialog.Title>
                 </div>
                 <div className="mt-4 flex">
-                  <input
+                  <Combobox
+                    as="div"
+                    className="w-full"
+                    onChange={onSearchSelect}
+                  >
+                    <Combobox.Input
+                      value={emailText}
+                      onChange={(e) => setEmailText(e.target.value)}
+                      onKeyDown={onEmailKeyDown}
+                      className={classNames(
+                        "block h-full w-full px-3 py-2 bg-transparent",
+                        "dark:text-white text-black placeholder:text-slate-500 placeholder:dark:text-zinc-400 text-sm leading-6",
+                        "border rounded-md border-slate-200 focus:outline-none"
+                      )}
+                      placeholder="Add people..."
+                    />
+                    <Combobox.Options className="absolute z-10 mt-1 rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                      {filteredContacts.map((person) => (
+                        <Combobox.Option
+                          key={person.contactEmailAddress}
+                          value={person}
+                          className={({ active }) =>
+                            classNames(
+                              "relative cursor-default select-none py-2 pl-3 pr-9",
+                              active
+                                ? "bg-gray-600 text-white"
+                                : "text-gray-900"
+                            )
+                          }
+                        >
+                          {({ active }) => (
+                            <div className="flex">
+                              <span className="font-semibold whitespace-nowrap">
+                                {person.contactName}
+                              </span>
+                              <span
+                                className={classNames(
+                                  "ml-2 text-gray-500",
+                                  active ? "text-white" : "text-gray-500"
+                                )}
+                              >
+                                {person.contactEmailAddress}
+                              </span>
+                            </div>
+                          )}
+                        </Combobox.Option>
+                      ))}
+                    </Combobox.Options>
+                  </Combobox>
+                  {/* <input
                     type="text"
                     value={emailText}
                     onChange={(e) => setEmailText(e.target.value)}
                     onKeyDown={(e) => onKeyDown(e)}
                     className="block h-full border border-slate-300 rounded-md w-full my-0.5 p-1.5 bg-transparent text-black focus:outline-none placeholder:text-slate-500 text-sm sm:leading-6"
-                    placeholder="..."
-                  />
+                    placeholder="Add collaborators..."
+                  /> */}
                 </div>
 
-                <div className="flex flex-col mt-3">
+                <div className="flex flex-col mt-4 mx-1">
+                  {participants.length > 0 && (
+                    <div className="font-semibold text-sm">Collaborators</div>
+                  )}
                   {participants.map((participant, idx) => (
                     <SharedDraftParticipant
                       key={idx}
@@ -325,7 +436,7 @@ export const SharedDraftModal = ({
                     />
                   ))}
                 </div>
-                <div className="mt-8 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                <div className="mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
                   <button
                     type="button"
                     className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"

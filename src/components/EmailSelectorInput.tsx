@@ -165,21 +165,19 @@ export function SelectorField({
                 }
               >
                 {({ active }) => (
-                  <>
-                    <div className="flex">
-                      <span className="font-semibold whitespace-nowrap">
-                        {person.contactName}
-                      </span>
-                      <span
-                        className={classNames(
-                          "ml-2 text-gray-500",
-                          active ? "text-white" : "text-gray-500"
-                        )}
-                      >
-                        {person.contactEmailAddress}
-                      </span>
-                    </div>
-                  </>
+                  <div className="flex">
+                    <span className="font-semibold whitespace-nowrap">
+                      {person.contactName}
+                    </span>
+                    <span
+                      className={classNames(
+                        "ml-2 text-gray-500",
+                        active ? "text-white" : "text-gray-500"
+                      )}
+                    >
+                      {person.contactEmailAddress}
+                    </span>
+                  </div>
                 )}
               </Combobox.Option>
             ))}

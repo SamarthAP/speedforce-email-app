@@ -98,7 +98,7 @@ export default function SharedDraftThreadPage({
               {/* subject of email */}
               <div className="flex flex-row justify-between items-center px-8 mb-4">
                 <h1 className="text-xl font-semibold text-slate-900 dark:text-zinc-200">
-                  {data?.subject}
+                  {data?.subject || "(No subject)"}
                 </h1>
                 <button
                   className="p-2 mt-2 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-full"
