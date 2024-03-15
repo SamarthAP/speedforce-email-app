@@ -108,8 +108,9 @@ export default function GenericThreadFeedPage({
 
   useHotkeys(
     [
-      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMMAND],
-      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.UNSUBSCRIBE],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMMAND] +
+        "+" +
+        DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.UNSUBSCRIBE],
     ],
     () => {
       if (!threads) return;
