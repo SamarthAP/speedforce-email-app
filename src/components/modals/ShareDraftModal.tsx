@@ -12,6 +12,8 @@ const emailSchema = string().email({ message: "Invalid email" });
 
 const getAccessTypeString = (accessType: SharedDraftAccessType) => {
   switch (accessType) {
+    case SharedDraftAccessType.OWNER:
+      return "Owner";
     case SharedDraftAccessType.VIEW:
       return "Read Only";
     case SharedDraftAccessType.EDIT:

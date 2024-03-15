@@ -183,7 +183,7 @@ export const loadParticipantsForDraft = async (
 };
 
 export const addCommentToDraft = async (
-  draftId: string,
+  threadId: string,
   email: string,
   content: string
 ) => {
@@ -201,7 +201,7 @@ export const addCommentToDraft = async (
       "speedforce-client-id": clientId,
     },
     body: JSON.stringify({
-      draftId,
+      threadId,
       email,
       content,
     }),
@@ -212,4 +212,39 @@ export const addCommentToDraft = async (
   } else {
     return { data: null, error: null };
   }
+};
+
+export const listCommentsForDraft = async (threadId: string) => {
+  const authHeader = await getJWTHeaders();
+  const clientId = await window.electron.ipcRenderer.invoke(
+    "store-get",
+    "client.id"
+  );
+
+  const res = await fetch(
+    `${SPEEDFORCE_API_URL}/drafts/comment?threadId=${threadId}`,
+    {
+      method: "GET",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+        "speedforce-client-id": clientId,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    return { data: null, error: "Error loading comments" };
+  }
+
+  const data = await res.json();
+  return {
+    data: data.map((c: any) => ({
+      id: c.id,
+      email: c.commentor?.email,
+      date: c.date,
+      comment: c.content,
+    })),
+    error: null,
+  };
 };

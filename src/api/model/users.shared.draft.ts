@@ -1,6 +1,7 @@
 export enum SharedDraftAccessType {
   VIEW = 0,
   EDIT = 1,
+  OWNER = 2,
 }
 
 export interface SharedDraftParticipantType {

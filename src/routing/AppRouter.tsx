@@ -371,7 +371,7 @@ export default function AppRouter({ session }: AppRouterProps) {
               />
             </Route>
             <Route
-              path="/sharedDraft/:draftId"
+              path="/sharedDraft/:threadId"
               element={<SharedDraftThreadPage selectedEmail={selectedEmail} />}
             ></Route>
             <Route

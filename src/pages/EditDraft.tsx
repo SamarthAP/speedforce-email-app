@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmailSelectorInput } from "../components/EmailSelectorInput";
-import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowSmallLeftIcon,
+  ChatBubbleBottomCenterTextIcon,
+} from "@heroicons/react/24/outline";
 import { ISelectedEmail, db } from "../lib/db";
 import { useNavigate, useParams } from "react-router-dom";
 import Titlebar from "../components/Titlebar";
@@ -26,6 +29,9 @@ import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
 import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import CommandBar from "../components/CommandBar";
+import TooltipPopover from "../components/TooltipPopover";
+import { useTooltip } from "../components/UseTooltip";
+import CommentsChain from "../components/SharedDrafts/CommentsChain";
 
 interface EditDraftProps {
   selectedEmail: ISelectedEmail;
@@ -42,7 +48,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [contentHtml, setContentHtml] = useState("");
   const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareModalIsOpen, setShareeModalIsOpen] = useState(false);
+  const [messagePanelIsOpen, setMessagePanelIsOpen] = useState(false);
+  const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
 
   const navigate = useNavigate();
   const { threadId } = useParams();
@@ -198,8 +206,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !commandBarIsOpen) {
-        if (isShareModalOpen) {
-          setIsShareModalOpen(false);
+        if (shareModalIsOpen) {
+          setShareeModalIsOpen(false);
         } else {
           void saveDraft({});
           navigate(-1);
@@ -212,7 +220,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [navigate, isShareModalOpen, saveDraft, commandBarIsOpen]);
+  }, [navigate, shareModalIsOpen, saveDraft, commandBarIsOpen]);
 
   useEffect(() => {
     const loadDraft = async (threadId: string) => {
@@ -270,70 +278,90 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                     </p>
                   </div>
                 </div>
-                <span className="flex flex-rw items-start justify-between px-4">
+                <span className="flex flex-row items-start justify-between px-4">
                   <div className="dark:text-white py-4 w-full">Edit Draft</div>
-                  <SimpleButton
-                    text="Share"
-                    loading={false}
-                    onClick={() => setIsShareModalOpen(true)}
-                  />
-                </span>{" "}
-                <div className="h-full w-full flex flex-col space-y-2 pt-2 px-4 pb-4 mb-10 overflow-y-scroll hide-scroll">
-                  <div className="border border-slate-200 dark:border-zinc-700 pt-1">
-                    <EmailSelectorInput
-                      selectedEmail={selectedEmail}
-                      alignLabels="right"
-                      toProps={{
-                        text: "To",
-                        emails: to,
-                        setEmails: setToAndSaveDraft,
+                  <div className="flex flex-row items-center space-x-2">
+                    <button
+                      className="p-2 mt-2 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-full"
+                      onMouseEnter={(event) => {
+                        handleShowTooltip(event, "Comments");
                       }}
-                      ccProps={{
-                        emails: cc,
-                        setEmails: setCcAndSaveDraft,
-                      }}
-                      bccProps={{
-                        emails: bcc,
-                        setEmails: setBccAndSaveDraft,
-                      }}
+                      onMouseLeave={handleHideTooltip}
+                      onClick={() => setMessagePanelIsOpen((val) => !val)}
+                    >
+                      <ChatBubbleBottomCenterTextIcon className="h-5 w-5 shrink-0 dark:text-zinc-300 text-black" />
+                    </button>
+                    <SimpleButton
+                      text="Share"
+                      loading={false}
+                      onClick={() => setShareeModalIsOpen(true)}
                     />
-                    <div className="flex py-2 border-b border-b-slate-200 dark:border-b-zinc-700">
-                      {/* Input */}
-                      <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center justify-end">
-                        Subject
-                      </div>
-                      <input
-                        value={subject}
-                        onChange={(event) => setSubject(event.target.value)}
-                        onBlur={() => void saveDraft({ subject })}
-                        type="text"
-                        name="subject"
-                        id="subject"
-                        className="w-full block bg-transparent border-0 pl-5 pr-20 dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
-                        placeholder="..."
+                  </div>
+                </span>
+                <div className="h-full w-full flex flex-row">
+                  <div className="h-full w-full flex flex-col space-y-2 pt-2 px-4 pb-4 mb-10 overflow-y-scroll hide-scroll">
+                    <div className="border border-slate-200 dark:border-zinc-700 pt-1">
+                      <EmailSelectorInput
+                        selectedEmail={selectedEmail}
+                        alignLabels="right"
+                        toProps={{
+                          text: "To",
+                          emails: to,
+                          setEmails: setToAndSaveDraft,
+                        }}
+                        ccProps={{
+                          emails: cc,
+                          setEmails: setCcAndSaveDraft,
+                        }}
+                        bccProps={{
+                          emails: bcc,
+                          setEmails: setBccAndSaveDraft,
+                        }}
                       />
-                    </div>
-                    <div className="flex py-2">
-                      {/* Input */}
-                      <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-start justify-end">
-                        Body
-                      </div>
-                      <div className="w-full pl-10 overflow-scroll hide-scroll">
-                        <TiptapEditor
-                          canSendEmail={
-                            to.length > 0 || cc.length > 0 || bcc.length > 0
-                          }
-                          initialContent={contentHtml}
-                          attachments={attachments}
-                          setAttachments={setAttachments}
-                          sendingEmail={sendingEmail}
-                          sendEmail={handleSendEmail}
-                          setContent={setContentHtml}
-                          saveDraft={saveDraft}
+                      <div className="flex py-2 border-b border-b-slate-200 dark:border-b-zinc-700">
+                        {/* Input */}
+                        <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center justify-end">
+                          Subject
+                        </div>
+                        <input
+                          value={subject}
+                          onChange={(event) => setSubject(event.target.value)}
+                          onBlur={() => void saveDraft({ subject })}
+                          type="text"
+                          name="subject"
+                          id="subject"
+                          className="w-full block bg-transparent border-0 pl-5 pr-20 dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 sm:text-sm sm:leading-6"
+                          placeholder="..."
                         />
+                      </div>
+                      <div className="flex py-2">
+                        {/* Input */}
+                        <div className="w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-start justify-end">
+                          Body
+                        </div>
+                        <div className="w-full pl-10 overflow-scroll hide-scroll">
+                          <TiptapEditor
+                            canSendEmail={
+                              to.length > 0 || cc.length > 0 || bcc.length > 0
+                            }
+                            initialContent={contentHtml}
+                            attachments={attachments}
+                            setAttachments={setAttachments}
+                            sendingEmail={sendingEmail}
+                            sendEmail={handleSendEmail}
+                            setContent={setContentHtml}
+                            saveDraft={saveDraft}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
+                  <CommentsChain
+                    threadId={threadId || ""}
+                    editMode={true}
+                    selectedEmail={selectedEmail}
+                    visible={messagePanelIsOpen}
+                  />
                 </div>
               </div>
             </div>
@@ -409,8 +437,13 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         snippet={snippet}
         date={date}
         html={contentHtml}
-        isDialogOpen={isShareModalOpen}
-        setIsDialogOpen={setIsShareModalOpen}
+        isDialogOpen={shareModalIsOpen}
+        setIsDialogOpen={setShareeModalIsOpen}
+      />
+      <TooltipPopover
+        message={tooltipData.message}
+        showTooltip={tooltipData.showTooltip}
+        coords={tooltipData.coords}
       />
     </div>
   );
