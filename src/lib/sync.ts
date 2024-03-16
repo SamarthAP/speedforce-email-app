@@ -229,26 +229,18 @@ export async function handleNewThreadsGoogle(
   }
 }
 
-async function batchGetThreads(
-  accessToken: string,
-  threadIds: string[],
-  batchSize = 3
-) {
+async function batchGetThreads(accessToken: string, threadIds: string[]) {
   const threads = [];
-  const batches = _.chunk(threadIds, batchSize);
-  for (const batch of batches) {
-    const promises = [];
-    for (const threadId of batch) {
-      promises.push(mThreadGet(accessToken, threadId));
-    }
+  const promises = [];
+  for (const threadId of threadIds) {
+    promises.push(mThreadGet(accessToken, threadId));
+  }
 
-    try {
-      const batchThreads = await Promise.all(promises);
-      threads.push(...batchThreads);
-    } catch (e) {
-      dLog("Error getting batch threads");
-      continue;
-    }
+  try {
+    const batchThreads = await Promise.all(promises);
+    threads.push(...batchThreads);
+  } catch (e) {
+    dLog("Error getting batch threads");
   }
 
   return threads;
@@ -261,127 +253,114 @@ export async function handleNewThreadsOutlook(
   additionalLabelIds: string[] = [] // Label ids that should be appended to all threads (e.g. SENT)
 ) {
   try {
-    // Outlook throttle limit is 4 concurrent requests
-    const threads = await batchGetThreads(accessToken, threadsIds, 3);
-
     const parsedThreads: IEmailThread[] = [];
     const parsedMessages: IMessage[] = [];
-    for (const thread of threads) {
-      let unread = false;
-      let isStarred = false;
-      let isImportant = false;
-      let hasAttachments = false;
-      let labelIds: string[] = [];
-      for (const message of thread.value) {
-        if (!message.isRead) {
-          unread = true;
-        }
-        if (message.flag && message.flag.flagStatus === "flagged") {
-          isStarred = true;
-        }
-        if (message.inferenceClassification.toLowerCase() === "focused") {
-          isImportant = true;
-        }
-        if (message.hasAttachments) {
-          hasAttachments = true;
-        }
-      }
 
-      if (isStarred) labelIds = upsertLabelIds(labelIds, "STARRED");
-      if (unread) labelIds = upsertLabelIds(labelIds, "UNREAD");
-      if (isImportant) labelIds = upsertLabelIds(labelIds, "IMPORTANT");
+    // Outlook throttle limit is 4 concurrent requests
+    const batches = _.chunk(threadsIds, 3);
 
-      for (const message of thread.value) {
-        let textData = "";
-        let htmlData = "";
-
-        if (message.body.contentType === "plain") {
-          textData = message.body.content || "";
-        } else if (message.body.contentType === "html") {
-          htmlData = message.body.content || "";
+    for (const batch of batches) {
+      const threads = await batchGetThreads(accessToken, batch);
+      for (const thread of threads) {
+        let unread = false;
+        let isStarred = false;
+        let isImportant = false;
+        let hasAttachments = false;
+        let labelIds: string[] = [];
+        for (const message of thread.value) {
+          if (!message.isRead) {
+            unread = true;
+          }
+          if (message.flag && message.flag.flagStatus === "flagged") {
+            isStarred = true;
+          }
+          if (message.inferenceClassification.toLowerCase() === "focused") {
+            isImportant = true;
+          }
+          if (message.hasAttachments) {
+            hasAttachments = true;
+          }
         }
 
-        const attachments: IAttachment[] =
-          message.attachments?.map((attachment) => {
-            return {
-              filename: attachment.name,
-              mimeType: attachment.contentType,
-              attachmentId: attachment.id,
-              size: attachment.size,
-            };
-          }) || [];
-        // // List attachments
-        // if (message.hasAttachments) {
-        //   const { data, error } = await mAttachmentList(
-        //     accessToken,
-        //     message.id
-        //   );
+        if (isStarred) labelIds = upsertLabelIds(labelIds, "STARRED");
+        if (unread) labelIds = upsertLabelIds(labelIds, "UNREAD");
+        if (isImportant) labelIds = upsertLabelIds(labelIds, "IMPORTANT");
 
-        //   if (data && !error) {
-        //     // attachments.data.value.forEach((attachment) => {
-        //     attachments = data.map((attachment) => {
-        //       return {
-        //         filename: attachment.name,
-        //         mimeType: attachment.contentType,
-        //         attachmentId: attachment.id,
-        //         size: attachment.size,
-        //       };
-        //     });
-        //   } else {
-        //     dLog("Error getting attachments");
-        //   }
-        // }
+        for (const message of thread.value) {
+          let textData = "";
+          let htmlData = "";
 
-        // TODO: Add CC, BCC, attachments, etc.
-        parsedMessages.push({
-          id: message.id,
-          threadId: message.conversationId,
-          labelIds:
-            buildMessageLabelIdsOutlook(message).concat(additionalLabelIds),
+          if (message.body.contentType === "plain") {
+            textData = message.body.content || "";
+          } else if (message.body.contentType === "html") {
+            htmlData = message.body.content || "";
+          }
+
+          const attachments: IAttachment[] =
+            message.attachments?.map((attachment) => {
+              return {
+                filename: attachment.name,
+                mimeType: attachment.contentType,
+                attachmentId: attachment.id,
+                size: attachment.size,
+              };
+            }) || [];
+
+          // TODO: Add CC, BCC, attachments, etc.
+          parsedMessages.push({
+            id: message.id,
+            threadId: message.conversationId,
+            labelIds:
+              buildMessageLabelIdsOutlook(message).concat(additionalLabelIds),
+            from:
+              message.from?.emailAddress?.address ||
+              message.sender?.emailAddress?.address ||
+              "No Sender",
+            toRecipients: message.toRecipients.map(
+              (m) => m.emailAddress.address
+            ), // TODO: add multiple recipients
+            snippet: message.bodyPreview || "",
+            headers: buildMessageHeadersOutlook(message),
+            textData,
+            htmlData,
+            date: new Date(message.receivedDateTime).getTime(),
+            attachments: attachments, // TODO: implement for outlook
+          });
+
+          // dLog(message)
+          const folderName = await getFolderNameFromIdOutlook(
+            email,
+            message.parentFolderId
+          );
+          const labelId =
+            OUTLOOK_FOLDER_IDS_MAP.getKey(folderName) || folderName;
+          labelIds = upsertLabelIds(labelIds, labelId);
+        }
+
+        const lastMessageIndex = thread.value.length - 1;
+        parsedThreads.push({
+          id: thread.value[lastMessageIndex].conversationId,
+          historyId: "",
+          email: email,
           from:
-            message.from?.emailAddress?.address ||
-            message.sender?.emailAddress?.address ||
+            thread.value[lastMessageIndex].from?.emailAddress?.address ||
+            thread.value[lastMessageIndex].sender?.emailAddress?.address ||
             "No Sender",
-          toRecipients: message.toRecipients.map((m) => m.emailAddress.address), // TODO: add multiple recipients
-          snippet: message.bodyPreview || "",
-          headers: buildMessageHeadersOutlook(message),
-          textData,
-          htmlData,
-          date: new Date(message.receivedDateTime).getTime(),
-          attachments: attachments, // TODO: implement for outlook
+          subject: thread.value[lastMessageIndex].subject,
+          snippet: thread.value[lastMessageIndex].bodyPreview,
+          date: new Date(
+            thread.value[lastMessageIndex].receivedDateTime
+          ).getTime(),
+          unread: unread,
+          labelIds: labelIds,
+          hasAttachments: hasAttachments,
         });
-
-        // dLog(message)
-        const folderName = await getFolderNameFromIdOutlook(
-          email,
-          message.parentFolderId
-        );
-        const labelId = OUTLOOK_FOLDER_IDS_MAP.getKey(folderName) || folderName;
-        labelIds = upsertLabelIds(labelIds, labelId);
       }
 
-      const lastMessageIndex = thread.value.length - 1;
-      parsedThreads.push({
-        id: thread.value[lastMessageIndex].conversationId,
-        historyId: "",
-        email: email,
-        from:
-          thread.value[lastMessageIndex].from?.emailAddress?.address ||
-          thread.value[lastMessageIndex].sender?.emailAddress?.address ||
-          "No Sender",
-        subject: thread.value[lastMessageIndex].subject,
-        snippet: thread.value[lastMessageIndex].bodyPreview,
-        date: new Date(
-          thread.value[lastMessageIndex].receivedDateTime
-        ).getTime(),
-        unread: unread,
-        labelIds: labelIds,
-        hasAttachments: hasAttachments,
-      });
+      await db.emailThreads.bulkPut(parsedThreads);
+      await db.messages.bulkPut(parsedMessages);
     }
 
-    await db.emailThreads.bulkPut(parsedThreads);
-    await db.messages.bulkPut(parsedMessages);
     return parsedThreads;
   } catch (e) {
     dLog("Could not sync mailbox");
