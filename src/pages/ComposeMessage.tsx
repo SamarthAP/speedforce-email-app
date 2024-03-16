@@ -23,6 +23,7 @@ import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
 import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import CommandBar from "../components/CommandBar";
+import { newEvent } from "../api/emailActions";
 
 interface ComposeMessageProps {
   selectedEmail: ISelectedEmail;
@@ -170,6 +171,8 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
         await saveDraft({ content });
         toast.error("Error sending email");
         return setSendingEmail(false);
+      } else {
+        void newEvent("SEND_EMAIL");
       }
 
       // delete draft thread as there will be a new thread for the sent email
@@ -199,6 +202,8 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
         await saveDraft({ content });
         toast.error("Error sending email");
         return setSendingEmail(false);
+      } else {
+        void newEvent("SEND_EMAIL");
       }
 
       if (draft.id && draft.threadId) {

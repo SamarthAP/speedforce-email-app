@@ -5,6 +5,9 @@ import { dLog } from "./noProd";
 import { FOLDER_IDS } from "../api/constants";
 // import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
+import toast from "react-hot-toast";
+import { sendEmail } from "./sync";
+import { unsubscribe } from "../api/emailActions";
 // import { BidirectionalMap } from "../api/model/bidirectionalMap";
 
 export function classNames(...classes: string[]) {
@@ -284,4 +287,50 @@ export function parseSearchQuery(searchQuery: string) {
         .map((item) => item.trim())
         .filter((item) => item.length > 0)
     : [];
+}
+
+export async function listUnsubscribe(
+  listUnsubscribeHeader: string,
+  email: string,
+  provider: "google" | "outlook"
+) {
+  toast("Unsubscribing...");
+  const unsubscribeLink = listUnsubscribeHeader.match(/<(http[^>]+)>/)?.[1];
+  const unsubscribeEmail = listUnsubscribeHeader.match(/<(mailto:[^>]+)>/)?.[1];
+
+  if (unsubscribeLink) {
+    try {
+      const { error } = await unsubscribe(unsubscribeLink);
+
+      if (error) {
+        toast("Failed to unsubscribe from mailing list");
+      } else {
+        toast("Successfully unsubscribed from mailing list");
+      }
+    } catch (e) {
+      dLog("error unsubscribing from email list", e);
+    }
+  } else if (unsubscribeEmail && unsubscribeEmail[1]) {
+    // example unsubscribeEmail: mailto:1axc2so6ift9r23tp588nei39vc4fi1a4yzk3i-samarth=payswift.ca@bf08x.hubspotemail.net?subject=unsubscribe
+    const mailtoURI = unsubscribeEmail[1];
+
+    const emailWithParams = mailtoURI.replace("mailto:", "");
+    const cleanedUnsubscribeEmail = emailWithParams.split("?")[0]; // removes query params from the mailto link
+
+    const { error } = await sendEmail(
+      email,
+      provider,
+      [cleanedUnsubscribeEmail],
+      [],
+      [],
+      "Unsubscribe",
+      "<div>Please unsubscribe me from this list.</div>"
+    );
+
+    if (error) {
+      dLog("error sending email to cancel subscription to email list", error);
+    } else {
+      toast("Successfully unsubscribed from mailing list");
+    }
+  }
 }

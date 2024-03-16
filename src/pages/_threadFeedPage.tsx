@@ -2,7 +2,10 @@ import { IEmailThread, ISelectedEmail, db } from "../lib/db";
 import Titlebar from "../components/Titlebar";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
-import { ArrowSmallLeftIcon } from "@heroicons/react/20/solid";
+import {
+  ArchiveBoxXMarkIcon,
+  ArrowSmallLeftIcon,
+} from "@heroicons/react/20/solid";
 import SelectedThreadBar from "../components/SelectedThreadBar";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -19,6 +22,8 @@ import { CommandBarOpenContext } from "../contexts/CommandBarContext";
 import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
 import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
 import CommandBar from "../components/CommandBar";
+import { getMessageHeader, listUnsubscribe } from "../lib/util";
+import toast from "react-hot-toast";
 
 interface GenericThreadFeedPageProps {
   selectedEmail: ISelectedEmail;
@@ -99,6 +104,39 @@ export default function GenericThreadFeedPage({
       }
     },
     [indexNumber, threads, navigate]
+  );
+
+  useHotkeys(
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMMAND] +
+        "+" +
+        DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.UNSUBSCRIBE],
+    ],
+    () => {
+      if (!threads) return;
+
+      const thread = threads[indexNumber];
+      async function getUnsubscribeHeader() {
+        const message = await db.messages
+          .where("threadId")
+          .equals(thread.id)
+          .first();
+        return getMessageHeader(message?.headers || [], "List-Unsubscribe");
+      }
+
+      void getUnsubscribeHeader().then((unsubscribeHeader) => {
+        if (unsubscribeHeader) {
+          void listUnsubscribe(
+            unsubscribeHeader,
+            selectedEmail.email,
+            selectedEmail.provider
+          );
+        } else {
+          toast.error("No unsubscribe link found");
+        }
+      });
+    },
+    [threads, selectedEmail.email, selectedEmail.provider, indexNumber]
   );
 
   useHotkeys(
@@ -212,7 +250,53 @@ export default function GenericThreadFeedPage({
                 },
               ]}
             />
-            <CommandBar data={[]} />
+            <CommandBar
+              data={[
+                {
+                  title: "Email Actions",
+                  commands: [
+                    {
+                      icon: ArchiveBoxXMarkIcon,
+                      description: "Unsubscribe from email list",
+                      action: () => {
+                        const thread = threads[indexNumber];
+                        async function getUnsubscribeHeader() {
+                          const message = await db.messages
+                            .where("threadId")
+                            .equals(thread.id)
+                            .first();
+                          return getMessageHeader(
+                            message?.headers || [],
+                            "List-Unsubscribe"
+                          );
+                        }
+
+                        void getUnsubscribeHeader().then(
+                          (unsubscribeHeader) => {
+                            if (unsubscribeHeader) {
+                              void listUnsubscribe(
+                                unsubscribeHeader,
+                                selectedEmail.email,
+                                selectedEmail.provider
+                              );
+                            } else {
+                              toast.error("No unsubscribe link found");
+                            }
+                          }
+                        );
+                      },
+                      keybind: {
+                        keystrokes: [
+                          "⌘",
+                          DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.UNSUBSCRIBE],
+                        ],
+                        isSequential: false,
+                      },
+                    },
+                  ],
+                },
+              ]}
+            />
           </GoToPageHotkeys>
         </CommandBarOpenContext.Provider>
       </KeyPressProvider>
