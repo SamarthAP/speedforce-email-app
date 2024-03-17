@@ -106,7 +106,7 @@ export const getSharedDraft = async (draftId: string, email: string) => {
   if (!res.ok) {
     return { data: null, error: "Error loading draft" };
   } else {
-    return { data: res.json(), error: null };
+    return { data: await res.json(), error: null };
   }
 };
 

@@ -22,7 +22,7 @@ import { SendDraftRequestType } from "./ComposeMessage";
 import { deleteDexieThread } from "../lib/util";
 import SimpleButton from "../components/SimpleButton";
 import { SharedDraftModal } from "../components/modals/ShareDraftModal";
-import { saveSharedDraft } from "../api/sharedDrafts";
+import { getSharedDraft, saveSharedDraft } from "../api/sharedDrafts";
 import { KeyPressProvider } from "../contexts/KeyPressContext";
 import { CommandBarOpenContext } from "../contexts/CommandBarContext";
 import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
@@ -32,6 +32,7 @@ import CommandBar from "../components/CommandBar";
 import TooltipPopover from "../components/TooltipPopover";
 import { useTooltip } from "../components/UseTooltip";
 import CommentsChain from "../components/SharedDrafts/CommentsChain";
+import { useQuery } from "react-query";
 
 interface EditDraftProps {
   selectedEmail: ISelectedEmail;
@@ -69,6 +70,31 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     setBcc(emails);
     void saveDraft({ bcc: emails });
   };
+
+  const { data, isFetching, refetch } = useQuery(
+    "sharedDraftEditor",
+    async () => {
+      if (!threadId) return;
+
+      const { data, error } = await getSharedDraft(
+        threadId,
+        selectedEmail.email
+      );
+      if (error) {
+        return null;
+      }
+
+      console.log(data);
+      return data;
+    }
+  );
+
+  useEffect(() => {
+    if (!shareModalIsOpen) {
+      // Refetch when share modal is closed
+      void refetch();
+    }
+  }, [shareModalIsOpen, refetch]);
 
   const saveDraft = useCallback(
     async (request: SendDraftRequestType) => {
@@ -285,16 +311,18 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                 <span className="flex flex-row items-start justify-between px-4">
                   <div className="dark:text-white py-4 w-full">Edit Draft</div>
                   <div className="flex flex-row items-center space-x-2">
-                    <button
-                      className="p-2 mt-2 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-full"
-                      onMouseEnter={(event) => {
-                        handleShowTooltip(event, "Comments");
-                      }}
-                      onMouseLeave={handleHideTooltip}
-                      onClick={() => setMessagePanelIsOpen((val) => !val)}
-                    >
-                      <ChatBubbleBottomCenterTextIcon className="h-5 w-5 shrink-0 dark:text-zinc-300 text-black" />
-                    </button>
+                    {!isFetching && data && data.id ? (
+                      <button
+                        className="p-2 mt-2 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-full"
+                        onMouseEnter={(event) => {
+                          handleShowTooltip(event, "Comments");
+                        }}
+                        onMouseLeave={handleHideTooltip}
+                        onClick={() => setMessagePanelIsOpen((val) => !val)}
+                      >
+                        <ChatBubbleBottomCenterTextIcon className="h-5 w-5 shrink-0 dark:text-zinc-300 text-black" />
+                      </button>
+                    ) : null}
                     <SimpleButton
                       text="Share"
                       loading={false}

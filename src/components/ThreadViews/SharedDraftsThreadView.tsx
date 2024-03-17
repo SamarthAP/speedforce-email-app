@@ -30,6 +30,7 @@ export default function SharedDraftsThreadView({
   const [threads, setThreads] = useState<
     {
       id: string;
+      threadId: string;
       from: string;
       subject: string;
       to: string;

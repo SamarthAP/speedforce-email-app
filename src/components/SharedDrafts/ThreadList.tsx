@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 interface SharedDraftThreadListProps {
   threads: {
     id: string;
+    threadId: string;
     from: string;
     subject: string;
     to: string;
@@ -25,7 +26,7 @@ export const SharedDraftThreadList = ({
         threads.map((thread) => (
           <div className="relative" key={thread.id}>
             <div
-              onClick={() => navigate(`/sharedDraft/${thread.id}`)}
+              onClick={() => navigate(`/sharedDraft/${thread.threadId}`)}
               // onMouseOver={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
               //   setHoveredThread(thread);
               //   setShowSummaryCard(true);
