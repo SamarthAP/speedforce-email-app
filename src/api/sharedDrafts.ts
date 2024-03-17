@@ -3,6 +3,7 @@ import { SPEEDFORCE_API_URL } from "./constants";
 import {
   SharedDraftDataType,
   SharedDraftParticipantType,
+  SharedDraftStatusType,
 } from "./model/users.shared.draft";
 
 export const saveSharedDraft = async (
@@ -10,18 +11,12 @@ export const saveSharedDraft = async (
   draftData: SharedDraftDataType
 ) => {
   try {
-    const clientId = await window.electron.ipcRenderer.invoke(
-      "store-get",
-      "client.id"
-    );
-
     const authHeader = await getJWTHeaders();
     const res = await fetch(`${SPEEDFORCE_API_URL}/drafts`, {
       method: "POST",
       headers: {
         ...authHeader,
         "Content-Type": "application/json",
-        "speedforce-client-id": clientId,
       },
       body: JSON.stringify({
         email,
@@ -39,24 +34,44 @@ export const saveSharedDraft = async (
   }
 };
 
+export const updateSharedDraftStatus = async (
+  threadId: string,
+  email: string,
+  status: SharedDraftStatusType
+) => {
+  const authHeader = await getJWTHeaders();
+  const res = await fetch(`${SPEEDFORCE_API_URL}/drafts/status`, {
+    method: "POST",
+    headers: {
+      ...authHeader,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      threadId,
+      email,
+      status,
+    }),
+  });
+
+  if (!res.ok) {
+    return { data: null, error: "Error updating draft status" };
+  } else {
+    return { data: null, error: null };
+  }
+};
+
 export const shareDraft = async (
   email: string,
   draftData: SharedDraftDataType,
   participants: SharedDraftParticipantType[]
 ) => {
   try {
-    const clientId = await window.electron.ipcRenderer.invoke(
-      "store-get",
-      "client.id"
-    );
-
     const authHeader = await getJWTHeaders();
     const res = await fetch(`${SPEEDFORCE_API_URL}/drafts/participants`, {
       method: "POST",
       headers: {
         ...authHeader,
         "Content-Type": "application/json",
-        "speedforce-client-id": clientId,
       },
       body: JSON.stringify({
         email,
@@ -77,11 +92,6 @@ export const shareDraft = async (
 
 export const getSharedDraft = async (draftId: string, email: string) => {
   const authHeader = await getJWTHeaders();
-  const clientId = await window.electron.ipcRenderer.invoke(
-    "store-get",
-    "client.id"
-  );
-
   const res = await fetch(
     `${SPEEDFORCE_API_URL}/drafts?draftId=${draftId}&email=${email}`,
     {
@@ -89,7 +99,6 @@ export const getSharedDraft = async (draftId: string, email: string) => {
       headers: {
         ...authHeader,
         "Content-Type": "application/json",
-        "speedforce-client-id": clientId,
       },
     }
   );
@@ -104,11 +113,6 @@ export const getSharedDraft = async (draftId: string, email: string) => {
 export const listSharedDrafts = async (email: string) => {
   try {
     const authHeader = await getJWTHeaders();
-    const clientId = await window.electron.ipcRenderer.invoke(
-      "store-get",
-      "client.id"
-    );
-
     const res: Response = await fetch(
       `${SPEEDFORCE_API_URL}/drafts/listSharedDraftsForUser?email=${email}`,
       {
@@ -116,7 +120,6 @@ export const listSharedDrafts = async (email: string) => {
         headers: {
           ...authHeader,
           "Content-Type": "application/json",
-          "speedforce-client-id": clientId,
         },
       }
     );
@@ -151,11 +154,6 @@ export const loadParticipantsForDraft = async (
   email: string
 ) => {
   const authHeader = await getJWTHeaders();
-  const clientId = await window.electron.ipcRenderer.invoke(
-    "store-get",
-    "client.id"
-  );
-
   const res = await fetch(
     `${SPEEDFORCE_API_URL}/drafts/listParticipantsForDraft?draftId=${draftId}&email=${email}`,
     {
@@ -163,7 +161,6 @@ export const loadParticipantsForDraft = async (
       headers: {
         ...authHeader,
         "Content-Type": "application/json",
-        "speedforce-client-id": clientId,
       },
     }
   );
@@ -188,17 +185,11 @@ export const addCommentToDraft = async (
   content: string
 ) => {
   const authHeader = await getJWTHeaders();
-  const clientId = await window.electron.ipcRenderer.invoke(
-    "store-get",
-    "client.id"
-  );
-
   const res = await fetch(`${SPEEDFORCE_API_URL}/drafts/comment`, {
     method: "POST",
     headers: {
       ...authHeader,
       "Content-Type": "application/json",
-      "speedforce-client-id": clientId,
     },
     body: JSON.stringify({
       threadId,
@@ -216,11 +207,6 @@ export const addCommentToDraft = async (
 
 export const listCommentsForDraft = async (threadId: string) => {
   const authHeader = await getJWTHeaders();
-  const clientId = await window.electron.ipcRenderer.invoke(
-    "store-get",
-    "client.id"
-  );
-
   const res = await fetch(
     `${SPEEDFORCE_API_URL}/drafts/comment?threadId=${threadId}`,
     {
@@ -228,7 +214,6 @@ export const listCommentsForDraft = async (threadId: string) => {
       headers: {
         ...authHeader,
         "Content-Type": "application/json",
-        "speedforce-client-id": clientId,
       },
     }
   );

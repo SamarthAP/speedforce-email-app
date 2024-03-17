@@ -142,6 +142,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       const { error } = await sendEmailWithAttachments(
         selectedEmail.email,
         selectedEmail.provider,
+        threadId || "",
         to,
         cc,
         bcc,
@@ -173,6 +174,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       const { error } = await sendEmail(
         selectedEmail.email,
         selectedEmail.provider,
+        threadId || "",
         to,
         cc,
         bcc,
@@ -234,6 +236,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         setTo(message.toRecipients.filter((recipient) => recipient !== ""));
         setSubject(thread.subject || "");
         setContentHtml(message.htmlData || "");
+        setSnippet(thread.snippet || "");
+        setDate(thread.date || 0);
       } else {
         dLog("Unable to load thread");
         navigate(-1);

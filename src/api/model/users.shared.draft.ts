@@ -4,6 +4,12 @@ export enum SharedDraftAccessType {
   OWNER = 2,
 }
 
+export enum SharedDraftStatusType {
+  OPEN = "OPEN",
+  SENT = "SENT",
+  DISCARDED = "DISCARDED",
+}
+
 export interface SharedDraftParticipantType {
   email: string;
   accessLevel: SharedDraftAccessType;

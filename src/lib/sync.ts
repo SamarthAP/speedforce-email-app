@@ -88,6 +88,8 @@ import toast from "react-hot-toast";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 import { CreateDraftResponseDataType } from "../api/model/users.draft";
 import { SENT_FROM_SPEEDFORCE_HTML } from "../api/templates/sentFromSpeedforce";
+import { updateSharedDraftStatus } from "../api/sharedDrafts";
+import { SharedDraftStatusType } from "../api/model/users.shared.draft";
 
 export async function handleNewThreadsGoogle(
   accessToken: string,
@@ -730,6 +732,7 @@ export async function forward(
 export async function sendEmail(
   email: string,
   provider: "google" | "outlook",
+  threadId: string,
   toRecipients: string[],
   ccRecipients: string[],
   bccRecipients: string[],
@@ -739,7 +742,7 @@ export async function sendEmail(
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    return await gSendEmail(
+    const { data, error } = await gSendEmail(
       accessToken,
       email,
       toRecipients.join(","),
@@ -748,6 +751,9 @@ export async function sendEmail(
       subject,
       html.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
+
+    await updateSharedDraftStatus(threadId, email, SharedDraftStatusType.SENT);
+    return { data, error };
   } else if (provider === "outlook") {
     try {
       await mSendEmail(
@@ -759,6 +765,11 @@ export async function sendEmail(
         html.concat(SENT_FROM_SPEEDFORCE_HTML)
       );
 
+      await updateSharedDraftStatus(
+        threadId,
+        email,
+        SharedDraftStatusType.SENT
+      );
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error sending email" };
@@ -771,6 +782,7 @@ export async function sendEmail(
 export async function sendEmailWithAttachments(
   email: string,
   provider: "google" | "outlook",
+  threadId: string,
   toRecipients: string[],
   ccRecipients: string[],
   bccRecipients: string[],
@@ -781,7 +793,7 @@ export async function sendEmailWithAttachments(
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    return await gSendEmailWithAttachments(
+    const { data, error } = await gSendEmailWithAttachments(
       accessToken,
       email,
       toRecipients.join(","),
@@ -791,6 +803,9 @@ export async function sendEmailWithAttachments(
       html.concat(SENT_FROM_SPEEDFORCE_HTML),
       attachments
     );
+
+    await updateSharedDraftStatus(threadId, email, SharedDraftStatusType.SENT);
+    return { data, error };
   } else if (provider === "outlook") {
     try {
       await mSendEmailWithAttachments(
@@ -803,6 +818,11 @@ export async function sendEmailWithAttachments(
         attachments
       );
 
+      await updateSharedDraftStatus(
+        threadId,
+        email,
+        SharedDraftStatusType.SENT
+      );
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error sending email" };
@@ -852,7 +872,8 @@ export async function deleteThread(
 export async function trashThread(
   email: string,
   provider: "google" | "outlook",
-  threadId: string
+  threadId: string,
+  isDraft = false
 ) {
   const accessToken = await getAccessToken(email);
 
@@ -870,6 +891,15 @@ export async function trashThread(
       });
 
       await Promise.all(promises);
+
+      // If thread is a draft, update shared draft status
+      if (isDraft) {
+        await updateSharedDraftStatus(
+          threadId,
+          email,
+          SharedDraftStatusType.DISCARDED
+        );
+      }
     }
   } else if (provider === "outlook") {
     const messages = await db.messages
@@ -887,6 +917,15 @@ export async function trashThread(
 
     try {
       await Promise.all(apiPromises);
+
+      // If thread is a draft, update shared draft status
+      if (isDraft) {
+        await updateSharedDraftStatus(
+          threadId,
+          email,
+          SharedDraftStatusType.DISCARDED
+        );
+      }
     } catch (e) {
       dLog("Error deleting thread");
       return { data: null, error: "Error deleting thread" };

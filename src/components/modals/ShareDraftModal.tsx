@@ -205,24 +205,6 @@ export const SharedDraftModal = ({
           })
           .slice(0, 5);
 
-  // const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-  //   if (e.key === "Enter") {
-  //     e.preventDefault();
-  //     if (
-  //       isValidEmail(
-  //         participants.map((p) => p.email).concat(selectedEmail.email),
-  //         emailText
-  //       )
-  //     ) {
-  //       setParticipants([
-  //         ...participants,
-  //         { email: emailText, accessType: SharedDraftAccessType.VIEW },
-  //       ]);
-  //       setEmailText("");
-  //     }
-  //   }
-  // };
-
   const onEmailKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       // Validate email and add to send list
@@ -367,7 +349,7 @@ export const SharedDraftModal = ({
                       onKeyDown={onEmailKeyDown}
                       className={classNames(
                         "block h-full w-full px-3 py-2 bg-transparent",
-                        "dark:text-white text-black placeholder:text-slate-500 placeholder:dark:text-zinc-400 text-sm leading-6",
+                        "text-black placeholder:text-slate-500 text-sm leading-6",
                         "border rounded-md border-slate-200 focus:outline-none"
                       )}
                       placeholder="Add people..."

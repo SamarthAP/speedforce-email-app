@@ -354,7 +354,8 @@ function ThreadListRow({
         await trashThread(
           selectedEmail.email,
           selectedEmail.provider,
-          thread.id
+          thread.id,
+          isDrafts
         ),
       () => {
         void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [

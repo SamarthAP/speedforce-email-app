@@ -157,6 +157,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       const { error } = await sendEmailWithAttachments(
         selectedEmail.email,
         selectedEmail.provider,
+        draft.threadId,
         to,
         cc,
         bcc,
@@ -187,6 +188,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       const { error } = await sendEmail(
         selectedEmail.email,
         selectedEmail.provider,
+        draft.threadId,
         to,
         cc,
         bcc,
