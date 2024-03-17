@@ -29,7 +29,7 @@ const toastSignIn = (email: string) => {
   signInToastTimestamps.set(email, now);
 };
 
-const fetch = async (
+const fetchTokenFromServer = async (
   email: string,
   provider: "google" | "outlook",
   clientId: string
@@ -57,7 +57,8 @@ export const getAccessToken = async (email: string) => {
     );
 
     if (!tokenPromises.get(email)) {
-      const tokenPromise = fetch(
+      // Global promise to prevent multiple fetches for the same email
+      const tokenPromise = fetchTokenFromServer(
         emailInfo.email,
         emailInfo.provider,
         clientId
