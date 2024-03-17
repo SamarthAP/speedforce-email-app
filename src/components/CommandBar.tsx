@@ -255,6 +255,7 @@ export default function CommandBar({ data }: CommandBarProps) {
 
       if (hoveredItem) {
         hoveredItem.action();
+        setOpen(false);
       }
     },
     [hoveredCommandBarItemId, filteredData, commandBarContext.commandBarIsOpen]
@@ -337,7 +338,7 @@ export default function CommandBar({ data }: CommandBarProps) {
   // Toggle the menu when ⌘K is pressed
   useEffect(() => {
     const down = (e: any) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === "k" && e.metaKey) {
         e.preventDefault();
         setOpen((open) => !open);
       }
@@ -422,6 +423,7 @@ export default function CommandBar({ data }: CommandBarProps) {
                         key={index}
                         title={group.title}
                         commands={group.commands}
+                        setCommandBar={(open: boolean) => setOpen(open)}
                       />
                     ))}
                   </div>
@@ -438,6 +440,7 @@ export default function CommandBar({ data }: CommandBarProps) {
 function CommandGroup({
   title,
   commands,
+  setCommandBar,
 }: {
   title: string;
   commands: {
@@ -449,6 +452,7 @@ function CommandGroup({
       isSequential?: boolean;
     };
   }[];
+  setCommandBar: (open: boolean) => void;
 }) {
   return (
     <div className="select-none">
@@ -463,6 +467,7 @@ function CommandGroup({
             action={command.action}
             description={command.description}
             keybind={command.keybind}
+            setCommandBar={setCommandBar}
           />
         ))}
       </div>
@@ -475,6 +480,7 @@ function CommandItem({
   description,
   action,
   keybind,
+  setCommandBar,
 }: {
   Icon: React.ElementType;
   description: string;
@@ -483,8 +489,10 @@ function CommandItem({
     keystrokes: string[];
     isSequential?: boolean;
   };
+  setCommandBar: (open: boolean) => void;
 }) {
   const hoveredCommandBarItemContext = useHoveredCommandBarItemContext();
+
   const isHovered = hoveredCommandBarItemContext.itemId === description;
 
   return (
@@ -492,7 +500,10 @@ function CommandItem({
       onMouseOver={() => {
         hoveredCommandBarItemContext.setItemId(description);
       }}
-      onClick={action}
+      onClick={() => {
+        action();
+        setCommandBar(false);
+      }}
       className={`p-2 w-full flex justify-between rounded-lg ${
         isHovered ? "dark:bg-zinc-800 bg-slate-100" : ""
       }`}

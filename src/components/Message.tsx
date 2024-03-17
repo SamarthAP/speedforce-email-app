@@ -1,12 +1,19 @@
 import { createRef, useState } from "react";
 import dayjs from "dayjs";
 import { IMessage, ISelectedEmail } from "../lib/db";
-import { classNames, cleanHtmlString } from "../lib/util";
+import {
+  classNames,
+  cleanHtmlString,
+  getMessageHeader,
+  listUnsubscribe,
+} from "../lib/util";
 import ShadowDom from "./ShadowDom";
 import {
   ArrowUturnLeftIcon,
   ArrowUturnRightIcon,
+  StarIcon as StarIconSolid,
 } from "@heroicons/react/24/outline";
+import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import { sendReply, sendReplyAll, forward } from "../lib/sync";
 import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
@@ -28,6 +35,7 @@ export default function Message({ message, selectedEmail }: MessageProps) {
   const [showReply, setShowReply] = useState(false);
   const [showImages, setShowImages] = useState(true);
   const [sendingReply, setSendingReply] = useState(false);
+  const [unsubscribingFromList, setUnsubscribingFromList] = useState(false);
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const [editorMode, setEditorMode] = useState<
     "reply" | "replyAll" | "forward" | "none"
@@ -37,6 +45,10 @@ export default function Message({ message, selectedEmail }: MessageProps) {
   const [forwardToBcc, setForwardToBcc] = useState<string[]>([]);
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const replyRef = createRef<HTMLDivElement>();
+  const listUnsubscribeHeader = getMessageHeader(
+    message.headers,
+    "List-Unsubscribe"
+  );
 
   const handleClickReply = () => {
     setShowReply((prev) => !prev || editorMode !== "reply");
@@ -92,6 +104,19 @@ export default function Message({ message, selectedEmail }: MessageProps) {
     setSendingReply(false);
   };
 
+  const handleUnsubscribe = () => {
+    if (!listUnsubscribeHeader) return;
+
+    setUnsubscribingFromList(true);
+    void listUnsubscribe(
+      listUnsubscribeHeader,
+      selectedEmail.email,
+      selectedEmail.provider
+    ).then(() => {
+      setUnsubscribingFromList(false);
+    });
+  };
+
   return (
     <div className="w-full h-auto flex flex-col border border-slate-200 dark:border-zinc-700">
       <div
@@ -104,6 +129,30 @@ export default function Message({ message, selectedEmail }: MessageProps) {
         <div className="flex items-center">
           {showBody && (
             <>
+              {/* <div
+                onMouseEnter={(event) => {
+                  handleShowTooltip(event, "Star");
+                }}
+                onMouseLeave={handleHideTooltip}
+              >
+                {message.labelIds.includes("STARRED") ? (
+                  <StarIconSolid
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // star the message, not thread.
+                    }}
+                    className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
+                  />
+                ) : (
+                  <StarIconOutline
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // star the message, not thread.
+                    }}
+                    className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
+                  />
+                )}
+              </div> */}
               <div
                 onMouseEnter={(event) => {
                   handleShowTooltip(event, "Reply");
@@ -230,7 +279,7 @@ export default function Message({ message, selectedEmail }: MessageProps) {
         </div>
       )}
 
-      <div className="flex px-4 pb-4">
+      <div className="flex gap-x-1 px-4 pb-4">
         <button
           className={classNames(
             "inline-flex items-center ",
@@ -243,6 +292,21 @@ export default function Message({ message, selectedEmail }: MessageProps) {
         >
           {showImages ? "Hide Images" : "Show Images"}
         </button>
+        {listUnsubscribeHeader && (
+          <button
+            className={classNames(
+              "inline-flex items-center ",
+              "rounded-md px-2 py-1",
+              "ring-1 ring-inset",
+              "text-xs font-medium",
+              "text-xs text-slate-700 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-500/10 ring-slate-600/20 dark:ring-zinc-500/20"
+            )}
+            disabled={unsubscribingFromList}
+            onClick={handleUnsubscribe}
+          >
+            Unsubscribe
+          </button>
+        )}
       </div>
 
       {showBody && (

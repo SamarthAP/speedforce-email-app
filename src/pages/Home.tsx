@@ -47,8 +47,7 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
     .toISOString()
     .split("T")[0];
 
-  const outlookQueryParam = `mailFolders/Inbox/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20&$filter=receivedDateTime ge ${afterDate}T00:00:00Z`;
-
+  const outlookQueryParam = `mailFolders/Inbox/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20&$filter=receivedDateTime ge ${afterDate}T00:00:00Z AND inferenceClassification eq 'focused'`;
   const gmailQueryParam = `q=label:INBOX ((category:personal) OR from:(${email}) OR from:"via Google") after:${afterDate}`;
 
   const {
