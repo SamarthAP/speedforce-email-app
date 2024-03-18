@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmailSelectorInput } from "../components/EmailSelectorInput";
 import {
   ArrowSmallLeftIcon,
@@ -8,7 +8,9 @@ import { ISelectedEmail, db } from "../lib/db";
 import { useNavigate, useParams } from "react-router-dom";
 import Titlebar from "../components/Titlebar";
 import Sidebar from "../components/Sidebar";
-import TiptapEditor from "../components/Editors/TiptapEditor";
+import TiptapEditor, {
+  TipTapEditorHandle,
+} from "../components/Editors/TiptapEditor";
 import { dLog } from "../lib/noProd";
 import { NewAttachment } from "../api/model/users.attachment";
 import {
@@ -18,7 +20,6 @@ import {
   updateDraft,
 } from "../lib/sync";
 import toast from "react-hot-toast";
-import { SendDraftRequestType } from "./ComposeMessage";
 import { deleteDexieThread } from "../lib/util";
 import SimpleButton from "../components/SimpleButton";
 import { SharedDraftModal } from "../components/modals/ShareDraftModal";
@@ -47,28 +48,29 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   const [date, setDate] = useState(0);
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [contentHtml, setContentHtml] = useState("");
+  const [initialContent, setInitialContent] = useState("");
   const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
   const [shareModalIsOpen, setShareeModalIsOpen] = useState(false);
   const [messagePanelIsOpen, setMessagePanelIsOpen] = useState(false);
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
+  const editorRef = useRef<TipTapEditorHandle>(null);
 
   const navigate = useNavigate();
   const { threadId } = useParams();
 
   const setToAndSaveDraft = (emails: string[]) => {
     setTo(emails);
-    void saveDraft({ to: emails });
+    void saveDraft();
   };
 
   const setCcAndSaveDraft = (emails: string[]) => {
     setCc(emails);
-    void saveDraft({ cc: emails });
+    void saveDraft();
   };
 
   const setBccAndSaveDraft = (emails: string[]) => {
     setBcc(emails);
-    void saveDraft({ bcc: emails });
+    void saveDraft();
   };
 
   const { data, isFetching, refetch } = useQuery(
@@ -84,7 +86,6 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         return null;
       }
 
-      console.log(data);
       return data;
     }
   );
@@ -96,61 +97,58 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     }
   }, [shareModalIsOpen, refetch]);
 
-  const saveDraft = useCallback(
-    async (request: SendDraftRequestType) => {
-      const message = await db.messages
-        .where("threadId")
-        .equals(threadId || "")
-        .first();
+  const saveDraft = useCallback(async () => {
+    const message = await db.messages
+      .where("threadId")
+      .equals(threadId || "")
+      .first();
 
-      if (!message || !message.id) {
-        return { error: "No message found" };
-      }
+    if (!message || !message.id) {
+      return { error: "No message found" };
+    }
 
-      const { data, error } = await updateDraft(
-        selectedEmail.email,
-        selectedEmail.provider,
-        message.id,
-        request.to || to,
-        request.cc || cc,
-        request.bcc || bcc,
-        request.subject || subject,
-        request.content || contentHtml
-        // request.attachments || attachments
-      );
-
-      await saveSharedDraft(selectedEmail.email, {
-        id: threadId || "",
-        recipients: to,
-        cc,
-        bcc,
-        subject,
-        html: contentHtml,
-        snippet,
-        date,
-      });
-
-      if (error || !data) {
-        dLog(error);
-        return { error };
-      }
-
-      return { error: null };
-    },
-    [
+    const html = editorRef.current?.getHTML() || "";
+    const { data, error } = await updateDraft(
       selectedEmail.email,
       selectedEmail.provider,
-      subject,
+      message.id,
       to,
       cc,
       bcc,
-      contentHtml,
-      threadId,
+      subject,
+      html
+      // request.attachments || attachments
+    );
+
+    await saveSharedDraft(selectedEmail.email, {
+      id: threadId || "",
+      recipients: to,
+      cc,
+      bcc,
+      subject,
+      html,
       snippet,
       date,
-      // attachments,
-    ]
-  );
+    });
+
+    if (error || !data) {
+      dLog(error);
+      return { error };
+    }
+
+    return { error: null };
+  }, [
+    selectedEmail.email,
+    selectedEmail.provider,
+    subject,
+    to,
+    cc,
+    bcc,
+    threadId,
+    snippet,
+    date,
+    // attachments,
+  ]);
 
   const commandBarContextValue = useMemo(
     () => ({
@@ -161,11 +159,14 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   );
 
   // content is passed in as live data from editor as it is only saved when the user stops typing for 5 seconds
-  const handleSendEmail = async (content: string) => {
+  const handleSendEmail = useCallback(async () => {
+    const html = editorRef.current?.getHTML() || "";
     setSendingEmail(true);
+    let error: string | null = null;
+
     if (attachments.length > 0) {
       // send with attachments
-      const { error } = await sendEmailWithAttachments(
+      ({ error } = await sendEmailWithAttachments(
         selectedEmail.email,
         selectedEmail.provider,
         threadId || "",
@@ -173,31 +174,12 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         cc,
         bcc,
         subject,
-        content,
+        html,
         attachments
-      );
-
-      // If send fails, try save draft and return
-      if (error) {
-        await saveDraft({ content });
-        toast.error("Error sending email");
-        return setSendingEmail(false);
-      }
-
-      // delete draft thread as there will be a new thread for the sent email
-      if (threadId) {
-        await deleteThread(
-          selectedEmail.email,
-          selectedEmail.provider,
-          threadId,
-          false
-        );
-
-        await deleteDexieThread(threadId);
-      }
+      ));
     } else {
       // send without attachments
-      const { error } = await sendEmail(
+      ({ error } = await sendEmail(
         selectedEmail.email,
         selectedEmail.provider,
         threadId || "",
@@ -205,31 +187,42 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         cc,
         bcc,
         subject,
-        content
+        html
+      ));
+    }
+
+    // If send fails, try save draft and return
+    if (error) {
+      await saveDraft();
+      toast.error("Error sending email");
+      return setSendingEmail(false);
+    }
+
+    if (threadId) {
+      await deleteThread(
+        selectedEmail.email,
+        selectedEmail.provider,
+        threadId,
+        false
       );
 
-      // If send fails, try save draft and return
-      if (error) {
-        await saveDraft({ content });
-        toast.error("Error sending email");
-        return setSendingEmail(false);
-      }
-
-      if (threadId) {
-        await deleteThread(
-          selectedEmail.email,
-          selectedEmail.provider,
-          threadId,
-          false
-        );
-
-        await deleteDexieThread(threadId);
-      }
+      await deleteDexieThread(threadId);
     }
 
     toast.success("Email sent");
     navigate(-1);
-  };
+  }, [
+    attachments,
+    bcc,
+    cc,
+    navigate,
+    saveDraft,
+    selectedEmail.email,
+    selectedEmail.provider,
+    subject,
+    threadId,
+    to,
+  ]);
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -237,8 +230,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         if (shareModalIsOpen) {
           setShareeModalIsOpen(false);
         } else {
-          void saveDraft({});
-          navigate(-1);
+          void saveDraft().then(() => {
+            navigate(-1);
+          });
         }
       }
     };
@@ -261,7 +255,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       if (thread && message && message.id) {
         setTo(message.toRecipients.filter((recipient) => recipient !== ""));
         setSubject(thread.subject || "");
-        setContentHtml(message.htmlData || "");
+        setInitialContent(message.htmlData || "");
         setSnippet(thread.snippet || "");
         setDate(thread.date || 0);
       } else {
@@ -292,14 +286,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                     className="flex flex-row cursor-pointer items-center"
                     onClick={(e) => {
                       e.stopPropagation();
-                      void saveDraft({
-                        to,
-                        cc,
-                        bcc,
-                        subject,
-                        attachments,
+                      void saveDraft().then(() => {
+                        navigate(-1);
                       });
-                      navigate(-1);
                     }}
                   >
                     <ArrowSmallLeftIcon className="h-4 w-4 dark:text-zinc-400 text-slate-500" />
@@ -358,7 +347,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                         <input
                           value={subject}
                           onChange={(event) => setSubject(event.target.value)}
-                          onBlur={() => void saveDraft({ subject })}
+                          onBlur={() => void saveDraft()}
                           type="text"
                           name="subject"
                           id="subject"
@@ -373,15 +362,16 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                         </div>
                         <div className="w-full pl-10 overflow-scroll hide-scroll">
                           <TiptapEditor
+                            ref={editorRef}
                             canSendEmail={
                               to.length > 0 || cc.length > 0 || bcc.length > 0
                             }
-                            initialContent={contentHtml}
+                            initialContent={initialContent}
                             attachments={attachments}
                             setAttachments={setAttachments}
                             sendingEmail={sendingEmail}
                             sendEmail={handleSendEmail}
-                            setContent={setContentHtml}
+                            // setContent={setContentHtml}
                             saveDraft={saveDraft}
                           />
                         </div>
@@ -464,7 +454,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         subject={subject}
         snippet={snippet}
         date={date}
-        html={contentHtml}
+        html={initialContent}
         isDialogOpen={shareModalIsOpen}
         setIsDialogOpen={setShareeModalIsOpen}
       />

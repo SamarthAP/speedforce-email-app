@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmailSelectorInput } from "../components/EmailSelectorInput";
 import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
 import { ISelectedEmail } from "../lib/db";
 import { useNavigate } from "react-router-dom";
 import Titlebar from "../components/Titlebar";
 import Sidebar from "../components/Sidebar";
-import Tiptap from "../components/Editors/TiptapEditor";
+import Tiptap, { TipTapEditorHandle } from "../components/Editors/TiptapEditor";
 import {
   createDraft,
   sendEmail,
@@ -45,28 +45,29 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
   const [subject, setSubject] = useState("");
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [contentHtml, setContentHtml] = useState(""); // TODO: Type this
+
   const [draft, setDraft] = useState<{
     id: string;
     threadId: string;
   }>({ id: "", threadId: "" }); // TODO: Type this
   const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
+  const editorRef = useRef<TipTapEditorHandle>(null);
 
   const navigate = useNavigate();
 
   const setToAndSaveDraft = (emails: string[]) => {
     setTo(emails);
-    void saveDraft({ to: emails });
+    void saveDraft();
   };
 
   const setCcAndSaveDraft = (emails: string[]) => {
     setCc(emails);
-    void saveDraft({ cc: emails });
+    void saveDraft();
   };
 
   const setBccAndSaveDraft = (emails: string[]) => {
     setBcc(emails);
-    void saveDraft({ bcc: emails });
+    void saveDraft();
   };
 
   const commandBarContextValue = useMemo(
@@ -77,70 +78,68 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
     [commandBarIsOpen, setCommandBarIsOpen]
   );
 
-  const saveDraft = useCallback(
-    async (request: SendDraftRequestType) => {
-      if (draft.id && draft.threadId) {
-        // Update draft
-        const { data, error } = await updateDraft(
-          selectedEmail.email,
-          selectedEmail.provider,
-          draft.id,
-          request.to || to,
-          request.cc || cc,
-          request.bcc || bcc,
-          request.subject || subject,
-          request.content || contentHtml
-          // request.attachments || attachments
-        );
+  const saveDraft = useCallback(async () => {
+    const html = editorRef.current?.getHTML() || "";
 
-        if (error || !data) {
-          dLog(error);
-          return { error };
-        }
-      } else {
-        // Create draft
-        const { data, error } = await createDraft(
-          selectedEmail.email,
-          selectedEmail.provider,
-          request.to || to,
-          request.cc || cc,
-          request.bcc || bcc,
-          request.subject || subject,
-          request.content || contentHtml
-          // request.attachments || attachments
-        );
+    if (draft.id && draft.threadId) {
+      // Update draft
+      const { data, error } = await updateDraft(
+        selectedEmail.email,
+        selectedEmail.provider,
+        draft.id,
+        to,
+        cc,
+        bcc,
+        subject,
+        html
+        // request.attachments || attachments
+      );
 
-        if (error || !data) {
-          dLog(error);
-          return { error };
-        }
+      if (error || !data) {
+        dLog(error);
+        return { error };
+      }
+    } else {
+      // Create draft
+      const { data, error } = await createDraft(
+        selectedEmail.email,
+        selectedEmail.provider,
+        to,
+        cc,
+        bcc,
+        subject,
+        html // request.attachments || attachments
+      );
 
-        setDraft({
-          id: data.id,
-          threadId: data.threadId,
-        });
+      if (error || !data) {
+        dLog(error);
+        return { error };
       }
 
-      return { error: null };
-    },
-    [
-      draft,
-      // attachments,
-      contentHtml,
-      subject,
-      to,
-      cc,
-      bcc,
-      selectedEmail.email,
-      selectedEmail.provider,
-    ]
-  );
+      setDraft({
+        id: data.id,
+        threadId: data.threadId,
+      });
+    }
+
+    return { error: null };
+  }, [
+    draft,
+    // attachments,
+    subject,
+    to,
+    cc,
+    bcc,
+    selectedEmail.email,
+    selectedEmail.provider,
+  ]);
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !commandBarIsOpen) {
-        void saveDraft({});
-        navigate(-1);
+        void saveDraft().then(() => {
+          navigate(-1);
+        });
       }
     };
 
@@ -151,11 +150,14 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
     };
   }, [navigate, saveDraft, commandBarIsOpen]);
 
-  const handleSendEmail = async (content: string) => {
+  const handleSendEmail = useCallback(async () => {
+    const html = editorRef.current?.getHTML() || "";
     setSendingEmail(true);
+    let error: string | null = null;
+
     if (attachments.length > 0) {
       // send with attachments
-      const { error } = await sendEmailWithAttachments(
+      ({ error } = await sendEmailWithAttachments(
         selectedEmail.email,
         selectedEmail.provider,
         draft.threadId,
@@ -163,32 +165,12 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
         cc,
         bcc,
         subject,
-        content,
+        html,
         attachments
-      );
-
-      // If send fails, try save draft and return
-      if (error) {
-        await saveDraft({ content });
-        toast.error("Error sending email");
-        return setSendingEmail(false);
-      } else {
-        void newEvent("SEND_EMAIL");
-      }
-
-      // delete draft thread as there will be a new thread for the sent email
-      if (draft.threadId) {
-        await deleteDraft(
-          selectedEmail.email,
-          selectedEmail.provider,
-          draft.threadId
-        );
-
-        await deleteDexieThread(draft.threadId);
-      }
+      ));
     } else {
       // send without attachments
-      const { error } = await sendEmail(
+      ({ error } = await sendEmail(
         selectedEmail.email,
         selectedEmail.provider,
         draft.threadId,
@@ -196,32 +178,38 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
         cc,
         bcc,
         subject,
-        content
-      );
+        html
+      ));
+    }
 
-      // If send fails, try save draft and return
-      if (error) {
-        await saveDraft({ content });
-        toast.error("Error sending email");
-        return setSendingEmail(false);
-      } else {
-        void newEvent("SEND_EMAIL");
-      }
+    // If send fails, try save draft and return
+    if (error) {
+      await saveDraft();
+      toast.error("Error sending email");
+      return setSendingEmail(false);
+    } else {
+      void newEvent("SEND_EMAIL");
+    }
 
-      if (draft.id && draft.threadId) {
-        await deleteDraft(
-          selectedEmail.email,
-          selectedEmail.provider,
-          draft.id
-        );
-
-        await deleteDexieThread(draft.threadId);
-      }
+    // delete draft thread as there will be a new thread for the sent email
+    if (draft.threadId) {
+      await deleteDexieThread(draft.threadId);
+      await deleteDraft(selectedEmail.email, selectedEmail.provider, draft.id);
     }
 
     toast.success("Email sent");
     navigate(-1);
-  };
+  }, [
+    attachments,
+    bcc,
+    cc,
+    draft,
+    saveDraft,
+    selectedEmail,
+    subject,
+    to,
+    navigate,
+  ]);
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col dark:bg-zinc-900">
@@ -237,14 +225,9 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                     className="flex flex-row cursor-pointer items-center"
                     onClick={(e) => {
                       e.stopPropagation();
-                      void saveDraft({
-                        to,
-                        cc,
-                        bcc,
-                        subject,
-                        attachments,
+                      void saveDraft().then(() => {
+                        navigate(-1);
                       });
-                      navigate(-1);
                     }}
                   >
                     <ArrowSmallLeftIcon className="h-4 w-4 dark:text-zinc-400 text-slate-500" />
@@ -280,7 +263,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                       </div>
                       <input
                         onChange={(event) => setSubject(event.target.value)}
-                        onBlur={() => void saveDraft({ subject })}
+                        onBlur={() => void saveDraft()}
                         type="text"
                         name="subject"
                         id="subject"
@@ -295,6 +278,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                       </div>
                       <div className="w-full pl-10 overflow-scroll hide-scroll">
                         <Tiptap
+                          ref={editorRef}
                           initialContent=""
                           attachments={attachments}
                           setAttachments={setAttachments}
@@ -303,7 +287,6 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                           }
                           sendingEmail={sendingEmail}
                           sendEmail={handleSendEmail}
-                          setContent={setContentHtml}
                           saveDraft={saveDraft}
                         />
                       </div>

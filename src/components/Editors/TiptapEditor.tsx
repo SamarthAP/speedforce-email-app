@@ -16,7 +16,13 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
 import ImagePlugin from "./ImagePlugin";
 import SimpleButton from "../SimpleButton";
-import { useCallback, useEffect, useState } from "react";
+import {
+  useImperativeHandle,
+  forwardRef,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { XCircleIcon } from "@heroicons/react/20/solid";
 import { classNames } from "../../lib/util";
 import { EditLinkModal } from "../modals/EditLinkModal";
@@ -56,7 +62,6 @@ interface TiptapProps {
   attachments: NewAttachment[];
   setAttachments: (attachments: NewAttachment[]) => void;
   sendEmail: (content: string) => Promise<void>;
-  setContent: (content: string) => void;
   saveDraft: (
     request: SendDraftRequestType
   ) => Promise<{ error: string | null }>;
@@ -64,182 +69,202 @@ interface TiptapProps {
   sendingEmail: boolean;
 }
 
-export default function Tiptap({
-  initialContent,
-  attachments,
-  setAttachments,
-  sendEmail,
-  setContent,
-  saveDraft,
-  canSendEmail,
-  sendingEmail,
-}: TiptapProps) {
-  const [selectedLink, setSelectedLink] = useState<{
-    displayText: string;
-    link: string;
-  } | null>(null);
-  const [isEditLinkModalOpen, setIsEditLinkModalOpen] = useState(false);
+export interface TipTapEditorHandle {
+  getHTML: () => string;
+}
 
-  // debounced save draft function. save draft when user stops typing for 5 seconds
-  const debouncedSaveDraft = useCallback(
-    debounce((html) => {
-      setContent(html);
-      void saveDraft({ content: html });
-    }, 2000),
-    [saveDraft]
-  );
+const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
+  (
+    {
+      initialContent,
+      attachments,
+      setAttachments,
+      sendEmail,
+      saveDraft,
+      canSendEmail,
+      sendingEmail,
+    }: TiptapProps,
+    ref
+  ) => {
+    useImperativeHandle(ref, () => ({
+      getHTML: () => {
+        if (!editor) return "";
+        return editor.getHTML();
+      },
+    }));
 
-  const editor = useEditor({
-    extensions,
-    content,
-    onUpdate: ({ editor }) => {
-      // Call the debounced save draft function with the current HTML content of the editor
-      debouncedSaveDraft(editor.getHTML());
-    },
-  });
+    const [selectedLink, setSelectedLink] = useState<{
+      displayText: string;
+      link: string;
+    } | null>(null);
+    const [isEditLinkModalOpen, setIsEditLinkModalOpen] = useState(false);
 
-  // Clean up the debounced save draft function so that it doesn't run after the component is unmounted
-  useEffect(() => {
-    return () => debouncedSaveDraft.cancel();
-  }, [debouncedSaveDraft]);
+    // debounced save draft function. save draft when user stops typing for 5 seconds
+    const debouncedSaveDraft = useCallback(
+      debounce((html) => {
+        // setContent(html);
+        void saveDraft({ content: html });
+      }, 2000),
+      [saveDraft]
+    );
 
-  // Clicking link handler to open the edit link modal
-  useEffect(() => {
-    if (editor) {
-      const handleClick = (event: MouseEvent) => {
-        const target = event.target as HTMLElement;
-        if (target.tagName === "A") {
-          event.preventDefault();
-          const href = target.getAttribute("href");
-          const text = target.textContent;
-          setSelectedLink({ displayText: text || "", link: href || "" });
-          setIsEditLinkModalOpen(true);
-        }
-      };
+    const editor = useEditor({
+      extensions,
+      content,
+      onUpdate: ({ editor }) => {
+        // Call the debounced save draft function with the current HTML content of the editor
+        debouncedSaveDraft(editor.getHTML());
+      },
+    });
 
-      const editorEl = editor.view.dom;
-      editorEl.addEventListener("click", handleClick);
+    // Clean up the debounced save draft function so that it doesn't run after the component is unmounted
+    useEffect(() => {
+      return () => debouncedSaveDraft.cancel();
+    }, [debouncedSaveDraft]);
 
-      return () => {
-        editorEl.removeEventListener("click", handleClick);
-      };
-    }
-  }, [editor]);
-
-  // For existing drafts, set the initial content
-  useEffect(() => {
-    if (editor && initialContent) {
-      editor.commands.setContent(initialContent);
-    }
-  }, [editor, initialContent]);
-
-  if (!editor) return null;
-
-  // Add addAttachments functionality
-  async function addAttachments() {
-    const newAttachments: NewAttachment[] =
-      await window.electron.ipcRenderer.invoke("add-attachments");
-
-    void saveDraft({ attachments: [...attachments, ...newAttachments] });
-    setAttachments([...attachments, ...newAttachments]);
-  }
-
-  function removeAttachment(idx: number) {
-    const newAttachments = attachments.filter((_, i) => i !== idx);
-    void saveDraft({ attachments: newAttachments });
-    setAttachments(newAttachments);
-  }
-
-  const editLink = (displayText: string | null, url: string) => {
-    const { $from } = editor.state.selection;
-    const linkMarkType = editor.state.schema.marks.link;
-
-    let startPos = $from.pos;
-    let endPos = startPos;
-
-    editor.state.doc.nodesBetween(
-      startPos,
-      editor.state.doc.content.size,
-      (node, pos) => {
-        if (
-          node.isInline &&
-          node.marks.some((mark) => mark.type === linkMarkType)
-        ) {
-          if (startPos > pos) {
-            startPos = pos;
+    // Clicking link handler to open the edit link modal
+    useEffect(() => {
+      if (editor) {
+        const handleClick = (event: MouseEvent) => {
+          const target = event.target as HTMLElement;
+          if (target.tagName === "A") {
+            event.preventDefault();
+            const href = target.getAttribute("href");
+            const text = target.textContent;
+            setSelectedLink({ displayText: text || "", link: href || "" });
+            setIsEditLinkModalOpen(true);
           }
-          endPos = pos + node.nodeSize;
-        }
+        };
+
+        const editorEl = editor.view.dom;
+        editorEl.addEventListener("click", handleClick);
+
+        return () => {
+          editorEl.removeEventListener("click", handleClick);
+        };
       }
-    );
+    }, [editor]);
 
-    // Selection not inside a link
-    if (startPos === endPos) return;
+    // For existing drafts, set the initial content
+    useEffect(() => {
+      if (editor && initialContent) {
+        editor.commands.setContent(initialContent);
+      }
+    }, [editor, initialContent]);
 
-    // Create a new text node with the link mark
-    const newLinkNode = editor.schema.text(displayText || url, [
-      linkMarkType.create({ href: url }),
-    ]);
+    if (!editor) return null;
 
-    // Create a transaction to replace the specified link
-    const transaction = editor.state.tr.replaceWith(
-      startPos,
-      endPos,
-      newLinkNode
-    );
+    // Add addAttachments functionality
+    async function addAttachments() {
+      const newAttachments: NewAttachment[] =
+        await window.electron.ipcRenderer.invoke("add-attachments");
 
-    // Dispatch the transaction
-    editor.view.dispatch(transaction);
-  };
+      void saveDraft({ attachments: [...attachments, ...newAttachments] });
+      setAttachments([...attachments, ...newAttachments]);
+    }
 
-  return (
-    <div>
-      <TiptapMenuBar editor={editor} addAttachments={addAttachments} />
-      <div className="text-sm flex gap-x-1 overflow-scroll hide-scroll">
-        {attachments.map((attachment, idx) => {
-          return (
-            <div
-              key={idx}
-              className={classNames(
-                "inline-flex items-center h-[32px]",
-                "rounded-md mt-2 px-2 py-2 text-xs font-semibold shadow-sm focus:outline-none",
-                "bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300",
-                sendingEmail ? "" : "hover:bg-slate-300 dark:hover:bg-zinc-600"
-              )}
-            >
-              <span className="max-w-[128px] truncate cursor-default">
-                {attachment.filename}
-              </span>
-              {!sendingEmail && (
-                <button onClick={() => removeAttachment(idx)}>
-                  <XCircleIcon className="w-4 h-4 ml-1" />
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <EditorContent editor={editor} className="mt-4 dark:text-white" />
+    function removeAttachment(idx: number) {
+      const newAttachments = attachments.filter((_, i) => i !== idx);
+      void saveDraft({ attachments: newAttachments });
+      setAttachments(newAttachments);
+    }
 
-      <div className="text-left mt-4 mb-2">
-        <SimpleButton
-          onClick={() => {
-            // void saveDraft({ content: editor.getHTML() });
-            void sendEmail(editor.getHTML());
-          }}
-          loading={sendingEmail}
-          text="Send"
-          width="w-16"
-          disabled={!canSendEmail}
+    const editLink = (displayText: string | null, url: string) => {
+      const { $from } = editor.state.selection;
+      const linkMarkType = editor.state.schema.marks.link;
+
+      let startPos = $from.pos;
+      let endPos = startPos;
+
+      editor.state.doc.nodesBetween(
+        startPos,
+        editor.state.doc.content.size,
+        (node, pos) => {
+          if (
+            node.isInline &&
+            node.marks.some((mark) => mark.type === linkMarkType)
+          ) {
+            if (startPos > pos) {
+              startPos = pos;
+            }
+            endPos = pos + node.nodeSize;
+          }
+        }
+      );
+
+      // Selection not inside a link
+      if (startPos === endPos) return;
+
+      // Create a new text node with the link mark
+      const newLinkNode = editor.schema.text(displayText || url, [
+        linkMarkType.create({ href: url }),
+      ]);
+
+      // Create a transaction to replace the specified link
+      const transaction = editor.state.tr.replaceWith(
+        startPos,
+        endPos,
+        newLinkNode
+      );
+
+      // Dispatch the transaction
+      editor.view.dispatch(transaction);
+    };
+
+    return (
+      <div>
+        <TiptapMenuBar editor={editor} addAttachments={addAttachments} />
+        <div className="text-sm flex gap-x-1 overflow-scroll hide-scroll">
+          {attachments.map((attachment, idx) => {
+            return (
+              <div
+                key={idx}
+                className={classNames(
+                  "inline-flex items-center h-[32px]",
+                  "rounded-md mt-2 px-2 py-2 text-xs font-semibold shadow-sm focus:outline-none",
+                  "bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300",
+                  sendingEmail
+                    ? ""
+                    : "hover:bg-slate-300 dark:hover:bg-zinc-600"
+                )}
+              >
+                <span className="max-w-[128px] truncate cursor-default">
+                  {attachment.filename}
+                </span>
+                {!sendingEmail && (
+                  <button onClick={() => removeAttachment(idx)}>
+                    <XCircleIcon className="w-4 h-4 ml-1" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <EditorContent editor={editor} className="mt-4 dark:text-white" />
+
+        <div className="text-left mt-4 mb-2">
+          <SimpleButton
+            onClick={() => {
+              // void saveDraft({ content: editor.getHTML() });
+              void sendEmail(editor.getHTML());
+            }}
+            loading={sendingEmail}
+            text="Send"
+            width="w-16"
+            disabled={!canSendEmail}
+          />
+        </div>
+        <EditLinkModal
+          initialTextToDisplay={selectedLink?.displayText || ""}
+          initialUrl={selectedLink?.link || ""}
+          isDialogOpen={isEditLinkModalOpen}
+          setIsDialogOpen={setIsEditLinkModalOpen}
+          editLink={editLink}
         />
       </div>
-      <EditLinkModal
-        initialTextToDisplay={selectedLink?.displayText || ""}
-        initialUrl={selectedLink?.link || ""}
-        isDialogOpen={isEditLinkModalOpen}
-        setIsDialogOpen={setIsEditLinkModalOpen}
-        editLink={editLink}
-      />
-    </div>
-  );
-}
+    );
+  }
+);
+
+TiptapEditor.displayName = "TiptapEditor";
+export default TiptapEditor;
