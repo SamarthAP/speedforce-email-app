@@ -49,6 +49,9 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
     return db.emailThreads.get(threadId || "");
   }, [threadId]);
 
+  console.log("thread", thread);
+  console.log("messages", messages);
+
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !commandBarIsOpen) {
@@ -246,25 +249,6 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
                     ]
                   : []
               }
-              // data={[
-              //   {
-              //     title: "Email Commands",
-              //     commands: [
-              //       {
-              //         icon: StarIcon,
-              //         description: "Star",
-              //         action: () => {
-              //           // star thread
-              //           toast("Starred");
-              //         },
-              //         keybind: {
-              //           keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
-              //           isSequential: false,
-              //         },
-              //       },
-              //     ],
-              //   },
-              // ]}
             />
           </GoToPageHotkeys>
         </CommandBarOpenContext.Provider>

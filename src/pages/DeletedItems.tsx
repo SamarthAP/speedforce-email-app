@@ -58,6 +58,7 @@ export default function DeletedItems() {
       getNextPageParam: (lastPage, pages) => {
         return lastPage;
       },
+      staleTime: 1000 * 60 * 1, // 1 min
     }
   );
 

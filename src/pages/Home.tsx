@@ -75,6 +75,7 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
       getNextPageParam: (lastPage, pages) => {
         return lastPage;
       },
+      staleTime: 1000 * 60 * 1, // 1 min
     }
   );
 
