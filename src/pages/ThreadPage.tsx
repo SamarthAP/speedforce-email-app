@@ -49,9 +49,6 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
     return db.emailThreads.get(threadId || "");
   }, [threadId]);
 
-  console.log("thread", thread);
-  console.log("messages", messages);
-
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !commandBarIsOpen) {
