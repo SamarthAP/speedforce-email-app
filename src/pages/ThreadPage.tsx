@@ -246,25 +246,6 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
                     ]
                   : []
               }
-              // data={[
-              //   {
-              //     title: "Email Commands",
-              //     commands: [
-              //       {
-              //         icon: StarIcon,
-              //         description: "Star",
-              //         action: () => {
-              //           // star thread
-              //           toast("Starred");
-              //         },
-              //         keybind: {
-              //           keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
-              //           isSequential: false,
-              //         },
-              //       },
-              //     ],
-              //   },
-              // ]}
             />
           </GoToPageHotkeys>
         </CommandBarOpenContext.Provider>
