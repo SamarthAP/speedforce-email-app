@@ -255,8 +255,6 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         .equals(threadId)
         .toArray();
 
-      console.log(thread);
-      console.log(messages);
       const message = messages[0];
 
       if (thread && message && message.id) {

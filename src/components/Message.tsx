@@ -274,7 +274,6 @@ export default function Message({ message, selectedEmail }: MessageProps) {
             saveDraft={async () => {
               return { error: null };
             }}
-            setContent={() => dLog("setContent")}
           />
         </div>
       )}

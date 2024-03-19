@@ -74,7 +74,7 @@ export default function CommentsChain({
   }, [threadId, selectedEmail.email, commentText, refetch]);
 
   return visible ? (
-    <div className="w-80 border-l border-slate-200">
+    <div className="w-80 border-l border-slate-200 dark:border-zinc-700">
       <div className="flex flex-col h-full px-4 pb-4">
         <div className="flex-grow overflow-y-scroll hide-scroll space-y-2">
           {data &&
