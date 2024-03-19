@@ -62,9 +62,7 @@ interface TiptapProps {
   attachments: NewAttachment[];
   setAttachments: (attachments: NewAttachment[]) => void;
   sendEmail: (content: string) => Promise<void>;
-  saveDraft: (
-    request: SendDraftRequestType
-  ) => Promise<{ error: string | null }>;
+  saveDraft: (html: string) => Promise<{ error: string | null }>;
   canSendEmail: boolean;
   sendingEmail: boolean;
 }
@@ -103,7 +101,7 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
     const debouncedSaveDraft = useCallback(
       debounce((html) => {
         // setContent(html);
-        void saveDraft({ content: html });
+        void saveDraft(html);
       }, 2000),
       [saveDraft]
     );
@@ -159,13 +157,15 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
       const newAttachments: NewAttachment[] =
         await window.electron.ipcRenderer.invoke("add-attachments");
 
-      void saveDraft({ attachments: [...attachments, ...newAttachments] });
+      // void saveDraft(editor?.getHTML() || "");
+      // TODO: save draft with new attachments
       setAttachments([...attachments, ...newAttachments]);
     }
 
     function removeAttachment(idx: number) {
       const newAttachments = attachments.filter((_, i) => i !== idx);
-      void saveDraft({ attachments: newAttachments });
+      // void saveDraft(editor?.getHTML() || "");
+      // TODO: save draft with new attachments
       setAttachments(newAttachments);
     }
 

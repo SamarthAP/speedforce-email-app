@@ -9,6 +9,7 @@ import {
   unstarThread,
   trashThread,
   deleteThread,
+  deleteDraft,
 } from "../lib/sync";
 import {
   CheckCircleIcon,
@@ -350,13 +351,20 @@ function ThreadListRow({
           [FOLDER_IDS.TRASH],
           labelsToRemove
         ),
-      async () =>
-        await trashThread(
-          selectedEmail.email,
-          selectedEmail.provider,
-          thread.id,
-          isDrafts
-        ),
+      async () => {
+        isDrafts
+          ? await deleteDraft(
+              selectedEmail.email,
+              selectedEmail.provider,
+              thread.id,
+              isDrafts
+            )
+          : await trashThread(
+              selectedEmail.email,
+              selectedEmail.provider,
+              thread.id
+            );
+      },
       () => {
         void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [
           FOLDER_IDS.TRASH,

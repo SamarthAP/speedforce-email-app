@@ -14,7 +14,7 @@ import TiptapEditor, {
 import { dLog } from "../lib/noProd";
 import { NewAttachment } from "../api/model/users.attachment";
 import {
-  deleteThread,
+  deleteDraft,
   sendEmail,
   sendEmailWithAttachments,
   updateDraft,
@@ -60,17 +60,17 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
   const setToAndSaveDraft = (emails: string[]) => {
     setTo(emails);
-    void saveDraft();
+    void saveDraft(editorRef.current?.getHTML() || "");
   };
 
   const setCcAndSaveDraft = (emails: string[]) => {
     setCc(emails);
-    void saveDraft();
+    void saveDraft(editorRef.current?.getHTML() || "");
   };
 
   const setBccAndSaveDraft = (emails: string[]) => {
     setBcc(emails);
-    void saveDraft();
+    void saveDraft(editorRef.current?.getHTML() || "");
   };
 
   const { data, isFetching, refetch } = useQuery(
@@ -97,58 +97,66 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     }
   }, [shareModalIsOpen, refetch]);
 
-  const saveDraft = useCallback(async () => {
-    const message = await db.messages
-      .where("threadId")
-      .equals(threadId || "")
-      .first();
+  const saveDraft = useCallback(
+    async (html: string) => {
+      if (!threadId) return { error: "No thread id" };
+      const message = await db.messages
+        .where("threadId")
+        .equals(threadId)
+        .first();
 
-    if (!message || !message.id) {
-      return { error: "No message found" };
-    }
+      if (!message || !message.id) {
+        return { error: "No message found" };
+      }
 
-    const html = editorRef.current?.getHTML() || "";
-    const { data, error } = await updateDraft(
+      // The save endpoint for outlook expects the message id, whereas the save endpoint for gmail expects the draft id
+      // For simplicity sake, for shared drafts we will always use the message id
+      const draftIdToUpdate =
+        selectedEmail.provider === "google" ? threadId : message.id;
+
+      const { data, error } = await updateDraft(
+        selectedEmail.email,
+        selectedEmail.provider,
+        draftIdToUpdate,
+        to,
+        cc,
+        bcc,
+        subject,
+        html
+        // request.attachments || attachments
+      );
+
+      await saveSharedDraft(selectedEmail.email, {
+        id: threadId,
+        recipients: to,
+        cc,
+        bcc,
+        subject,
+        html,
+        snippet,
+        date,
+      });
+
+      if (error || !data) {
+        dLog(error);
+        return { error };
+      }
+
+      return { error: null };
+    },
+    [
       selectedEmail.email,
       selectedEmail.provider,
-      message.id,
+      subject,
       to,
       cc,
       bcc,
-      subject,
-      html
-      // request.attachments || attachments
-    );
-
-    await saveSharedDraft(selectedEmail.email, {
-      id: threadId || "",
-      recipients: to,
-      cc,
-      bcc,
-      subject,
-      html,
+      threadId,
       snippet,
       date,
-    });
-
-    if (error || !data) {
-      dLog(error);
-      return { error };
-    }
-
-    return { error: null };
-  }, [
-    selectedEmail.email,
-    selectedEmail.provider,
-    subject,
-    to,
-    cc,
-    bcc,
-    threadId,
-    snippet,
-    date,
-    // attachments,
-  ]);
+      // attachments,
+    ]
+  );
 
   const commandBarContextValue = useMemo(
     () => ({
@@ -160,6 +168,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
   // content is passed in as live data from editor as it is only saved when the user stops typing for 5 seconds
   const handleSendEmail = useCallback(async () => {
+    if (!threadId) return;
+
     const html = editorRef.current?.getHTML() || "";
     setSendingEmail(true);
     let error: string | null = null;
@@ -169,7 +179,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       ({ error } = await sendEmailWithAttachments(
         selectedEmail.email,
         selectedEmail.provider,
-        threadId || "",
+        threadId,
         to,
         cc,
         bcc,
@@ -182,7 +192,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       ({ error } = await sendEmail(
         selectedEmail.email,
         selectedEmail.provider,
-        threadId || "",
+        threadId,
         to,
         cc,
         bcc,
@@ -193,19 +203,13 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
     // If send fails, try save draft and return
     if (error) {
-      await saveDraft();
+      await saveDraft(editorRef.current?.getHTML() || "");
       toast.error("Error sending email");
       return setSendingEmail(false);
     }
 
     if (threadId) {
-      await deleteThread(
-        selectedEmail.email,
-        selectedEmail.provider,
-        threadId,
-        false
-      );
-
+      await deleteDraft(selectedEmail.email, selectedEmail.provider, threadId);
       await deleteDexieThread(threadId);
     }
 
@@ -230,9 +234,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         if (shareModalIsOpen) {
           setShareeModalIsOpen(false);
         } else {
-          void saveDraft().then(() => {
-            navigate(-1);
-          });
+          void saveDraft(editorRef.current?.getHTML() || "");
+          navigate(-1);
         }
       }
     };
@@ -247,10 +250,14 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   useEffect(() => {
     const loadDraft = async (threadId: string) => {
       const thread = await db.emailThreads.get(threadId);
-      const message = await db.messages
+      const messages = await db.messages
         .where("threadId")
         .equals(threadId)
-        .first();
+        .toArray();
+
+      console.log(thread);
+      console.log(messages);
+      const message = messages[0];
 
       if (thread && message && message.id) {
         setTo(message.toRecipients.filter((recipient) => recipient !== ""));
@@ -286,9 +293,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                     className="flex flex-row cursor-pointer items-center"
                     onClick={(e) => {
                       e.stopPropagation();
-                      void saveDraft().then(() => {
-                        navigate(-1);
-                      });
+                      void saveDraft(editorRef.current?.getHTML() || "");
+                      navigate(-1);
                     }}
                   >
                     <ArrowSmallLeftIcon className="h-4 w-4 dark:text-zinc-400 text-slate-500" />
@@ -347,7 +353,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                         <input
                           value={subject}
                           onChange={(event) => setSubject(event.target.value)}
-                          onBlur={() => void saveDraft()}
+                          onBlur={() =>
+                            void saveDraft(editorRef.current?.getHTML() || "")
+                          }
                           type="text"
                           name="subject"
                           id="subject"

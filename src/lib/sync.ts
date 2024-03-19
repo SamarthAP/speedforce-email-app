@@ -61,6 +61,7 @@ import {
 } from "../api/outlook/helpers";
 import {
   create as gDraftCreate,
+  get as gDraftGet,
   update as gDraftUpdate,
   deleteDraft as gDraftDelete,
 } from "../api/gmail/users/drafts";
@@ -90,6 +91,117 @@ import { CreateDraftResponseDataType } from "../api/model/users.draft";
 import { SENT_FROM_SPEEDFORCE_HTML } from "../api/templates/sentFromSpeedforce";
 import { updateSharedDraftStatus } from "../api/sharedDrafts";
 import { SharedDraftStatusType } from "../api/model/users.shared.draft";
+
+export async function handleNewDraftsGoogle(
+  accessToken: string,
+  email: string,
+  draftIds: string[]
+) {
+  let maxHistoryId = 0;
+  const promises = draftIds.map((draftId) => gDraftGet(accessToken, draftId));
+
+  try {
+    const drafts = await Promise.all(promises);
+    const parsedDrafts: IEmailThread[] = [];
+    const parsedMessages: IMessage[] = [];
+
+    drafts.forEach((draft) => {
+      // let hasInboxLabel = false;
+      const isStarred = draft.message.labelIds?.includes("STARRED") || false;
+      let labelIds: string[] = [];
+
+      if (isStarred) labelIds = upsertLabelIds(labelIds, "STARRED");
+
+      if (parseInt(draft.historyId) > maxHistoryId) {
+        maxHistoryId = parseInt(draft.historyId);
+      }
+
+      let hasAttachments = false;
+      let textData = "";
+      let htmlData = "";
+      const attachments: IAttachment[] = [];
+
+      draft.message.payload.parts?.forEach((part) => {
+        if (part.mimeType === "text/plain") {
+          textData = part.body.data || "";
+        } else if (part.mimeType === "text/html") {
+          htmlData = part.body.data || "";
+        }
+
+        if (part.parts) {
+          part.parts.forEach((nestedPart) => {
+            if (nestedPart.mimeType === "text/plain") {
+              textData = nestedPart.body.data || "";
+            } else if (nestedPart.mimeType === "text/html") {
+              htmlData = nestedPart.body.data || "";
+            }
+          });
+        }
+
+        if (part.filename && part.filename !== "") {
+          attachments.push({
+            filename: part.filename,
+            mimeType: part.mimeType,
+            attachmentId: part.body.attachmentId || "",
+            size: part.body.size || 0,
+          });
+          hasAttachments = true;
+        }
+      });
+
+      if (htmlData === "") {
+        htmlData = draft.message.payload.body.data || "";
+      }
+
+      parsedMessages.push({
+        // Weird behaviour here. When a draft is updated, messageId and threadId are modified.
+        // If we use either of these are as, message will not be overwritten and we have duplicates (and draft loading doesnt know which one to use)
+        // Since there is only 1 message per draft, we can use draft.id as messageId
+        id: draft.id,
+        threadId: draft.id,
+        labelIds: draft.message.labelIds,
+        from: getMessageHeader(draft.message.payload.headers, "From"),
+        toRecipients: getMessageHeader(draft.message.payload.headers, "To")
+          .split(",")
+          .map((recipient) => recipient.trim()),
+        snippet: draft.message.snippet || "",
+        headers: draft.message.payload.headers,
+        textData: decodeGoogleMessageData(textData),
+        htmlData: decodeGoogleMessageData(htmlData),
+        date: parseInt(draft.message.internalDate),
+        attachments,
+      });
+
+      draft.message.labelIds.forEach((id) => {
+        const labelId = GMAIL_FOLDER_IDS_MAP.getKey(id) || id;
+        labelIds = upsertLabelIds(labelIds, labelId);
+      });
+
+      parsedDrafts.push({
+        id: draft.id,
+        historyId: draft.historyId,
+        email: email,
+        from: getMessageHeader(draft.message.payload.headers, "From"),
+        subject: getMessageHeader(draft.message.payload.headers, "Subject"),
+        snippet: draft.message.snippet || "", // this should be the latest message's snippet
+        date: parseInt(draft.message.internalDate),
+        unread: draft.message.labelIds?.includes("UNREAD"),
+        labelIds: labelIds,
+        hasAttachments,
+      });
+    });
+    console.log(parsedMessages);
+
+    await db.emailThreads.bulkPut(parsedDrafts);
+    await db.messages.bulkPut(parsedMessages);
+
+    return;
+  } catch (e) {
+    dLog("Could not sync mailbox");
+    dLog(e);
+    return;
+  }
+}
 
 export async function handleNewThreadsGoogle(
   accessToken: string,
@@ -814,8 +926,7 @@ export async function sendEmailWithAttachments(
 export async function deleteThread(
   email: string,
   provider: "google" | "outlook",
-  threadId: string,
-  shouldToast = true
+  threadId: string
 ) {
   const accessToken = await getAccessToken(email);
 
@@ -842,17 +953,12 @@ export async function deleteThread(
       dLog("Error deleting thread");
     }
   }
-
-  if (shouldToast) {
-    toast.success("Deleted thread");
-  }
 }
 
 export async function trashThread(
   email: string,
   provider: "google" | "outlook",
-  threadId: string,
-  isDraft = false
+  threadId: string
 ) {
   const accessToken = await getAccessToken(email);
 
@@ -870,15 +976,6 @@ export async function trashThread(
       });
 
       await Promise.all(promises);
-
-      // If thread is a draft, update shared draft status
-      if (isDraft) {
-        await updateSharedDraftStatus(
-          threadId,
-          email,
-          SharedDraftStatusType.DISCARDED
-        );
-      }
     }
   } else if (provider === "outlook") {
     const messages = await db.messages
@@ -896,15 +993,6 @@ export async function trashThread(
 
     try {
       await Promise.all(apiPromises);
-
-      // If thread is a draft, update shared draft status
-      if (isDraft) {
-        await updateSharedDraftStatus(
-          threadId,
-          email,
-          SharedDraftStatusType.DISCARDED
-        );
-      }
     } catch (e) {
       dLog("Error deleting thread");
       return { data: null, error: "Error deleting thread" };
@@ -1262,22 +1350,54 @@ export async function updateDraft(
 export async function deleteDraft(
   email: string,
   provider: "google" | "outlook",
-  messageId: string
+  draftId: string,
+  shouldToast = false
 ) {
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    return await gDraftDelete(accessToken, messageId);
-  } else {
-    try {
-      await mDeleteMessage(accessToken, messageId);
-
-      return { data: null, error: null };
-    } catch (e) {
+    const { error } = await gDraftDelete(accessToken, draftId);
+    if (error) {
       dLog("Error deleting draft");
-      return { data: null, error: "Error deleting draft" };
+      return { data: null, error };
+    }
+
+    await updateSharedDraftStatus(
+      draftId,
+      email,
+      SharedDraftStatusType.DISCARDED
+    );
+  } else {
+    const messages = await db.messages
+      .where("threadId")
+      .equals(draftId)
+      .toArray();
+
+    const apiPromises = messages.map((message) => {
+      return mMoveMessage(
+        accessToken,
+        message.id,
+        OUTLOOK_FOLDER_IDS_MAP.getValue(FOLDER_IDS.TRASH) || ""
+      );
+    });
+
+    try {
+      await Promise.all(apiPromises);
+
+      // If thread is a draft, update shared draft status
+      await updateSharedDraftStatus(
+        draftId,
+        email,
+        SharedDraftStatusType.DISCARDED
+      );
+    } catch (e) {
+      dLog("Error deleting thread");
+      return { data: null, error: "Error deleting thread" };
     }
   }
+
+  if (shouldToast) toast.success("Discarded draft");
+  return { data: null, error: null };
 }
 
 export async function sendDraft(
