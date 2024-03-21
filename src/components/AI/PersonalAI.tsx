@@ -76,6 +76,9 @@ export default function PersonalAI({ show, hide }: PersonalAIProps) {
   }, [messages]);
 
   const sendMessage = async () => {
+    if (inputMessage.length === 0) {
+      return;
+    }
     setLoading(true);
     setInputMessage("");
     setMessages((messages) => [
