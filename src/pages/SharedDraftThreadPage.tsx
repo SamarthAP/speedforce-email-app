@@ -125,7 +125,7 @@ export default function SharedDraftThreadPage({
                     readOnly
                     toProps={{
                       text: "To",
-                      emails: data?.recipients || [],
+                      emails: data?.to || [],
                     }}
                     ccProps={{
                       text: "Cc",

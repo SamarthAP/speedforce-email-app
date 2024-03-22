@@ -17,7 +17,7 @@ export interface SharedDraftParticipantType {
 
 export interface SharedDraftDataType {
   id: string;
-  recipients: string[];
+  to: string[];
   cc: string[];
   bcc: string[];
   subject: string;

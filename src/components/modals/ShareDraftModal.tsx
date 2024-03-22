@@ -148,7 +148,7 @@ const SharedDraftParticipant = ({
 interface SharedDraftModalProps {
   selectedEmail: ISelectedEmail;
   draftId: string;
-  recipients: string[];
+  to: string[];
   cc: string[];
   bcc: string[];
   subject: string;
@@ -162,7 +162,7 @@ interface SharedDraftModalProps {
 export const SharedDraftModal = ({
   selectedEmail,
   draftId,
-  recipients,
+  to,
   cc,
   bcc,
   subject,
@@ -267,7 +267,7 @@ export const SharedDraftModal = ({
       selectedEmail.email,
       {
         id: draftId,
-        recipients,
+        to,
         cc,
         bcc,
         subject,
@@ -294,7 +294,7 @@ export const SharedDraftModal = ({
     participants,
     selectedEmail,
     draftId,
-    recipients,
+    to,
     cc,
     bcc,
     subject,

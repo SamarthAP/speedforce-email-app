@@ -34,6 +34,7 @@ import TooltipPopover from "../components/TooltipPopover";
 import { useTooltip } from "../components/UseTooltip";
 import CommentsChain from "../components/SharedDrafts/CommentsChain";
 import { useQuery } from "react-query";
+import { handleUpdateDraft } from "../lib/asyncHelpers";
 
 interface EditDraftProps {
   selectedEmail: ISelectedEmail;
@@ -114,7 +115,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       const draftIdToUpdate =
         selectedEmail.provider === "google" ? threadId : message.id;
 
-      const { data, error } = await updateDraft(
+      await handleUpdateDraft(
         selectedEmail.email,
         selectedEmail.provider,
         draftIdToUpdate,
@@ -123,12 +124,11 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         bcc,
         subject,
         html
-        // request.attachments || attachments
       );
 
       await saveSharedDraft(selectedEmail.email, {
         id: threadId,
-        recipients: to,
+        to,
         cc,
         bcc,
         subject,
@@ -136,11 +136,6 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         snippet,
         date,
       });
-
-      if (error || !data) {
-        dLog(error);
-        return { error };
-      }
 
       return { error: null };
     },
@@ -154,7 +149,6 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       threadId,
       snippet,
       date,
-      // attachments,
     ]
   );
 
@@ -454,7 +448,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       <SharedDraftModal
         selectedEmail={selectedEmail}
         draftId={threadId || ""}
-        recipients={to}
+        to={to}
         cc={cc}
         bcc={bcc}
         subject={subject}

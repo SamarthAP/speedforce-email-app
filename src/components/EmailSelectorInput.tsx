@@ -238,7 +238,7 @@ export function EmailSelectorInput({
         </div>
         {!disableCC && (
           <div
-            className="rounded-full hover:bg-slate-200 dark:hover:bg-zinc-700"
+            className="rounded-full hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-500 dark:border-zinc-400"
             onClick={() => setCcExpanded(!ccExpanded)}
           >
             <ChevronDownIcon
@@ -256,7 +256,7 @@ export function EmailSelectorInput({
             {/* Input */}
             <div
               className={classNames(
-                "w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center whitespace-nowrap",
+                "w-[64px]   flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center whitespace-nowrap",
                 alignLabels === "left" ? "justify-start" : "justify-end"
               )}
             >

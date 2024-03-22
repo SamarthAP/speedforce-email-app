@@ -1233,15 +1233,15 @@ export async function search(
 export async function createDraft(
   email: string,
   provider: "google" | "outlook",
-  toRecipients: string[],
-  ccRecipients: string[],
-  bccRecipients: string[],
+  to: string[],
+  cc: string[],
+  bcc: string[],
   subject: string,
   content: string
   // attachments: NewAttachment[]
 ) {
   if (
-    toRecipients.length === 0 &&
+    to.length === 0 &&
     !subject &&
     !content
     // attachments.length === 0
@@ -1257,9 +1257,9 @@ export async function createDraft(
     const { data, error } = await gDraftCreate(
       accessToken,
       email,
-      toRecipients.join(","),
-      ccRecipients.join(","),
-      bccRecipients.join(","),
+      to.join(","),
+      cc.join(","),
+      bcc.join(","),
       subject,
       content
       // attachments
@@ -1278,9 +1278,9 @@ export async function createDraft(
     try {
       const draft = await mDraftCreate(
         accessToken,
-        toRecipients,
-        ccRecipients,
-        bccRecipients,
+        to,
+        cc,
+        bcc,
         subject,
         content
         // attachments
@@ -1305,9 +1305,9 @@ export async function updateDraft(
   email: string,
   provider: "google" | "outlook",
   messageId: string,
-  toRecipients: string[],
-  ccRecipients: string[],
-  bccRecipients: string[],
+  to: string[],
+  cc: string[],
+  bcc: string[],
   subject: string,
   content: string
   // attachments: NewAttachment[]
@@ -1319,9 +1319,9 @@ export async function updateDraft(
       accessToken,
       messageId,
       email,
-      toRecipients.join(","),
-      ccRecipients.join(","),
-      bccRecipients.join(","),
+      to.join(","),
+      cc.join(","),
+      bcc.join(","),
       subject,
       content
       // attachments
@@ -1331,9 +1331,9 @@ export async function updateDraft(
       const data = await mDraftUpdate(
         accessToken,
         messageId,
-        toRecipients,
-        ccRecipients,
-        bccRecipients,
+        to,
+        cc,
+        bcc,
         subject,
         content
         // attachments
