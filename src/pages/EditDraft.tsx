@@ -13,14 +13,9 @@ import TiptapEditor, {
 } from "../components/Editors/TiptapEditor";
 import { dLog } from "../lib/noProd";
 import { NewAttachment } from "../api/model/users.attachment";
-import {
-  deleteDraft,
-  sendEmail,
-  sendEmailWithAttachments,
-  updateDraft,
-} from "../lib/sync";
+import { deleteDraft, sendEmail, sendEmailWithAttachments } from "../lib/sync";
 import toast from "react-hot-toast";
-import { deleteDexieThread } from "../lib/util";
+import { deleteDexieThread, getSnippetFromHtml } from "../lib/util";
 import SimpleButton from "../components/SimpleButton";
 import { SharedDraftModal } from "../components/modals/ShareDraftModal";
 import { getSharedDraft, saveSharedDraft } from "../api/sharedDrafts";
@@ -74,8 +69,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     void saveDraft(editorRef.current?.getHTML() || "");
   };
 
-  const { data, isFetching, refetch } = useQuery(
-    "sharedDraftEditor",
+  const { data, isLoading, refetch } = useQuery(
+    ["sharedDraftEditor", { threadId }],
     async () => {
       if (!threadId) return;
 
@@ -126,6 +121,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         html
       );
 
+      const newSnippet = await getSnippetFromHtml(html);
       await saveSharedDraft(selectedEmail.email, {
         id: threadId,
         to,
@@ -133,8 +129,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         bcc,
         subject,
         html,
-        snippet,
-        date,
+        snippet: newSnippet,
+        date: new Date().getTime(),
       });
 
       return { error: null };
@@ -147,8 +143,6 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       cc,
       bcc,
       threadId,
-      snippet,
-      date,
     ]
   );
 
@@ -298,7 +292,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                 <span className="flex flex-row items-start justify-between px-4">
                   <div className="dark:text-white py-4 w-full">Edit Draft</div>
                   <div className="flex flex-row items-center space-x-2">
-                    {!isFetching && data && data.id ? (
+                    {!isLoading && data && data.id ? (
                       <button
                         className="p-2 mt-2 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-full"
                         onMouseEnter={(event) => {

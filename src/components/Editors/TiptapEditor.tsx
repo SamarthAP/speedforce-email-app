@@ -28,7 +28,6 @@ import { classNames } from "../../lib/util";
 import { EditLinkModal } from "../modals/EditLinkModal";
 import { NewAttachment } from "../../api/model/users.attachment";
 import { debounce } from "lodash";
-import { SendDraftRequestType } from "../../pages/ComposeMessage";
 
 // define your extension array
 const extensions = [
@@ -72,7 +71,7 @@ export interface TipTapEditorHandle {
 }
 
 const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
-  (
+  function TiptapEditor(
     {
       initialContent,
       attachments,
@@ -82,8 +81,8 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
       canSendEmail,
       sendingEmail,
     }: TiptapProps,
-    ref
-  ) => {
+    ref: React.ForwardedRef<TipTapEditorHandle>
+  ) {
     useImperativeHandle(ref, () => ({
       getHTML: () => {
         if (!editor) return "";
@@ -266,5 +265,4 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
   }
 );
 
-TiptapEditor.displayName = "TiptapEditor";
 export default TiptapEditor;

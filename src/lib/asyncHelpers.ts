@@ -137,6 +137,7 @@ export async function handleUpdateDraft(
           ...thread,
           subject,
           snippet: newSnippet,
+          date: new Date().getTime(),
         },
         {
           ...message,

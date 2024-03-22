@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { string } from "zod";
 import { loadParticipantsForDraft, shareDraft } from "../../api/sharedDrafts";
 import { useLiveQuery } from "dexie-react-hooks";
+import { useQuery } from "react-query";
 
 const emailSchema = string().email({ message: "Invalid email" });
 
@@ -29,6 +30,21 @@ const isValidEmail = (forbiddenEmails: string[], email: string) => {
   } catch (error) {
     return false;
   }
+};
+
+interface SharedDraftOwnerProps {
+  email: string;
+}
+
+const SharedDraftOwner = ({ email }: SharedDraftOwnerProps) => {
+  return (
+    <span className="ml-2 my-2 flex flex-row items-center justify-between">
+      <div className="text-base">
+        {email} <span className="italic text-sm text-gray-400">(you)</span>
+      </div>
+      <span className="italic text-sm text-gray-400">Owner</span>
+    </span>
+  );
 };
 
 interface SharedDraftParticipantProps {
@@ -181,6 +197,30 @@ export const SharedDraftModal = ({
     return db.contacts.where("email").equals(selectedEmail.email).toArray();
   }, []);
 
+  const { isFetching, refetch } = useQuery(
+    "sharedDraftParticipants",
+    async () => {
+      const { data, error } = await loadParticipantsForDraft(
+        draftId,
+        selectedEmail.email
+      );
+
+      if (error) {
+        toast.error("Error loading editor");
+        setIsDialogOpen(false);
+        return;
+      }
+
+      setParticipants(data);
+    }
+  );
+
+  useEffect(() => {
+    if (isDialogOpen) {
+      void refetch();
+    }
+  }, [isDialogOpen, refetch]);
+
   // TODO: build a sophisticated rank algo with recent interactions (non-contacts)
   const filteredContacts =
     emailText === "" || !userContactsList
@@ -233,32 +273,6 @@ export const SharedDraftModal = ({
     ]);
     setEmailText("");
   };
-
-  useEffect(() => {
-    const loadParticipants = async () => {
-      const { data, error } = await loadParticipantsForDraft(
-        draftId,
-        selectedEmail.email
-      );
-
-      if (error) {
-        toast.error("Error loading editor");
-        setIsDialogOpen(false);
-        return;
-      } else {
-        setParticipants(data);
-      }
-    };
-
-    if (isDialogOpen) {
-      setParticipants([]);
-      setEmailText("");
-
-      void loadParticipants();
-    } else {
-      setParticipants([]);
-    }
-  }, [isDialogOpen, draftId, selectedEmail.email, setIsDialogOpen]);
 
   const handleOnClickDone = useCallback(async () => {
     setSubmitting(true);
@@ -397,26 +411,52 @@ export const SharedDraftModal = ({
                   /> */}
                 </div>
 
-                <div className="flex flex-col mt-4 mx-1">
-                  {participants.length > 0 && (
-                    <div className="font-semibold text-sm">Collaborators</div>
+                <div className="flex flex-col my-6 mx-1">
+                  {isFetching ? (
+                    <div className="flex justify-center items-center h-full w-full">
+                      <svg
+                        className={`h-8 w-8 animate-spin text-black dark:text-white`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="font-semibold text-sm">Collaborators</div>
+                      <SharedDraftOwner email={selectedEmail.email} />
+                      {participants.map((participant, idx) => (
+                        <SharedDraftParticipant
+                          key={idx}
+                          email={participant.email}
+                          accessType={participant.accessType}
+                          setAccessType={(accessType) => {
+                            setParticipants([
+                              ...participants.slice(0, idx),
+                              { email: participant.email, accessType },
+                              ...participants.slice(idx + 1),
+                            ]);
+                          }}
+                          participants={participants}
+                          setParticipants={setParticipants}
+                        />
+                      ))}
+                    </>
                   )}
-                  {participants.map((participant, idx) => (
-                    <SharedDraftParticipant
-                      key={idx}
-                      email={participant.email}
-                      accessType={participant.accessType}
-                      setAccessType={(accessType) => {
-                        setParticipants([
-                          ...participants.slice(0, idx),
-                          { email: participant.email, accessType },
-                          ...participants.slice(idx + 1),
-                        ]);
-                      }}
-                      participants={participants}
-                      setParticipants={setParticipants}
-                    />
-                  ))}
                 </div>
                 <div className="mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
                   <button
