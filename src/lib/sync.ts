@@ -190,7 +190,6 @@ export async function handleNewDraftsGoogle(
         hasAttachments,
       });
     });
-    console.log(parsedMessages);
 
     await db.emailThreads.bulkPut(parsedDrafts);
     await db.messages.bulkPut(parsedMessages);
@@ -380,6 +379,7 @@ export async function handleNewThreadsOutlook(
         let isStarred = false;
         let isImportant = false;
         let hasAttachments = false;
+        let isDraft = false;
         let labelIds: string[] = [];
         for (const message of thread.value) {
           if (!message.isRead) {
@@ -393,6 +393,9 @@ export async function handleNewThreadsOutlook(
           }
           if (message.hasAttachments) {
             hasAttachments = true;
+          }
+          if (message.isDraft) {
+            isDraft = true;
           }
         }
 
@@ -463,7 +466,9 @@ export async function handleNewThreadsOutlook(
           subject: thread.value[lastMessageIndex].subject,
           snippet: thread.value[lastMessageIndex].bodyPreview,
           date: new Date(
-            thread.value[lastMessageIndex].receivedDateTime
+            isDraft
+              ? thread.value[lastMessageIndex].lastModifiedDateTime
+              : thread.value[lastMessageIndex].receivedDateTime
           ).getTime(),
           unread: unread,
           labelIds: labelIds,
@@ -823,7 +828,6 @@ export async function forward(
 export async function sendEmail(
   email: string,
   provider: "google" | "outlook",
-  threadId: string,
   toRecipients: string[],
   ccRecipients: string[],
   bccRecipients: string[],
@@ -843,7 +847,6 @@ export async function sendEmail(
       html.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
 
-    await updateSharedDraftStatus(threadId, email, SharedDraftStatusType.SENT);
     return { data, error };
   } else if (provider === "outlook") {
     try {
@@ -856,11 +859,6 @@ export async function sendEmail(
         html.concat(SENT_FROM_SPEEDFORCE_HTML)
       );
 
-      await updateSharedDraftStatus(
-        threadId,
-        email,
-        SharedDraftStatusType.SENT
-      );
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error sending email" };
@@ -873,7 +871,6 @@ export async function sendEmail(
 export async function sendEmailWithAttachments(
   email: string,
   provider: "google" | "outlook",
-  threadId: string,
   toRecipients: string[],
   ccRecipients: string[],
   bccRecipients: string[],
@@ -895,7 +892,6 @@ export async function sendEmailWithAttachments(
       attachments
     );
 
-    await updateSharedDraftStatus(threadId, email, SharedDraftStatusType.SENT);
     return { data, error };
   } else if (provider === "outlook") {
     try {
@@ -909,11 +905,6 @@ export async function sendEmailWithAttachments(
         attachments
       );
 
-      await updateSharedDraftStatus(
-        threadId,
-        email,
-        SharedDraftStatusType.SENT
-      );
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error sending email" };
@@ -1361,12 +1352,6 @@ export async function deleteDraft(
       dLog("Error deleting draft");
       return { data: null, error };
     }
-
-    await updateSharedDraftStatus(
-      draftId,
-      email,
-      SharedDraftStatusType.DISCARDED
-    );
   } else {
     const messages = await db.messages
       .where("threadId")
@@ -1383,13 +1368,6 @@ export async function deleteDraft(
 
     try {
       await Promise.all(apiPromises);
-
-      // If thread is a draft, update shared draft status
-      await updateSharedDraftStatus(
-        draftId,
-        email,
-        SharedDraftStatusType.DISCARDED
-      );
     } catch (e) {
       dLog("Error deleting thread");
       return { data: null, error: "Error deleting thread" };

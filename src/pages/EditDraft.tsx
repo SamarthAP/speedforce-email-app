@@ -18,7 +18,11 @@ import toast from "react-hot-toast";
 import { deleteDexieThread, getSnippetFromHtml } from "../lib/util";
 import SimpleButton from "../components/SimpleButton";
 import { SharedDraftModal } from "../components/modals/ShareDraftModal";
-import { getSharedDraft, saveSharedDraft } from "../api/sharedDrafts";
+import {
+  getSharedDraft,
+  saveSharedDraft,
+  updateSharedDraftStatus,
+} from "../api/sharedDrafts";
 import { KeyPressProvider } from "../contexts/KeyPressContext";
 import { CommandBarOpenContext } from "../contexts/CommandBarContext";
 import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
@@ -30,6 +34,7 @@ import { useTooltip } from "../components/UseTooltip";
 import CommentsChain from "../components/SharedDrafts/CommentsChain";
 import { useQuery } from "react-query";
 import { handleUpdateDraft } from "../lib/asyncHelpers";
+import { SharedDraftStatusType } from "../api/model/users.shared.draft";
 
 interface EditDraftProps {
   selectedEmail: ISelectedEmail;
@@ -43,6 +48,11 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   const [snippet, setSnippet] = useState("");
   const [date, setDate] = useState(0);
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
+  const [initialData, setInitialData] = useState<{
+    to: string[];
+    subject: string;
+    html: string;
+  } | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [initialContent, setInitialContent] = useState("");
   const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
@@ -53,6 +63,17 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
   const navigate = useNavigate();
   const { threadId } = useParams();
+
+  const isDirty = useCallback(() => {
+    if (!initialData) return false;
+    const isHtmlDirty = editorRef.current?.isDirty() || false;
+
+    return (
+      to.toString() != initialData.to.toString() ||
+      subject !== initialData.subject ||
+      isHtmlDirty
+    );
+  }, [to, subject, initialData]);
 
   const setToAndSaveDraft = (emails: string[]) => {
     setTo(emails);
@@ -96,6 +117,11 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   const saveDraft = useCallback(
     async (html: string) => {
       if (!threadId) return { error: "No thread id" };
+      if (!isDirty()) {
+        // No changes, no need to save
+        return { error: null };
+      }
+
       const message = await db.messages
         .where("threadId")
         .equals(threadId)
@@ -167,7 +193,6 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       ({ error } = await sendEmailWithAttachments(
         selectedEmail.email,
         selectedEmail.provider,
-        threadId,
         to,
         cc,
         bcc,
@@ -180,7 +205,6 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       ({ error } = await sendEmail(
         selectedEmail.email,
         selectedEmail.provider,
-        threadId,
         to,
         cc,
         bcc,
@@ -195,6 +219,12 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       toast.error("Error sending email");
       return setSendingEmail(false);
     }
+
+    await updateSharedDraftStatus(
+      threadId,
+      selectedEmail.email,
+      SharedDraftStatusType.SENT
+    );
 
     if (threadId) {
       await deleteDraft(selectedEmail.email, selectedEmail.provider, threadId);
@@ -251,6 +281,11 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         setInitialContent(message.htmlData || "");
         setSnippet(thread.snippet || "");
         setDate(thread.date || 0);
+        setInitialData({
+          to: message.toRecipients.filter((recipient) => recipient !== ""),
+          subject: thread.subject || "",
+          html: message.htmlData || "",
+        });
       } else {
         dLog("Unable to load thread");
         navigate(-1);

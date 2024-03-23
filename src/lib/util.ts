@@ -333,7 +333,6 @@ export async function listUnsubscribe(
     const { error } = await sendEmail(
       email,
       provider,
-      "",
       [cleanedUnsubscribeEmail],
       [],
       [],

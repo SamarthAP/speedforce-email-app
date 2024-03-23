@@ -68,6 +68,7 @@ interface TiptapProps {
 
 export interface TipTapEditorHandle {
   getHTML: () => string;
+  isDirty: () => boolean;
 }
 
 const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
@@ -83,18 +84,25 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
     }: TiptapProps,
     ref: React.ForwardedRef<TipTapEditorHandle>
   ) {
-    useImperativeHandle(ref, () => ({
-      getHTML: () => {
-        if (!editor) return "";
-        return editor.getHTML();
-      },
-    }));
-
     const [selectedLink, setSelectedLink] = useState<{
       displayText: string;
       link: string;
     } | null>(null);
     const [isEditLinkModalOpen, setIsEditLinkModalOpen] = useState(false);
+    const [initialEditorContentState, setInitialEditorContentState] =
+      useState("");
+
+    useImperativeHandle(ref, () => ({
+      getHTML: () => {
+        if (!editor) return "";
+        return editor.getHTML();
+      },
+
+      isDirty: () => {
+        if (!editor) return false;
+        return editor.getHTML() !== initialEditorContentState;
+      },
+    }));
 
     // debounced save draft function. save draft when user stops typing for 5 seconds
     const debouncedSaveDraft = useCallback(
@@ -146,6 +154,10 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
     useEffect(() => {
       if (editor && initialContent) {
         editor.commands.setContent(initialContent);
+
+        // Used to check if the editor content has changed
+        // Cant use initial content because of heading tags
+        setInitialEditorContentState(editor.getHTML());
       }
     }, [editor, initialContent]);
 

@@ -10,7 +10,6 @@ import {
   createDraft,
   sendEmail,
   sendEmailWithAttachments,
-  updateDraft,
   deleteDraft,
   handleNewThreadsOutlook,
   handleNewDraftsGoogle,
@@ -28,6 +27,8 @@ import CommandBar from "../components/CommandBar";
 import { newEvent } from "../api/emailActions";
 import { getAccessToken } from "../api/accessToken";
 import { handleUpdateDraft } from "../lib/asyncHelpers";
+import { SharedDraftStatusType } from "../api/model/users.shared.draft";
+import { updateSharedDraftStatus } from "../api/sharedDrafts";
 
 interface ComposeMessageProps {
   selectedEmail: ISelectedEmail;
@@ -173,7 +174,6 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       ({ error } = await sendEmailWithAttachments(
         selectedEmail.email,
         selectedEmail.provider,
-        draft.threadId,
         to,
         cc,
         bcc,
@@ -186,7 +186,6 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       ({ error } = await sendEmail(
         selectedEmail.email,
         selectedEmail.provider,
-        draft.threadId,
         to,
         cc,
         bcc,
@@ -201,6 +200,12 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       toast.error("Error sending email");
       return setSendingEmail(false);
     } else {
+      await updateSharedDraftStatus(
+        draft.threadId,
+        selectedEmail.email,
+        SharedDraftStatusType.SENT
+      );
+
       void newEvent("SEND_EMAIL");
     }
 

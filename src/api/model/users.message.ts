@@ -8,6 +8,7 @@ export interface OutlookMessageDataType {
   subject: string;
   conversationId: string;
   createdDateTime: string;
+  lastModifiedDateTime: string;
   sentDateTime: string;
   receivedDateTime: string;
   isRead: boolean;
