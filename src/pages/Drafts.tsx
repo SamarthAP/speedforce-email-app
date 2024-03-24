@@ -4,7 +4,7 @@ import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import { ISelectedEmail, db } from "../lib/db";
 import { useEmailPageOutletContext } from "./_emailPage";
 import { useInfiniteQuery } from "react-query";
-import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
+import { getDraftsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
 import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
@@ -41,13 +41,13 @@ export default function Drafts() {
   } = useInfiniteQuery(
     ["drafts", email],
     ({ pageParam = "" }) =>
-      getThreadsExhaustive(
+      getDraftsExhaustive(
         email,
         selectedEmail.provider,
         selectedEmail.provider === "google"
           ? gmailQueryParam
           : outlookQueryParam,
-        ["ID_DRFTS"],
+        ["ID_DRAFTS"],
         pageParam
       ),
     {

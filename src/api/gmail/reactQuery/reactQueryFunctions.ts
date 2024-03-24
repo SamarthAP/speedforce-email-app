@@ -4,11 +4,15 @@
 // the error state of the query.
 
 import {
+  handleNewDraftsGoogle,
   handleNewThreadsGoogle,
   handleNewThreadsOutlook,
 } from "../../../lib/sync";
 import { getAccessToken } from "../../accessToken";
-import { list as gList } from "./reactQueryHelperFunctions";
+import {
+  list as gList,
+  listDrafts as gListDrafts,
+} from "./reactQueryHelperFunctions";
 import { list as mList } from "../../outlook/reactQuery/reactQueryHelperFunctions";
 import _ from "lodash";
 
@@ -76,4 +80,50 @@ export const getThreadsExhaustive = async (
   }
 
   return "";
+};
+
+export const getDraftsExhaustive = async (
+  email: string,
+  provider: "google" | "outlook",
+  queryParam: string,
+  outlookLabelIds: string[], // LabelIds to append to threads on Outlook fetch
+  pageToken?: string
+) => {
+  const accessToken = await getAccessToken(email);
+  if (!accessToken) {
+    throw Error("Error getting access token");
+  }
+
+  if (provider === "google") {
+    const listThreadsResponse = await gListDrafts(accessToken, pageToken);
+
+    const nextPageToken = listThreadsResponse.nextPageToken;
+    const threadIds =
+      listThreadsResponse.drafts?.map((thread) => thread.id) || [];
+
+    if (threadIds.length > 0) {
+      await handleNewDraftsGoogle(accessToken, email, threadIds);
+    }
+
+    return nextPageToken;
+  } else if (provider === "outlook") {
+    // Same as get threads exhaustive for outlook
+    const listThreadsResponse = await mList(accessToken, queryParam, pageToken);
+
+    const nextPageToken = listThreadsResponse.nextPageToken;
+    const threadIds = _.uniq(
+      listThreadsResponse.value.map((thread) => thread.conversationId)
+    );
+
+    if (threadIds.length > 0) {
+      await handleNewThreadsOutlook(
+        accessToken,
+        email,
+        threadIds,
+        outlookLabelIds
+      );
+    }
+
+    return nextPageToken;
+  }
 };

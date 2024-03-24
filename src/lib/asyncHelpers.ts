@@ -3,9 +3,13 @@
 
 import toast from "react-hot-toast";
 import { FOLDER_IDS } from "../api/constants";
-import { IEmailThread } from "./db";
-import { archiveThread, starThread, unstarThread } from "./sync";
-import { updateLabelIdsForEmailThread } from "./util";
+import { IEmailThread, IMessage, db } from "./db";
+import { archiveThread, starThread, unstarThread, updateDraft } from "./sync";
+import {
+  getSnippetFromHtml,
+  updateDexieDraft,
+  updateLabelIdsForEmailThread,
+} from "./util";
 import _ from "lodash";
 
 // Usage: instantEffectFnc, rollbackFnc can be async, but the intent is that they execute much quicker (e.g. dexie operations)
@@ -94,4 +98,58 @@ export async function handleStarClick(
       }
     );
   }
+}
+
+export async function handleUpdateDraft(
+  email: string,
+  provider: "google" | "outlook",
+  draftId: string,
+  to: string[],
+  cc: string[],
+  bcc: string[],
+  subject: string,
+  html: string
+) {
+  let thread: IEmailThread | null = null;
+  let message: IMessage | null = null;
+
+  if (provider === "google") {
+    // Google drafts are analogous to email threads
+    thread = (await db.emailThreads.get({ id: draftId })) || null;
+    message = (await db.messages.get({ threadId: draftId })) || null;
+  } else {
+    // Outlook drafts are analogous to email messages
+    message = (await db.messages.get({ id: draftId })) || null;
+    if (message) {
+      thread = (await db.emailThreads.get({ id: message.threadId })) || null;
+    }
+  }
+
+  if (!thread || !message) {
+    return;
+  }
+
+  const newSnippet = await getSnippetFromHtml(html);
+  await executeInstantAsyncAction(
+    () => {
+      void updateDexieDraft(
+        {
+          ...thread,
+          subject,
+          snippet: newSnippet,
+          date: new Date().getTime(),
+        },
+        {
+          ...message,
+          toRecipients: to,
+          htmlData: html,
+        }
+      );
+    },
+    async () =>
+      await updateDraft(email, provider, draftId, to, cc, bcc, subject, html),
+    () => {
+      void updateDexieDraft(thread, message);
+    }
+  );
 }

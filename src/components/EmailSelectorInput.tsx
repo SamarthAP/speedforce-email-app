@@ -19,24 +19,37 @@ const isValidEmail = (existingEmails: string[], email: string) => {
 };
 
 interface SelectorFieldProps {
-  text: string;
   selectedEmail: ISelectedEmail;
   emails: string[];
-  setEmails: (emails: string[]) => void;
-  alignLabels?: "left" | "right"; // Wthether to align To/CC/BCC labels left or right
+  setEmails?: (emails: string[]) => void;
+  readOnly?: boolean;
 }
 
-function SelectorField({
-  text,
+export function SelectorField({
   selectedEmail,
   emails,
-  setEmails,
-  alignLabels = "right",
+  setEmails = () => void 0,
+  readOnly = false,
 }: SelectorFieldProps) {
   const [emailText, setEmailText] = useState("");
   const userContactsList = useLiveQuery(() => {
     return db.contacts.where("email").equals(selectedEmail.email).toArray();
   }, []);
+
+  if (readOnly) {
+    return (
+      <div className="flex flex-row flex-wrap pl-5">
+        {emails.map((email, idx) => (
+          <div
+            key={idx}
+            className="flex items-center mr-1.5 my-0.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-2 py-1 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 cursor-default"
+          >
+            <span>{email}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   // TODO: build a sophisticated rank algo with recent interactions (non-contacts)
   const filteredContacts =
@@ -111,80 +124,66 @@ function SelectorField({
   };
 
   return (
-    <div className="flex pt-0.5">
-      {/* Input */}
-      <div
-        className={classNames(
-          "w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center whitespace-nowrap",
-          alignLabels === "left" ? "justify-start" : "justify-end"
-        )}
-      >
-        {text}
-      </div>
-      <div className="flex flex-row flex-wrap pl-5">
-        {emails.map((email, idx) => (
-          <div
-            key={idx}
-            className="flex items-center mr-1.5 my-0.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-2 py-1 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 cursor-default"
+    <div className="flex flex-row flex-wrap pl-5">
+      {emails.map((email, idx) => (
+        <div
+          key={idx}
+          className="flex items-center mr-1.5 my-0.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-2 py-1 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 cursor-default"
+        >
+          <span>{email}</span>
+          <button
+            onClick={() => setEmails(emails.filter((_, i) => i !== idx))}
+            type="button"
+            className="focus:outline-none"
           >
-            <span>{email}</span>
-            <button
-              onClick={() => setEmails(emails.filter((_, i) => i !== idx))}
-              type="button"
-              className="focus:outline-none"
-            >
-              <XCircleIcon className="w-4 h-4 ml-1" />
-            </button>
-          </div>
-        ))}
+            <XCircleIcon className="w-4 h-4 ml-1" />
+          </button>
+        </div>
+      ))}
 
-        <Combobox as="div" onChange={onSearchSelect}>
-          <Combobox.Input
-            className="block h-full border-0 my-0.5 py-1.5 bg-transparent dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 text-sm sm:leading-6"
-            placeholder="..."
-            pattern=""
-            value={emailText}
-            onChange={(event) => void onEmailTextChange(event)}
-            onKeyDown={onEmailKeyDown}
-          />
+      <Combobox as="div" onChange={onSearchSelect}>
+        <Combobox.Input
+          className="block h-full border-0 my-0.5 pt-1 pb-2 bg-transparent dark:text-white text-black focus:outline-none placeholder:text-slate-500 placeholder:dark:text-zinc-400 text-sm sm:leading-6"
+          placeholder="..."
+          pattern=""
+          value={emailText}
+          onChange={(event) => void onEmailTextChange(event)}
+          onKeyDown={onEmailKeyDown}
+        />
 
-          {filteredContacts.length > 0 && (
-            <Combobox.Options className="absolute z-10 mt-1 left-[calc(6.5rem)] rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-              {filteredContacts.map((person) => (
-                <Combobox.Option
-                  key={person.contactEmailAddress}
-                  value={person}
-                  className={({ active }) =>
-                    classNames(
-                      "relative cursor-default select-none py-2 pl-3 pr-9",
-                      active ? "bg-gray-600 text-white" : "text-gray-900"
-                    )
-                  }
-                >
-                  {({ active }) => (
-                    <>
-                      <div className="flex">
-                        <span className="font-semibold whitespace-nowrap">
-                          {person.contactName}
-                        </span>
-                        <span
-                          className={classNames(
-                            "ml-2 text-gray-500",
-                            active ? "text-white" : "text-gray-500"
-                          )}
-                        >
-                          {person.contactEmailAddress}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                </Combobox.Option>
-              ))}
-            </Combobox.Options>
-          )}
-          {/* </div> */}
-        </Combobox>
-      </div>
+        {filteredContacts.length > 0 && (
+          <Combobox.Options className="absolute z-10 mt-1 left-[calc(6.5rem)] rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+            {filteredContacts.map((person) => (
+              <Combobox.Option
+                key={person.contactEmailAddress}
+                value={person}
+                className={({ active }) =>
+                  classNames(
+                    "relative cursor-default select-none py-2 pl-3 pr-9",
+                    active ? "bg-gray-600 text-white" : "text-gray-900"
+                  )
+                }
+              >
+                {({ active }) => (
+                  <div className="flex">
+                    <span className="font-semibold whitespace-nowrap">
+                      {person.contactName}
+                    </span>
+                    <span
+                      className={classNames(
+                        "ml-2 text-gray-500",
+                        active ? "text-white" : "text-gray-500"
+                      )}
+                    >
+                      {person.contactEmailAddress}
+                    </span>
+                  </div>
+                )}
+              </Combobox.Option>
+            ))}
+          </Combobox.Options>
+        )}
+      </Combobox>
     </div>
   );
 }
@@ -192,7 +191,7 @@ function SelectorField({
 interface SetEmailFieldProps {
   text?: string;
   emails: string[];
-  setEmails: (emails: string[]) => void;
+  setEmails?: (emails: string[]) => void;
 }
 
 interface EmailSelectorInputProps {
@@ -202,6 +201,7 @@ interface EmailSelectorInputProps {
   bccProps: SetEmailFieldProps;
   alignLabels?: "left" | "right";
   disableCC?: boolean;
+  readOnly?: boolean;
 }
 
 export function EmailSelectorInput({
@@ -211,6 +211,7 @@ export function EmailSelectorInput({
   bccProps,
   alignLabels = "right",
   disableCC = false,
+  readOnly = false,
 }: EmailSelectorInputProps) {
   const [ccExpanded, setCcExpanded] = useState(false);
 
@@ -218,21 +219,31 @@ export function EmailSelectorInput({
     <div className="relative w-full">
       {/* first field toggles CC and BCC */}
       <span className="w-full flex flex-row justify-between items-center pr-2">
-        <SelectorField
-          text={toProps.text || "To"}
-          selectedEmail={selectedEmail}
-          emails={toProps.emails}
-          setEmails={toProps.setEmails}
-          alignLabels={alignLabels}
-        />
+        <div className="flex pt-0.5">
+          {/* Input */}
+          <div
+            className={classNames(
+              "w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center whitespace-nowrap",
+              alignLabels === "left" ? "justify-start" : "justify-end"
+            )}
+          >
+            {toProps.text || "To"}
+          </div>
+          <SelectorField
+            selectedEmail={selectedEmail}
+            emails={toProps.emails}
+            setEmails={toProps.setEmails}
+            readOnly={readOnly}
+          />
+        </div>
         {!disableCC && (
           <div
-            className="w-4 h-4 flex-shrink-0 flex-grow-0"
+            className="rounded-full hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-500 dark:border-zinc-400"
             onClick={() => setCcExpanded(!ccExpanded)}
           >
             <ChevronDownIcon
               className={classNames(
-                "w-full dark:text-zinc-400 text-slate-500 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800",
+                "w-5 h-5 dark:text-zinc-400 text-slate-500",
                 ccExpanded ? "rotate-180" : ""
               )}
             />
@@ -241,20 +252,41 @@ export function EmailSelectorInput({
       </span>
       {ccExpanded && !disableCC && (
         <React.Fragment>
-          <SelectorField
-            text="Cc"
-            selectedEmail={selectedEmail}
-            emails={ccProps.emails}
-            setEmails={ccProps.setEmails}
-            alignLabels={alignLabels}
-          />
-          <SelectorField
-            text="Bcc"
-            selectedEmail={selectedEmail}
-            emails={bccProps.emails}
-            setEmails={bccProps.setEmails}
-            alignLabels={alignLabels}
-          />
+          <div className="flex pt-0.5">
+            {/* Input */}
+            <div
+              className={classNames(
+                "w-[64px]   flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center whitespace-nowrap",
+                alignLabels === "left" ? "justify-start" : "justify-end"
+              )}
+            >
+              Cc
+            </div>
+            <SelectorField
+              selectedEmail={selectedEmail}
+              emails={ccProps.emails}
+              setEmails={ccProps.setEmails}
+              readOnly={readOnly}
+            />
+          </div>
+
+          <div className="flex pt-0.5">
+            {/* Input */}
+            <div
+              className={classNames(
+                "w-[64px] flex-shrink-0 text-slate-500 dark:text-zinc-400 sm:text-sm col-span-2 flex items-center whitespace-nowrap",
+                alignLabels === "left" ? "justify-start" : "justify-end"
+              )}
+            >
+              Bcc
+            </div>
+            <SelectorField
+              selectedEmail={selectedEmail}
+              emails={bccProps.emails}
+              setEmails={bccProps.setEmails}
+              readOnly={readOnly}
+            />
+          </div>
         </React.Fragment>
       )}
     </div>

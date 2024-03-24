@@ -1,5 +1,9 @@
 import { Base64 } from "js-base64";
-import { GmailDraftDataType } from "../../model/users.draft";
+import {
+  GoogleDraftType,
+  GoogleDraftsGetDataType,
+  GoogleDraftsListDataType,
+} from "../../model/users.draft";
 import { GMAIL_API_URL } from "../constants";
 
 export const create = async (
@@ -11,7 +15,7 @@ export const create = async (
   subject: string,
   messageContent: string
 ) => {
-  let data: GmailDraftDataType | null = null;
+  let data: GoogleDraftType | null = null;
   let error: string | null = null;
 
   const encodedDraft = Base64.encode(
@@ -48,13 +52,27 @@ export const create = async (
       error = "Error sending email";
     } else {
       data = await res.json();
-      console.log(data);
     }
   } catch (e) {
     error = "Error fetching history";
   }
 
   return { data, error };
+};
+
+export const get = async (accessToken: string, draftId: string) => {
+  const res = await fetch(`${GMAIL_API_URL}/drafts/${draftId}?format=full`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw Error("Error fetching draft");
+  }
+
+  const data: GoogleDraftsGetDataType = await res.json();
+  return data;
 };
 
 export const update = async (
@@ -67,7 +85,7 @@ export const update = async (
   subject: string,
   messageContent: string
 ) => {
-  let data: GmailDraftDataType | null = null;
+  let data: GoogleDraftsListDataType | null = null;
   let error: string | null = null;
 
   const encodedDraft = Base64.encode(
@@ -94,6 +112,7 @@ export const update = async (
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
+        id: draftId,
         message: {
           raw: encodedDraft,
         },
@@ -104,7 +123,6 @@ export const update = async (
       error = "Error updating draft";
     } else {
       data = await res.json();
-      console.log(data);
     }
   } catch (e) {
     error = "Error updating draft";

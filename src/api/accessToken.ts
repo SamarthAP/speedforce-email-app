@@ -56,7 +56,8 @@ export const getAccessToken = async (email: string) => {
       "client.id"
     );
 
-    if (!tokenPromises.get(email)) {
+    const existingPromise = tokenPromises.get(email);
+    if (!existingPromise) {
       // Global promise to prevent multiple fetches for the same email
       const tokenPromise = fetchTokenFromServer(
         emailInfo.email,
@@ -79,10 +80,11 @@ export const getAccessToken = async (email: string) => {
       });
 
       tokenPromises.set(email, tokenPromise);
+      return tokenPromise;
+    } else {
+      // Return token promise instead of reinvoking fetch
+      return existingPromise;
     }
-
-    // Return token promise instead of reinvoking fetch
-    return tokenPromises.get(email);
   } else {
     return Promise.resolve(emailInfo.accessToken);
   }

@@ -1,6 +1,6 @@
 import { Base64 } from "js-base64";
 import DomPurify from "dompurify";
-import { db, IEmailThread } from "./db";
+import { db, IEmailThread, IMessage } from "./db";
 import { dLog } from "./noProd";
 import { FOLDER_IDS } from "../api/constants";
 // import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
@@ -156,6 +156,19 @@ export async function deleteDexieThread(threadId: string) {
 
 export async function addDexieThread(thread: IEmailThread) {
   await db.emailThreads.put(thread);
+}
+
+export async function updateDexieDraft(
+  thread: IEmailThread,
+  message: IMessage
+) {
+  await db.emailThreads.update(thread.id, thread);
+  await db.messages.update(message.id, message);
+}
+
+export async function getSnippetFromHtml(html: string) {
+  const text = extractTextFromHTML(html);
+  return text.slice(0, 100);
 }
 
 export function delay(ms: number) {

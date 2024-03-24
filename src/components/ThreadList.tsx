@@ -9,6 +9,7 @@ import {
   unstarThread,
   trashThread,
   deleteThread,
+  deleteDraft,
 } from "../lib/sync";
 import {
   CheckCircleIcon,
@@ -33,6 +34,8 @@ import { useNavigate } from "react-router-dom";
 import ThreadSummaryHoverCard from "./ThreadSummaryHoverCard";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useHoveredThreadContext } from "../contexts/HoveredThreadContext";
+import { updateSharedDraftStatus } from "../api/sharedDrafts";
+import { SharedDraftStatusType } from "../api/model/users.shared.draft";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -350,12 +353,28 @@ function ThreadListRow({
           [FOLDER_IDS.TRASH],
           labelsToRemove
         ),
-      async () =>
-        await trashThread(
-          selectedEmail.email,
-          selectedEmail.provider,
-          thread.id
-        ),
+      async () => {
+        if (isDrafts) {
+          await deleteDraft(
+            selectedEmail.email,
+            selectedEmail.provider,
+            thread.id,
+            isDrafts
+          );
+
+          await updateSharedDraftStatus(
+            thread.id,
+            selectedEmail.email,
+            SharedDraftStatusType.DISCARDED
+          );
+        } else {
+          await trashThread(
+            selectedEmail.email,
+            selectedEmail.provider,
+            thread.id
+          );
+        }
+      },
       () => {
         void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [
           FOLDER_IDS.TRASH,
