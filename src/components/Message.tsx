@@ -28,10 +28,16 @@ interface MessageProps {
   message: IMessage;
   key: string;
   selectedEmail: ISelectedEmail;
+  isLast?: boolean;
 }
 
-export default function Message({ message, selectedEmail }: MessageProps) {
-  const [showBody, setShowBody] = useState(true);
+export default function Message({
+  message,
+  selectedEmail,
+  isLast,
+}: MessageProps) {
+  // if isLast is true, then show the body and scroll to the bottom of the message
+  const [showBody, setShowBody] = useState(isLast || false);
   const [showReply, setShowReply] = useState(false);
   const [showImages, setShowImages] = useState(true);
   const [sendingReply, setSendingReply] = useState(false);
