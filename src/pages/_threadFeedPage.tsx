@@ -389,12 +389,13 @@ function ThreadFeedSection({
           </div>
         </div>
         <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll">
-          {messages?.map((message) => {
+          {messages?.map((message, idx) => {
             return (
               <Message
                 message={message}
                 key={message.id}
                 selectedEmail={selectedEmail}
+                isLast={idx === messages.length - 1}
               />
             );
           })}
