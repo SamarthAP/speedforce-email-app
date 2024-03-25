@@ -19,6 +19,7 @@ import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import CommandBar from "../components/CommandBar";
 import { useHotkeys } from "react-hotkeys-hook";
+import DraftSkeletonPulse from "./DraftSkeletonPulse";
 
 interface SharedDraftThreadPageProps {
   selectedEmail: ISelectedEmail;
@@ -97,48 +98,36 @@ export default function SharedDraftThreadPage({
                     </p>
                   </div>
                 </div>
-                {isFetching ? (
-                  <div className="flex justify-center items-center h-full w-full">
-                    <svg
-                      className={`h-12 w-12 animate-spin text-black dark:text-white`}
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                  </div>
-                ) : (
-                  <div className="py-4 h-full w-full">
-                    {/* subject of email */}
-                    <div className="flex flex-row justify-between items-center px-8 mb-4">
+
+                <div className="py-4 h-full w-full">
+                  {/* subject of email */}
+                  <div className="flex flex-row justify-between items-center px-8 mb-4">
+                    {isFetching ? (
+                      <div className="flex flex-col animate-pulse h-full justify-center ml-1">
+                        <div className="w-[calc(40rem)] h-10 bg-slate-100 dark:bg-zinc-800 rounded-md"></div>
+                      </div>
+                    ) : (
                       <h1 className="text-xl font-semibold text-slate-900 dark:text-zinc-200">
                         {data?.subject || "(No subject)"}
                       </h1>
-                      <button
-                        className="p-2 mt-2 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-full"
-                        onMouseEnter={(event) => {
-                          handleShowTooltip(event, "Comments");
-                        }}
-                        onMouseLeave={handleHideTooltip}
-                        onClick={() => setMessagePanelIsOpen((val) => !val)}
-                      >
-                        <ChatBubbleBottomCenterTextIcon className="h-5 w-5 shrink-0 dark:text-zinc-300 text-black" />
-                      </button>
-                    </div>
-                    <div className="h-full w-full flex flex-row">
+                    )}
+                    <button
+                      className="p-2 mt-2 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-full"
+                      onMouseEnter={(event) => {
+                        handleShowTooltip(event, "Comments");
+                      }}
+                      onMouseLeave={handleHideTooltip}
+                      onClick={() => setMessagePanelIsOpen((val) => !val)}
+                    >
+                      <ChatBubbleBottomCenterTextIcon className="h-5 w-5 shrink-0 dark:text-zinc-300 text-black" />
+                    </button>
+                  </div>
+                  <div className="h-full w-full flex flex-row">
+                    {isFetching ? (
+                      <div className="flex justify-center items-start w-full h-full px-5">
+                        <DraftSkeletonPulse />
+                      </div>
+                    ) : (
                       <div
                         className={classNames(
                           "h-full w-full flex flex-col pl-8",
@@ -178,15 +167,15 @@ export default function SharedDraftThreadPage({
                           )}
                         </div>
                       </div>
-                      <CommentsChain
-                        threadId={data?.owner_thread_id || ""}
-                        editMode={true}
-                        visible={messagePanelIsOpen}
-                        selectedEmail={selectedEmail}
-                      />
-                    </div>
+                    )}
+                    <CommentsChain
+                      threadId={data?.owner_thread_id || ""}
+                      editMode={true}
+                      visible={messagePanelIsOpen}
+                      selectedEmail={selectedEmail}
+                    />
                   </div>
-                )}
+                </div>
               </div>
             </div>
             <TooltipPopover
