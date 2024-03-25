@@ -238,7 +238,7 @@ export function EmailSelectorInput({
         </div>
         {!disableCC && (
           <div
-            className="rounded-full hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-500 dark:border-zinc-400"
+            className="rounded-full hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer"
             onClick={() => setCcExpanded(!ccExpanded)}
           >
             <ChevronDownIcon

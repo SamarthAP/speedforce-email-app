@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PersonalAI from "../AI/PersonalAI";
 import Sidebar from "../Sidebar";
 import Titlebar from "../Titlebar";
 import { classNames } from "../../lib/util";
-import { IEmail, ISelectedEmail, db } from "../../lib/db";
+import { IEmail, db } from "../../lib/db";
 import { useTooltip } from "../UseTooltip";
 import {
   PencilSquareIcon,
@@ -16,14 +16,15 @@ import TooltipPopover from "../TooltipPopover";
 import AssistBar from "../AssistBar";
 import { SharedDraftThreadList } from "../SharedDrafts/ThreadList";
 import { listSharedDrafts } from "../../api/sharedDrafts";
+import { useHotkeys } from "react-hotkeys-hook";
+import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../../lib/shortcuts";
+import { useCommandBarOpenContext } from "../../contexts/CommandBarContext";
+import { HoveredThreadContext } from "../../contexts/HoveredThreadContext";
+import { useEmailPageOutletContext } from "../../pages/_emailPage";
+import CommandBar from "../CommandBar";
 
-interface SharedDraftsThreadViewProps {
-  selectedEmail: ISelectedEmail;
-}
-
-export default function SharedDraftsThreadView({
-  selectedEmail,
-}: SharedDraftsThreadViewProps) {
+export default function SharedDraftsThreadView() {
+  const { selectedEmail } = useEmailPageOutletContext();
   const [showPersonalAi, setShowPersonalAi] = useState(false);
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const navigate = useNavigate();
@@ -40,6 +41,88 @@ export default function SharedDraftsThreadView({
       html: string;
     }[]
   >([]);
+  const { commandBarIsOpen } = useCommandBarOpenContext();
+  const [hoveredThreadIndex, setHoveredThreadIndex] = useState<number>(-1);
+
+  useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE], () => {
+    navigate("/compose");
+  });
+
+  useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SEARCH], () => {
+    navigate("/search");
+  });
+
+  // move hovered thread down
+  useHotkeys(
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_DOWN],
+    ],
+    () => {
+      if (!commandBarIsOpen) {
+        setHoveredThreadIndex((prev) => {
+          if (prev <= -1) {
+            return 0;
+          } else if (prev < threads.length - 1) {
+            return prev + 1;
+          } else {
+            return threads.length - 1;
+          }
+        });
+      }
+    },
+    [threads, commandBarIsOpen, setHoveredThreadIndex]
+  );
+
+  // move hovered thread up
+  useHotkeys(
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_UP],
+    ],
+    () => {
+      if (!commandBarIsOpen) {
+        setHoveredThreadIndex((prev) => {
+          if (prev <= -1) {
+            return 0;
+          } else if (prev > 0) {
+            return prev - 1;
+          } else {
+            return 0;
+          }
+        });
+      }
+    },
+    [threads, commandBarIsOpen, setHoveredThreadIndex]
+  );
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SELECT],
+    () => {
+      if (!commandBarIsOpen) {
+        if (hoveredThreadIndex > -1) {
+          const thread = threads[hoveredThreadIndex];
+
+          navigate(`/sharedDraft/${thread.threadId}`);
+        }
+      }
+    },
+    [
+      hoveredThreadIndex,
+      threads,
+      selectedEmail.email,
+      selectedEmail.provider,
+      commandBarIsOpen,
+    ]
+  );
+
+  const hoveredThreadContextValue = useMemo(
+    () => ({
+      threadIndex: hoveredThreadIndex,
+      setThreadIndex: (index: number) => void setHoveredThreadIndex(index),
+    }),
+    [hoveredThreadIndex, setHoveredThreadIndex]
+  );
 
   useEffect(() => {
     const getSharedDrafts = async () => {
@@ -154,10 +237,13 @@ export default function SharedDraftsThreadView({
               />
             </div>
           </div>
-          <SharedDraftThreadList threads={threads} />
+          <HoveredThreadContext.Provider value={hoveredThreadContextValue}>
+            <SharedDraftThreadList threads={threads} />
+          </HoveredThreadContext.Provider>
         </div>
         <AssistBar thread={null} />
       </div>
+      <CommandBar data={[]} />
     </div>
   );
 }

@@ -20,6 +20,7 @@ import SimpleButton from "../components/SimpleButton";
 import { SharedDraftModal } from "../components/modals/ShareDraftModal";
 import {
   getSharedDraft,
+  loadParticipantsForDraft,
   saveSharedDraft,
   updateSharedDraftStatus,
 } from "../api/sharedDrafts";
@@ -90,29 +91,44 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     void saveDraft(editorRef.current?.getHTML() || "");
   };
 
-  const { data, isLoading, refetch } = useQuery(
-    ["sharedDraftEditor", { threadId }],
-    async () => {
+  const {
+    data: sharedDraftData,
+    isLoading: isSharedDraftLoading,
+    refetch: refetchSharedDraft,
+  } = useQuery(["sharedDraftEditor", { threadId }], async () => {
+    if (!threadId) return;
+
+    const { data, error } = await getSharedDraft(threadId, selectedEmail.email);
+    if (error) {
+      return null;
+    }
+
+    return data;
+  });
+
+  const { data: sharedDraftParticipants, refetch: refetchParticipants } =
+    useQuery("sharedDraftParticipants", async () => {
       if (!threadId) return;
 
-      const { data, error } = await getSharedDraft(
+      const { data, error } = await loadParticipantsForDraft(
         threadId,
         selectedEmail.email
       );
+
       if (error) {
         return null;
       }
 
       return data;
-    }
-  );
+    });
 
   useEffect(() => {
     if (!shareModalIsOpen) {
       // Refetch when share modal is closed
-      void refetch();
+      void refetchSharedDraft();
+      void refetchParticipants();
     }
-  }, [shareModalIsOpen, refetch]);
+  }, [shareModalIsOpen, refetchSharedDraft, refetchParticipants]);
 
   const saveDraft = useCallback(
     async (html: string) => {
@@ -327,7 +343,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                 <span className="flex flex-row items-start justify-between px-4">
                   <div className="dark:text-white py-4 w-full">Edit Draft</div>
                   <div className="flex flex-row items-center space-x-2">
-                    {!isLoading && data && data.id ? (
+                    {!isSharedDraftLoading &&
+                    sharedDraftData &&
+                    sharedDraftData.id ? (
                       <button
                         className="p-2 mt-2 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-full"
                         onMouseEnter={(event) => {
@@ -477,6 +495,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       <SharedDraftModal
         selectedEmail={selectedEmail}
         draftId={threadId || ""}
+        sharedParticipants={sharedDraftParticipants || []}
         to={to}
         cc={cc}
         bcc={bcc}

@@ -1,5 +1,6 @@
 import he from "he";
 import { useNavigate } from "react-router-dom";
+import { useHoveredThreadContext } from "../../contexts/HoveredThreadContext";
 
 interface SharedDraftThreadListProps {
   threads: {
@@ -19,22 +20,32 @@ export const SharedDraftThreadList = ({
   threads,
 }: SharedDraftThreadListProps) => {
   const navigate = useNavigate();
+  const hoveredThreadContext = useHoveredThreadContext();
+
+  function handleThreadClick(threadId: string) {
+    navigate(`/sharedDraft/${threadId}`);
+  }
 
   return (
     <div>
       {threads.length > 0 ? (
-        threads.map((thread) => (
+        threads.map((thread, index) => (
           <div className="relative" key={thread.id}>
             <div
-              onClick={() => navigate(`/sharedDraft/${thread.threadId}`)}
-              // onMouseOver={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-              //   setHoveredThread(thread);
-              //   setShowSummaryCard(true);
-              // }}
+              onClick={() => handleThreadClick(thread.threadId)}
+              onMouseOver={(
+                e: React.MouseEvent<HTMLDivElement, MouseEvent>
+              ) => {
+                hoveredThreadContext.setThreadIndex(index);
+              }}
               // onMouseLeave={() => {
               //   setShowSummaryCard(false);
               // }}
-              className="relative grid grid-cols-10 py-1 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-default group"
+              className={`relative grid grid-cols-10 py-1 cursor-default group ${
+                hoveredThreadContext.threadIndex === index
+                  ? "bg-slate-100 dark:bg-zinc-800"
+                  : ""
+              }`}
             >
               <div className="text-sm flex items-center font-medium px-4 col-span-2">
                 <span className="truncate text-black dark:text-zinc-100">
