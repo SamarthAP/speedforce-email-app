@@ -19,7 +19,11 @@ import {
   useCommandBarOpenContext,
   useHoveredCommandBarItemContext,
 } from "../contexts/CommandBarContext";
-// import "./CommandBar.css";
+import {
+  DisableMouseHoverContext,
+  useDisableMouseHoverContext,
+} from "../contexts/DisableMouseHoverContext";
+import { useDebounceCallback } from "usehooks-ts";
 
 interface CommandBarGroupData {
   title: string;
@@ -54,6 +58,11 @@ export default function CommandBar({ data }: CommandBarProps) {
 
     return false;
   });
+  const [disableMouseHover, setDisableMouseHover] = useState(false);
+  const disableMouseHoverContextValue = {
+    disableMouseHover,
+    setDisableMouseHover,
+  };
 
   useEffect(() => {
     if (open) {
@@ -83,6 +92,11 @@ export default function CommandBar({ data }: CommandBarProps) {
       window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
+
+  const debouncedDisableMouseHover = useDebounceCallback(
+    setDisableMouseHover,
+    300
+  );
 
   const defaultData: CommandBarGroupData[] = [
     {
@@ -298,6 +312,8 @@ export default function CommandBar({ data }: CommandBarProps) {
       } else if (currentIndex === 0) {
         return;
       } else {
+        setDisableMouseHover(true);
+        debouncedDisableMouseHover(false);
         return setHoveredCommandBarItemId(
           items[currentIndex - 1].innerHTML || ""
         );
@@ -335,6 +351,8 @@ export default function CommandBar({ data }: CommandBarProps) {
       } else if (currentIndex === items.length - 1) {
         return;
       } else {
+        setDisableMouseHover(true);
+        debouncedDisableMouseHover(false);
         return setHoveredCommandBarItemId(
           items[currentIndex + 1].innerHTML || ""
         );
@@ -428,17 +446,20 @@ export default function CommandBar({ data }: CommandBarProps) {
                     placeholder="Type a command"
                     className="pl-1 py-2 mb-2 border-b border-b-slate-200 dark:border-b-zinc-700 w-full outline-none bg-transparent text-sm dark:placeholder-zinc-600 placeholder-slate-300 dark:text-white text-black"
                   ></input>
-                  {/* <CommandGroup title="Help" /> */}
-                  <div className="overflow-y-scroll hide-scroll">
-                    {filteredData.map((group, index) => (
-                      <CommandGroup
-                        key={index}
-                        title={group.title}
-                        commands={group.commands}
-                        setCommandBar={(open: boolean) => setOpen(open)}
-                      />
-                    ))}
-                  </div>
+                  <DisableMouseHoverContext.Provider
+                    value={disableMouseHoverContextValue}
+                  >
+                    <div className="overflow-y-scroll hide-scroll">
+                      {filteredData.map((group, index) => (
+                        <CommandGroup
+                          key={index}
+                          title={group.title}
+                          commands={group.commands}
+                          setCommandBar={(open: boolean) => setOpen(open)}
+                        />
+                      ))}
+                    </div>
+                  </DisableMouseHoverContext.Provider>
                 </HoveredCommandBarItemContext.Provider>
               </div>
             </Transition.Child>
@@ -503,14 +524,30 @@ function CommandItem({
   };
   setCommandBar: (open: boolean) => void;
 }) {
+  // make ref
+  const itemRef = useRef<HTMLDivElement>(null);
   const hoveredCommandBarItemContext = useHoveredCommandBarItemContext();
+  const disableMouseHoverContext = useDisableMouseHoverContext();
 
   const isHovered = hoveredCommandBarItemContext.itemId === description;
 
+  useEffect(() => {
+    if (isHovered && itemRef.current) {
+      itemRef.current.scrollIntoView({
+        behavior: "smooth", // smooth or instant
+        block: "nearest",
+        inline: "nearest",
+      });
+    }
+  }, [isHovered]);
+
   return (
     <div
-      onMouseOver={() => {
-        hoveredCommandBarItemContext.setItemId(description);
+      ref={itemRef}
+      onMouseEnter={() => {
+        if (!disableMouseHoverContext.disableMouseHover) {
+          hoveredCommandBarItemContext.setItemId(description);
+        }
       }}
       onClick={() => {
         action();
