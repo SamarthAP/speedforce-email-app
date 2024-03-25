@@ -27,13 +27,6 @@ export const SharedDraftThreadList = ({
           <div className="relative" key={thread.id}>
             <div
               onClick={() => navigate(`/sharedDraft/${thread.threadId}`)}
-              // onMouseOver={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-              //   setHoveredThread(thread);
-              //   setShowSummaryCard(true);
-              // }}
-              // onMouseLeave={() => {
-              //   setShowSummaryCard(false);
-              // }}
               className="relative grid grid-cols-10 py-1 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-default group"
             >
               <div className="text-sm flex items-center font-medium px-4 col-span-2">

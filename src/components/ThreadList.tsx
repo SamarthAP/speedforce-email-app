@@ -1,7 +1,7 @@
 import UnreadDot from "./UnreadDot";
 import { IEmailThread, ISelectedEmail, db } from "../lib/db";
 import he from "he";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   archiveThread,
   markRead,
@@ -36,6 +36,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useHoveredThreadContext } from "../contexts/HoveredThreadContext";
 import { updateSharedDraftStatus } from "../api/sharedDrafts";
 import { SharedDraftStatusType } from "../api/model/users.shared.draft";
+import { useDisableMouseHoverContext } from "../contexts/DisableMouseHoverContext";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -260,8 +261,21 @@ function ThreadListRow({
   navigateToFeed,
 }: ThreadListRowProps) {
   const navigate = useNavigate();
+  const itemRef = useRef<HTMLDivElement>(null);
   const [showSummaryCard, setShowSummaryCard] = useState(false);
   const hoveredThreadContext = useHoveredThreadContext();
+  const disableMouseHoverContext = useDisableMouseHoverContext();
+  const isHovered = hoveredThreadContext.threadIndex === threadIndex;
+
+  useEffect(() => {
+    if (isHovered && itemRef.current) {
+      itemRef.current.scrollIntoView({
+        behavior: "smooth", // smooth or instant
+        block: "nearest",
+        inline: "nearest",
+      });
+    }
+  }, [isHovered]);
 
   function handleThreadClick(thread: IEmailThread) {
     // setScrollPosition(scrollRef.current?.scrollTop || 0);
@@ -389,12 +403,14 @@ function ThreadListRow({
   });
 
   return (
-    <div className="relative">
+    <div ref={itemRef} className="relative">
       <div
         onClick={() => handleThreadClick(thread)}
         onMouseEnter={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-          hoveredThreadContext.setThreadIndex(threadIndex);
-          setShowSummaryCard(true);
+          if (!disableMouseHoverContext.disableMouseHover) {
+            hoveredThreadContext.setThreadIndex(threadIndex);
+            setShowSummaryCard(true);
+          }
         }}
         onMouseLeave={() => {
           setShowSummaryCard(false);
