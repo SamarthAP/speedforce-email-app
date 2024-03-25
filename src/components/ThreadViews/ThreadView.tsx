@@ -1,6 +1,6 @@
 import ThreadList from "../ThreadList";
 import Sidebar from "../Sidebar";
-import { IEmail, IEmailThread, db } from "../../lib/db";
+import { IEmail, db } from "../../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useEmailPageOutletContext } from "../../pages/_emailPage";
@@ -34,6 +34,8 @@ import { handleStarClick } from "../../lib/asyncHelpers";
 import { useCommandBarOpenContext } from "../../contexts/CommandBarContext";
 import { useKeyPressContext } from "../../contexts/KeyPressContext";
 import CommandBar from "../CommandBar";
+import { useDebounceCallback } from "usehooks-ts";
+import { DisableMouseHoverContext } from "../../contexts/DisableMouseHoverContext";
 
 interface ThreadViewProps {
   data: ClientInboxTabType;
@@ -65,6 +67,16 @@ export default function ThreadView({
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const navigate = useNavigate();
   const [showPersonalAi, setShowPersonalAi] = useState(false);
+  const [disableMouseHover, setDisableMouseHover] = useState(false);
+  const disableMouseHoverContextValue = {
+    disableMouseHover,
+    setDisableMouseHover,
+  };
+
+  const debouncedDisableMouseHover = useDebounceCallback(
+    setDisableMouseHover,
+    300
+  );
 
   const renderCounter = useRef(0);
   renderCounter.current = renderCounter.current + 1;
@@ -214,6 +226,8 @@ export default function ThreadView({
         if (prev <= -1) {
           return 0;
         } else if (prev < threads.length - 1) {
+          setDisableMouseHover(true);
+          debouncedDisableMouseHover(false);
           return prev + 1;
         } else {
           return threads.length - 1;
@@ -236,6 +250,8 @@ export default function ThreadView({
         if (prev <= -1) {
           return 0;
         } else if (prev > 0) {
+          setDisableMouseHover(true);
+          debouncedDisableMouseHover(false);
           return prev - 1;
         } else {
           return 0;
@@ -348,17 +364,21 @@ export default function ThreadView({
             </div>
           </div>
           <HoveredThreadContext.Provider value={hoveredThreadContextValue}>
-            <ThreadList
-              selectedEmail={selectedEmail}
-              threads={threads}
-              setScrollPosition={setScrollPosition}
-              handleScroll={handleScroll}
-              scrollRef={scrollRef}
-              canArchiveThread={data.canArchiveThread}
-              canTrashThread={data.canTrashThread}
-              canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
-              isDrafts={data.isDraftMode}
-            />
+            <DisableMouseHoverContext.Provider
+              value={disableMouseHoverContextValue}
+            >
+              <ThreadList
+                selectedEmail={selectedEmail}
+                threads={threads}
+                setScrollPosition={setScrollPosition}
+                handleScroll={handleScroll}
+                scrollRef={scrollRef}
+                canArchiveThread={data.canArchiveThread}
+                canTrashThread={data.canTrashThread}
+                canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
+                isDrafts={data.isDraftMode}
+              />
+            </DisableMouseHoverContext.Provider>
           </HoveredThreadContext.Provider>
         </div>
         <AssistBar thread={threads[hoveredThreadIndex]} />

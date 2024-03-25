@@ -35,6 +35,8 @@ import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../../lib/shortcuts";
 import { useKeyPressContext } from "../../contexts/KeyPressContext";
 import { useCommandBarOpenContext } from "../../contexts/CommandBarContext";
 import CommandBar from "../CommandBar";
+import { useDebounceCallback } from "usehooks-ts";
+import { DisableMouseHoverContext } from "../../contexts/DisableMouseHoverContext";
 
 interface InboxThreadViewProps {
   data: ClientInboxTabType;
@@ -69,6 +71,16 @@ export default function InboxThreadView({
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const navigate = useNavigate();
   const [showPersonalAi, setShowPersonalAi] = useState(false);
+  const [disableMouseHover, setDisableMouseHover] = useState(false);
+  const disableMouseHoverContextValue = {
+    disableMouseHover,
+    setDisableMouseHover,
+  };
+
+  const debouncedDisableMouseHover = useDebounceCallback(
+    setDisableMouseHover,
+    300
+  );
 
   const renderCounter = useRef(0);
   renderCounter.current = renderCounter.current + 1;
@@ -292,6 +304,8 @@ export default function InboxThreadView({
           if (prev <= -1) {
             return 0;
           } else if (prev < threads.length - 1) {
+            setDisableMouseHover(true);
+            debouncedDisableMouseHover(false);
             return prev + 1;
           } else {
             return threads.length - 1;
@@ -314,6 +328,8 @@ export default function InboxThreadView({
           if (prev <= -1) {
             return 0;
           } else if (prev > 0) {
+            setDisableMouseHover(true);
+            debouncedDisableMouseHover(false);
             return prev - 1;
           } else {
             return 0;
@@ -478,21 +494,25 @@ export default function InboxThreadView({
               </div>
             </div>
             <HoveredThreadContext.Provider value={hoveredThreadContextValue}>
-              <ThreadList
-                selectedEmail={selectedEmail}
-                threads={threads}
-                setScrollPosition={setScrollPosition}
-                handleScroll={handleScroll}
-                scrollRef={scrollRef}
-                canArchiveThread={data.canArchiveThread}
-                canTrashThread={data.canTrashThread}
-                canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
-                navigateToFeed={
-                  data.title === "Important"
-                    ? "/importantThreadFeed"
-                    : "/otherThreadFeed"
-                }
-              />
+              <DisableMouseHoverContext.Provider
+                value={disableMouseHoverContextValue}
+              >
+                <ThreadList
+                  selectedEmail={selectedEmail}
+                  threads={threads}
+                  setScrollPosition={setScrollPosition}
+                  handleScroll={handleScroll}
+                  scrollRef={scrollRef}
+                  canArchiveThread={data.canArchiveThread}
+                  canTrashThread={data.canTrashThread}
+                  canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
+                  navigateToFeed={
+                    data.title === "Important"
+                      ? "/importantThreadFeed"
+                      : "/otherThreadFeed"
+                  }
+                />
+              </DisableMouseHoverContext.Provider>
             </HoveredThreadContext.Provider>
           </div>
           <AssistBar thread={threads[hoveredThreadIndex]} />
