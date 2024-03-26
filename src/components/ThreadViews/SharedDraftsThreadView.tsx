@@ -22,6 +22,8 @@ import { useCommandBarOpenContext } from "../../contexts/CommandBarContext";
 import { HoveredThreadContext } from "../../contexts/HoveredThreadContext";
 import { useEmailPageOutletContext } from "../../pages/_emailPage";
 import CommandBar from "../CommandBar";
+import { useDebounceCallback } from "usehooks-ts";
+import { DisableMouseHoverContext } from "../../contexts/DisableMouseHoverContext";
 
 export default function SharedDraftsThreadView() {
   const { selectedEmail } = useEmailPageOutletContext();
@@ -43,6 +45,16 @@ export default function SharedDraftsThreadView() {
   >([]);
   const { commandBarIsOpen } = useCommandBarOpenContext();
   const [hoveredThreadIndex, setHoveredThreadIndex] = useState<number>(-1);
+  const [disableMouseHover, setDisableMouseHover] = useState(false);
+  const disableMouseHoverContextValue = {
+    disableMouseHover,
+    setDisableMouseHover,
+  };
+
+  const debouncedDisableMouseHover = useDebounceCallback(
+    setDisableMouseHover,
+    300
+  );
 
   useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE], () => {
     navigate("/compose");
@@ -64,6 +76,8 @@ export default function SharedDraftsThreadView() {
           if (prev <= -1) {
             return 0;
           } else if (prev < threads.length - 1) {
+            setDisableMouseHover(true);
+            debouncedDisableMouseHover(false);
             return prev + 1;
           } else {
             return threads.length - 1;
@@ -86,6 +100,8 @@ export default function SharedDraftsThreadView() {
           if (prev <= -1) {
             return 0;
           } else if (prev > 0) {
+            setDisableMouseHover(true);
+            debouncedDisableMouseHover(false);
             return prev - 1;
           } else {
             return 0;
@@ -151,9 +167,7 @@ export default function SharedDraftsThreadView() {
   };
 
   return (
-    <div
-      className={`overflow-hidden h-screen w-screen flex flex-col fadeIn-animation bg-cover bg-center`}
-    >
+    <div className="overflow-hidden h-screen w-screen flex flex-col">
       <Titlebar />
       <PersonalAI show={showPersonalAi} hide={() => setShowPersonalAi(false)} />
 
@@ -238,7 +252,11 @@ export default function SharedDraftsThreadView() {
             </div>
           </div>
           <HoveredThreadContext.Provider value={hoveredThreadContextValue}>
-            <SharedDraftThreadList threads={threads} />
+            <DisableMouseHoverContext.Provider
+              value={disableMouseHoverContextValue}
+            >
+              <SharedDraftThreadList threads={threads} />
+            </DisableMouseHoverContext.Provider>
           </HoveredThreadContext.Provider>
         </div>
         <AssistBar thread={null} />
