@@ -10,6 +10,7 @@ import {
   PaperAirplaneIcon,
   StarIcon,
   TrashIcon,
+  UserGroupIcon,
 } from "@heroicons/react/20/solid";
 import { useHotkeys } from "react-hotkeys-hook";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
@@ -186,6 +187,17 @@ export default function CommandBar({ data }: CommandBarProps) {
           },
           keybind: {
             keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "#"],
+            isSequential: true,
+          },
+        },
+        {
+          icon: UserGroupIcon,
+          description: "Go To Shared Drafts",
+          action: () => {
+            navigate("/sharedDrafts");
+          },
+          keybind: {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "$"],
             isSequential: true,
           },
         },

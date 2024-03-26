@@ -365,10 +365,7 @@ export default function AppRouter({ session }: AppRouterProps) {
               path="/sharedDrafts"
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
-              <Route
-                index
-                element={<SharedDrafts selectedEmail={selectedEmail} />}
-              />
+              <Route index element={<SharedDrafts />} />
             </Route>
             <Route
               path="/sharedDraft/:threadId"
