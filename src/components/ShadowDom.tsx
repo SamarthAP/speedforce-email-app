@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { addQuoteToggleButton } from "../lib/shadowHelpers";
 import { useThemeContext } from "../contexts/ThemeContext";
+import { applyDarkModeToElement } from "../lib/colorMod/colorConversion";
+import { dLog } from "../lib/noProd";
 
 interface ShadowDomProps {
   htmlString: string;
@@ -22,7 +24,7 @@ export default function ShadowDom({ htmlString, showImages }: ShadowDomProps) {
         : shadowRef.current.attachShadow({ mode: "open" });
       const emailContainer = document.createElement("div");
       emailContainer.id = "speedforce-email-container";
-      emailContainer.style.fontSize = "0.875rem";
+      emailContainer.style.fontSize = "0.875rem"; // text-sm 14px
 
       const parser = new DOMParser();
       const doc = parser.parseFromString(htmlString, "text/html");
@@ -38,10 +40,6 @@ export default function ShadowDom({ htmlString, showImages }: ShadowDomProps) {
             link.href
           );
         });
-        // if no style color is set, set it to blue
-        if (!link.style.color) {
-          link.style.color = "#2563eb"; // text-blue-500
-        }
       });
 
       // remove images
@@ -59,30 +57,29 @@ export default function ShadowDom({ htmlString, showImages }: ShadowDomProps) {
         .querySelectorAll("script")
         .forEach((element) => element.remove());
       shadowRoot.appendChild(emailContainer);
-    }
-  }, [htmlString, showImages]);
 
-  // Note: do not remove, keep as reference
-  // useEffect(() => {
-  //   if (shadowRef.current) {
-  //     const body = shadowRef.current.shadowRoot?.querySelector(
-  //       "body"
-  //     ) as HTMLBodyElement;
-  //     if (body) {
-  //       if (theme === "dark") {
-  //         body.style.backgroundColor = "rgb(24 24 27)";
-  //         body.style.color = "#fff";
-  //       } else {
-  //         body.style.backgroundColor = "#fff";
-  //         body.style.color = "#000";
-  //       }
-  //     }
-  //   }
-  // }, [theme]);
+      const elements = shadowRoot.querySelectorAll("*");
+
+      for (const element of elements) {
+        if (theme === "dark") {
+          const results = applyDarkModeToElement(element as HTMLElement);
+
+          if (!results || results.length !== 3) {
+            dLog("Unexpected results applying dark mode to email", results);
+            continue;
+          }
+
+          (element as HTMLElement).style.backgroundColor = results[0];
+          (element as HTMLElement).style.borderColor = results[1];
+          (element as HTMLElement).style.color = results[2];
+        }
+      }
+    }
+  }, [htmlString, showImages, theme]);
 
   return (
     <div
-      className="bg-white p-4 w-full overflow-x-scroll hide-scroll"
+      className="bg-white dark:bg-zinc-900 w-full overflow-x-scroll hide-scroll"
       ref={shadowRef}
     />
   );
