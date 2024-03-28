@@ -1,3 +1,4 @@
+import { GoogleDraftsListDataType } from "../../model/users.draft";
 import { GoogleThreadsListDataType } from "../../model/users.thread";
 import { GMAIL_API_URL } from "../constants";
 
@@ -25,4 +26,24 @@ export const list = async (
   }
 
   return res.json() as Promise<GoogleThreadsListDataType>;
+};
+
+export const listDrafts = async (accessToken: string, pageToken?: string) => {
+  let url = `${GMAIL_API_URL}/drafts?maxResults=20`;
+
+  if (pageToken) {
+    url += `&pageToken=${pageToken}`;
+  }
+
+  const res: Response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw Error("Error fetching gmail drafts");
+  }
+
+  return res.json() as Promise<GoogleDraftsListDataType>;
 };

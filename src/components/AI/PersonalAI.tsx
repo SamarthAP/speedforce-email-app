@@ -76,6 +76,9 @@ export default function PersonalAI({ show, hide }: PersonalAIProps) {
   }, [messages]);
 
   const sendMessage = async () => {
+    if (inputMessage.length === 0) {
+      return;
+    }
     setLoading(true);
     setInputMessage("");
     setMessages((messages) => [
@@ -201,7 +204,14 @@ export default function PersonalAI({ show, hide }: PersonalAIProps) {
                     className="w-full min-w-0 outline-none text-md bg-transparent dark:text-white"
                     placeholder={loading ? "Loading..." : "Type a message..."}
                     value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
+                    onChange={(e) => {
+                      setInputMessage(e.target.value);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        sendMessage();
+                      }
+                    }}
                   />
                   <button
                     disabled={loading}

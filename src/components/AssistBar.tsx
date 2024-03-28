@@ -102,7 +102,7 @@ export default function AssistBar({ thread }: IAssistBarProps) {
           </div>
         ))}
       </div>
-      <div className="fixed bottom-10 right-0 h-18 w-6 rounded-l-md bg-slate-600 dark:bg-zinc-200 shrink-0">
+      <div className="fixed bottom-12 right-0 h-18 w-6 rounded-l-md bg-slate-600 dark:bg-zinc-200 shrink-0">
         <Feedback />
       </div>
       {/* <Calendar /> */}

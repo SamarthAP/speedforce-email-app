@@ -9,6 +9,7 @@ import {
   unstarThread,
   trashThread,
   deleteThread,
+  deleteDraft,
 } from "../lib/sync";
 import {
   CheckCircleIcon,
@@ -32,6 +33,9 @@ import { ConfirmModal } from "./modals/ConfirmModal";
 import { useNavigate } from "react-router-dom";
 import ThreadSummaryHoverCard from "./ThreadSummaryHoverCard";
 import { useLiveQuery } from "dexie-react-hooks";
+import { useHoveredThreadContext } from "../contexts/HoveredThreadContext";
+import { updateSharedDraftStatus } from "../api/sharedDrafts";
+import { SharedDraftStatusType } from "../api/model/users.shared.draft";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -69,8 +73,7 @@ interface DeleteThreadModalData {
 
 interface ThreadListProps {
   selectedEmail: ISelectedEmail;
-  threads?: IEmailThread[]; // TODO: change for outlook thread
-  setHoveredThread: (thread: IEmailThread | null) => void;
+  threads?: IEmailThread[];
   setScrollPosition: (position: number) => void;
   handleScroll: (event: React.UIEvent<HTMLDivElement, UIEvent>) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
@@ -78,12 +81,12 @@ interface ThreadListProps {
   canTrashThread?: boolean;
   canPermanentlyDeleteThread?: boolean;
   isDrafts?: boolean;
+  navigateToFeed?: string;
 }
 
 export default function ThreadList({
   selectedEmail,
   threads,
-  setHoveredThread,
   setScrollPosition,
   handleScroll,
   scrollRef,
@@ -91,6 +94,7 @@ export default function ThreadList({
   canTrashThread = false,
   canPermanentlyDeleteThread = false,
   isDrafts = false,
+  navigateToFeed,
 }: ThreadListProps) {
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
 
@@ -136,7 +140,6 @@ export default function ThreadList({
                 );
               }
             }}
-            onMouseOver={() => setHoveredThread(thread)}
             key={index}
           >
             {index === 0 && isToday(new Date(thread.date)) ? (
@@ -152,6 +155,12 @@ export default function ThreadList({
               </div>
             ) : null}
 
+            {index === 0 && isOlderThanSevenDays(new Date(thread.date)) ? (
+              <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 mb-2">
+                Past Month And Older
+              </div>
+            ) : null}
+
             {index > 0 &&
             isLastSevenDaysButNotToday(new Date(thread.date)) &&
             isToday(new Date(threads[index - 1].date)) ? (
@@ -160,8 +169,10 @@ export default function ThreadList({
               </div>
             ) : null}
 
-            {index === 0 && isOlderThanSevenDays(new Date(thread.date)) ? (
-              <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 mb-2">
+            {index > 0 &&
+            isOlderThanSevenDays(new Date(thread.date)) &&
+            isToday(new Date(threads[index - 1].date)) ? (
+              <div className="pl-8 text-sm text-slate-400 dark:text-zinc-500 my-2">
                 Past Month And Older
               </div>
             ) : null}
@@ -176,15 +187,16 @@ export default function ThreadList({
 
             <ThreadListRow
               thread={thread}
+              threadIndex={index}
               selectedEmail={selectedEmail}
               canArchiveThread={canArchiveThread}
               canTrashThread={canTrashThread}
               canPermanentlyDeleteThread={canPermanentlyDeleteThread}
               isDrafts={isDrafts}
-              setHoveredThread={setHoveredThread}
               setDeleteThreadModalData={setDeleteThreadModalData}
               handleShowTooltip={handleShowTooltip}
               handleHideTooltip={handleHideTooltip}
+              navigateToFeed={navigateToFeed}
             />
           </div>
         );
@@ -219,34 +231,37 @@ export default function ThreadList({
 
 interface ThreadListRowProps {
   thread: IEmailThread;
+  threadIndex: number;
   selectedEmail: ISelectedEmail;
   canArchiveThread: boolean;
   canTrashThread: boolean;
   canPermanentlyDeleteThread: boolean;
   isDrafts: boolean;
-  setHoveredThread: (thread: IEmailThread | null) => void;
   setDeleteThreadModalData: (data: DeleteThreadModalData) => void;
   handleShowTooltip: (
     event: React.MouseEvent<HTMLElement>,
     message: string
   ) => void;
   handleHideTooltip: () => void;
+  navigateToFeed?: string;
 }
 
 function ThreadListRow({
   thread,
+  threadIndex,
   selectedEmail,
   canArchiveThread,
   canTrashThread,
   canPermanentlyDeleteThread,
   isDrafts,
-  setHoveredThread,
   setDeleteThreadModalData,
   handleShowTooltip,
   handleHideTooltip,
+  navigateToFeed,
 }: ThreadListRowProps) {
   const navigate = useNavigate();
   const [showSummaryCard, setShowSummaryCard] = useState(false);
+  const hoveredThreadContext = useHoveredThreadContext();
 
   function handleThreadClick(thread: IEmailThread) {
     // setScrollPosition(scrollRef.current?.scrollTop || 0);
@@ -257,7 +272,11 @@ function ThreadListRow({
         void markRead(selectedEmail.email, selectedEmail.provider, thread.id);
       }
 
-      navigate(`/thread/${thread.id}`);
+      if (navigateToFeed) {
+        navigate(`${navigateToFeed}/${hoveredThreadContext.threadIndex}`);
+      } else {
+        navigate(`/thread/${thread.id}`);
+      }
     }
   }
 
@@ -334,12 +353,28 @@ function ThreadListRow({
           [FOLDER_IDS.TRASH],
           labelsToRemove
         ),
-      async () =>
-        await trashThread(
-          selectedEmail.email,
-          selectedEmail.provider,
-          thread.id
-        ),
+      async () => {
+        if (isDrafts) {
+          await deleteDraft(
+            selectedEmail.email,
+            selectedEmail.provider,
+            thread.id,
+            isDrafts
+          );
+
+          await updateSharedDraftStatus(
+            thread.id,
+            selectedEmail.email,
+            SharedDraftStatusType.DISCARDED
+          );
+        } else {
+          await trashThread(
+            selectedEmail.email,
+            selectedEmail.provider,
+            thread.id
+          );
+        }
+      },
       () => {
         void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [
           FOLDER_IDS.TRASH,
@@ -357,14 +392,18 @@ function ThreadListRow({
     <div className="relative">
       <div
         onClick={() => handleThreadClick(thread)}
-        onMouseOver={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-          setHoveredThread(thread);
+        onMouseEnter={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+          hoveredThreadContext.setThreadIndex(threadIndex);
           setShowSummaryCard(true);
         }}
         onMouseLeave={() => {
           setShowSummaryCard(false);
         }}
-        className="relative grid grid-cols-10 py-1 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-default group"
+        className={`relative grid grid-cols-10 py-1 cursor-default group ${
+          hoveredThreadContext.threadIndex === threadIndex
+            ? "bg-slate-100 dark:bg-zinc-800"
+            : ""
+        }`}
       >
         <div className="text-sm flex items-center font-medium pr-4 col-span-2">
           <div className="flex flex-col items-center justify-center px-2">
@@ -411,13 +450,14 @@ function ThreadListRow({
           <span className="truncate text-black dark:text-zinc-100">
             {
               // TODO: Should we make a DraftThreadView or DraftThreadList component to avoid need for live query?
-              isDrafts
+              (isDrafts
                 ? message?.toRecipients
                     .map((recipient) =>
                       recipient.slice(0, recipient.lastIndexOf("<"))
                     )
                     .join(", ")
-                : thread.from.slice(0, thread.from.lastIndexOf("<"))
+                : thread.from.slice(0, thread.from.lastIndexOf("<"))) ||
+                "(no sender)"
             }
           </span>
         </div>
@@ -430,7 +470,16 @@ function ThreadListRow({
 
           <div className="flex flex-grow overflow-hidden">
             <div className="text-sm truncate text-slate-400 dark:text-zinc-500 w-full">
-              {he.decode(thread.snippet)}
+              {/* 
+                NOTE: Some emails append &zwnj; to the snippet (at least on Gmail, idk about Outlook). This is called a Zero Width Non-Joiner.
+                It has the same effect as a space character. You can see it inside the HTML as &zwnj;, but when you console log it, it just shows up as spaces.
+                This causes the truncate dots (...) to come up on the thread row, because the spaces make it truncate.
+                You cannot .replace(/&zwnj;/g, "") to remove the &zwnj; from the snippet, because you actually need to use the unicode character (U+200C) to remove it.
+              */}
+              {he
+                .decode(thread.snippet)
+                .replace(/\u200C/g, "")
+                .trim()}
             </div>
             <div className="text-sm pl-2 pr-4 flex-shrink-0 text-slate-400 dark:text-zinc-500 font-medium flex flex-col justify-center">
               <span className="group-hover:hidden block">
