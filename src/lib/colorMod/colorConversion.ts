@@ -43,6 +43,19 @@ const BORDER_COLOR_CSS_PROPERTY_NAMES = [
   "border-left-color",
 ];
 
+// br, button, canvas, iframe, input, select, style, svg, textarea
+export const DISALLOWED_TAGS = [
+  "BR",
+  "BUTTON",
+  "CANVAS",
+  "IFRAME",
+  "INPUT",
+  "SELECT",
+  "STYLE",
+  "SVG",
+  "TEXTAREA",
+];
+
 // interface for color
 interface Color {
   r: number;

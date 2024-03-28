@@ -696,6 +696,17 @@ export async function sendReply(
   html: string
 ) {
   const accessToken = await getAccessToken(email);
+  const wrappedHtml = `
+    ${html}
+    <br>
+    <div class="speedforce_quote">
+      <p>On ${new Date(message.date).toDateString()}, ${message.from} wrote:</p>
+      <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+        <div dir="ltr">${message.htmlData}</div>
+      </blockquote>
+    </div>
+    <br>
+  `;
   if (provider === "google") {
     const from = email;
     const to =
@@ -715,7 +726,7 @@ export async function sendReply(
       subject,
       headerMessageId,
       threadId,
-      html.concat(SENT_FROM_SPEEDFORCE_HTML)
+      wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
   } else if (provider === "outlook") {
     const subject = getMessageHeader(message.headers, "Subject");
@@ -726,7 +737,7 @@ export async function sendReply(
         accessToken,
         subject,
         messageId,
-        html.concat(SENT_FROM_SPEEDFORCE_HTML)
+        wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
       );
       return { data: null, error: null };
     } catch (e) {
@@ -744,6 +755,18 @@ export async function sendReplyAll(
   html: string
 ) {
   const accessToken = await getAccessToken(email);
+  const wrappedHtml = `
+    ${html}
+    <br>
+    <div class="speedforce_quote">
+      <p>On ${new Date(message.date).toDateString()} ${message.from} wrote:</p>
+      <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+        <div dir="ltr">${message.htmlData}</div>
+      </blockquote>
+    </div>
+    <br>
+  `;
+
   if (provider === "google") {
     const from = email;
     const to = getToRecipients(message, email);
@@ -758,7 +781,7 @@ export async function sendReplyAll(
       subject,
       headerMessageId,
       threadId,
-      html.concat(SENT_FROM_SPEEDFORCE_HTML)
+      wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
   } else if (provider === "outlook") {
     const subject = getMessageHeader(message.headers, "Subject");
@@ -769,7 +792,7 @@ export async function sendReplyAll(
         accessToken,
         subject,
         messageId,
-        html.concat(SENT_FROM_SPEEDFORCE_HTML)
+        wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
       );
       return { data: null, error: null };
     } catch (e) {

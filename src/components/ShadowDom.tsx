@@ -1,12 +1,44 @@
 import { useEffect, useRef } from "react";
 import { addQuoteToggleButton } from "../lib/shadowHelpers";
 import { useThemeContext } from "../contexts/ThemeContext";
-import { applyDarkModeToElement } from "../lib/colorMod/colorConversion";
+import {
+  DISALLOWED_TAGS,
+  applyDarkModeToElement,
+} from "../lib/colorMod/colorConversion";
 import { dLog } from "../lib/noProd";
 
 interface ShadowDomProps {
   htmlString: string;
   showImages: boolean;
+}
+// doesn't use querySelectorAll, recureses through all children
+function recursivelyApplyDarkMode(element: HTMLElement): void {
+  if (DISALLOWED_TAGS.indexOf(element.tagName) > -1) {
+    return;
+  }
+
+  const attributeName = `data-dark-decoration`;
+  const decorated = element.hasAttribute(attributeName);
+
+  if (!decorated) {
+    // NOTE: gotta go deep first, since applying the other way stacks the styles and the colors filter on top of each other
+    for (const child of element.children) {
+      recursivelyApplyDarkMode(child as HTMLElement);
+    }
+
+    const results = applyDarkModeToElement(element);
+
+    element.setAttribute(attributeName, "true");
+
+    if (!results || results.length !== 3) {
+      dLog("Unexpected results applying dark mode to email", results);
+      return;
+    }
+
+    element.style.backgroundColor = results[0];
+    element.style.borderColor = results[1];
+    element.style.color = results[2];
+  }
 }
 
 export default function ShadowDom({ htmlString, showImages }: ShadowDomProps) {
@@ -26,12 +58,10 @@ export default function ShadowDom({ htmlString, showImages }: ShadowDomProps) {
       emailContainer.id = "speedforce-email-container";
       emailContainer.style.fontSize = "0.875rem"; // text-sm 14px
 
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(htmlString, "text/html");
-      doc.body.style.margin = "0";
-      doc.body.style.padding = "0";
+      const emailContentDiv = document.createElement("div");
+      emailContentDiv.innerHTML = htmlString;
 
-      const links = doc.querySelectorAll("a");
+      const links = emailContentDiv.querySelectorAll("a");
       links.forEach((link) => {
         link.addEventListener("click", (e) => {
           e.preventDefault();
@@ -42,37 +72,27 @@ export default function ShadowDom({ htmlString, showImages }: ShadowDomProps) {
         });
       });
 
-      // remove images
       if (!showImages) {
-        const images = doc.querySelectorAll("img");
+        const images = emailContentDiv.querySelectorAll("img");
         images.forEach((image) => {
           image.remove();
         });
       }
 
-      addQuoteToggleButton(doc);
+      addQuoteToggleButton(emailContentDiv);
 
-      emailContainer.appendChild(doc.body);
+      emailContainer.appendChild(emailContentDiv);
+
       emailContainer
         .querySelectorAll("script")
         .forEach((element) => element.remove());
+
       shadowRoot.appendChild(emailContainer);
 
-      const elements = shadowRoot.querySelectorAll("*");
-
-      for (const element of elements) {
-        if (theme === "dark") {
-          const results = applyDarkModeToElement(element as HTMLElement);
-
-          if (!results || results.length !== 3) {
-            dLog("Unexpected results applying dark mode to email", results);
-            continue;
-          }
-
-          (element as HTMLElement).style.backgroundColor = results[0];
-          (element as HTMLElement).style.borderColor = results[1];
-          (element as HTMLElement).style.color = results[2];
-        }
+      if (theme === "dark") {
+        recursivelyApplyDarkMode(
+          shadowRoot.getElementById("speedforce-email-container") as HTMLElement
+        );
       }
     }
   }, [htmlString, showImages, theme]);
