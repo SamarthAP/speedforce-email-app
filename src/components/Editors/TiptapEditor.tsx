@@ -251,7 +251,10 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
             );
           })}
         </div>
-        <EditorContent editor={editor} className="mt-4 dark:text-white" />
+
+        <div className="editor-content">
+          <EditorContent editor={editor} className="mt-4 dark:text-white" />
+        </div>
 
         <div className="text-left mt-4 mb-2">
           <SimpleButton

@@ -1,10 +1,44 @@
 import { useEffect, useRef } from "react";
 import { addQuoteToggleButton } from "../lib/shadowHelpers";
 import { useThemeContext } from "../contexts/ThemeContext";
+import {
+  DISALLOWED_TAGS,
+  applyDarkModeToElement,
+} from "../lib/colorMod/colorConversion";
+import { dLog } from "../lib/noProd";
 
 interface ShadowDomProps {
   htmlString: string;
   showImages: boolean;
+}
+// doesn't use querySelectorAll, recureses through all children
+function recursivelyApplyDarkMode(element: HTMLElement): void {
+  if (DISALLOWED_TAGS.indexOf(element.tagName) > -1) {
+    return;
+  }
+
+  const attributeName = `data-dark-decoration`;
+  const decorated = element.hasAttribute(attributeName);
+
+  if (!decorated) {
+    // NOTE: gotta go deep first, since applying the other way stacks the styles and the colors filter on top of each other
+    for (const child of element.children) {
+      recursivelyApplyDarkMode(child as HTMLElement);
+    }
+
+    const results = applyDarkModeToElement(element);
+
+    element.setAttribute(attributeName, "true");
+
+    if (!results || results.length !== 3) {
+      dLog("Unexpected results applying dark mode to email", results);
+      return;
+    }
+
+    element.style.backgroundColor = results[0];
+    element.style.borderColor = results[1];
+    element.style.color = results[2];
+  }
 }
 
 export default function ShadowDom({ htmlString, showImages }: ShadowDomProps) {
@@ -22,14 +56,12 @@ export default function ShadowDom({ htmlString, showImages }: ShadowDomProps) {
         : shadowRef.current.attachShadow({ mode: "open" });
       const emailContainer = document.createElement("div");
       emailContainer.id = "speedforce-email-container";
-      emailContainer.style.fontSize = "0.875rem";
+      emailContainer.style.fontSize = "0.875rem"; // text-sm 14px
 
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(htmlString, "text/html");
-      doc.body.style.margin = "0";
-      doc.body.style.padding = "0";
+      const emailContentDiv = document.createElement("div");
+      emailContentDiv.innerHTML = htmlString;
 
-      const links = doc.querySelectorAll("a");
+      const links = emailContentDiv.querySelectorAll("a");
       links.forEach((link) => {
         link.addEventListener("click", (e) => {
           e.preventDefault();
@@ -38,51 +70,36 @@ export default function ShadowDom({ htmlString, showImages }: ShadowDomProps) {
             link.href
           );
         });
-        // if no style color is set, set it to blue
-        if (!link.style.color) {
-          link.style.color = "#2563eb"; // text-blue-500
-        }
       });
 
-      // remove images
       if (!showImages) {
-        const images = doc.querySelectorAll("img");
+        const images = emailContentDiv.querySelectorAll("img");
         images.forEach((image) => {
           image.remove();
         });
       }
 
-      addQuoteToggleButton(doc);
+      addQuoteToggleButton(emailContentDiv);
 
-      emailContainer.appendChild(doc.body);
+      emailContainer.appendChild(emailContentDiv);
+
       emailContainer
         .querySelectorAll("script")
         .forEach((element) => element.remove());
-      shadowRoot.appendChild(emailContainer);
-    }
-  }, [htmlString, showImages]);
 
-  // Note: do not remove, keep as reference
-  // useEffect(() => {
-  //   if (shadowRef.current) {
-  //     const body = shadowRef.current.shadowRoot?.querySelector(
-  //       "body"
-  //     ) as HTMLBodyElement;
-  //     if (body) {
-  //       if (theme === "dark") {
-  //         body.style.backgroundColor = "rgb(24 24 27)";
-  //         body.style.color = "#fff";
-  //       } else {
-  //         body.style.backgroundColor = "#fff";
-  //         body.style.color = "#000";
-  //       }
-  //     }
-  //   }
-  // }, [theme]);
+      shadowRoot.appendChild(emailContainer);
+
+      if (theme === "dark") {
+        recursivelyApplyDarkMode(
+          shadowRoot.getElementById("speedforce-email-container") as HTMLElement
+        );
+      }
+    }
+  }, [htmlString, showImages, theme]);
 
   return (
     <div
-      className="bg-white p-4 w-full overflow-x-scroll hide-scroll"
+      className="bg-white dark:bg-zinc-900 w-full overflow-x-scroll hide-scroll"
       ref={shadowRef}
     />
   );

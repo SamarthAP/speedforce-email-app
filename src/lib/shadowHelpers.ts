@@ -25,7 +25,7 @@ export function insertQuoteToggle(quote: HTMLDivElement) {
   quote.insertAdjacentElement("beforebegin", wrapper);
 }
 
-export function addQuoteToggleButton(emailContainer: Document) {
+export function addQuoteToggleButton(emailContainer: HTMLElement) {
   // add toggle button before quote
   const gmailQuote = emailContainer.querySelector(
     ".gmail_quote"
@@ -33,6 +33,10 @@ export function addQuoteToggleButton(emailContainer: Document) {
 
   const protonmailQuote = emailContainer.querySelector(
     ".protonmail_quote"
+  ) as HTMLDivElement;
+
+  const speedforceQuote = emailContainer.querySelector(
+    ".speedforce_quote"
   ) as HTMLDivElement;
 
   // Currently this will add a button to every quote in the email, but it should only add it to the first one (the one at the top of the dom tree).
@@ -46,5 +50,10 @@ export function addQuoteToggleButton(emailContainer: Document) {
   if (protonmailQuote) {
     insertQuoteToggle(protonmailQuote);
     toggleQuote(protonmailQuote);
+  }
+
+  if (speedforceQuote) {
+    insertQuoteToggle(speedforceQuote);
+    toggleQuote(speedforceQuote);
   }
 }
