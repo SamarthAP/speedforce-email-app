@@ -1,7 +1,6 @@
 import Paragraph from "@tiptap/extension-paragraph";
 
-// Tip Tap Paragraph Extension that changes the default tag to div from p
-// Based on: https://github.com/ueberdosis/tiptap/tree/main/packages/extension-paragraph
+// Tip Tap Paragraph Extension that changes the default tag from p to div
 const ParagraphExtension = Paragraph.extend({
   parseHTML() {
     return [{ tag: "p" }];
