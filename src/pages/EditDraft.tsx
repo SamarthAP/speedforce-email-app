@@ -185,6 +185,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       cc,
       bcc,
       threadId,
+      isDirty,
     ]
   );
 
@@ -364,8 +365,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                     />
                   </div>
                 </span>
-                <div className="h-full w-full flex flex-row">
-                  <div className="h-full w-full flex flex-col space-y-2 pt-2 px-4 pb-4 mb-10 overflow-y-scroll hide-scroll">
+                <div className="h-full w-full flex flex-row mb-10 overflow-y-scroll hide-scroll">
+                  <div className="h-full w-full flex flex-col space-y-2 pt-2 px-4 pb-4">
                     <div className="border border-slate-200 dark:border-zinc-700 pt-1">
                       <EmailSelectorInput
                         selectedEmail={selectedEmail}
