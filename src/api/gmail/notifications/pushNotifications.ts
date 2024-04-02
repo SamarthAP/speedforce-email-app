@@ -30,3 +30,31 @@ export const watch = async (accessToken: string, email: string) => {
 
   return { data, error };
 };
+
+export const stop = async (accessToken: string, email: string) => {
+  let data: any = null;
+  let error: string | null = null;
+
+  try {
+    const res: Response = await fetch(
+      `https://www.googleapis.com/gmail/v1/users/${email}/stop`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!res.ok) {
+      error = "Error stopping notifications";
+    } else {
+      data = await res.json();
+    }
+  } catch (e) {
+    error = "Error stopping notifications: " + e;
+  }
+
+  return { data, error };
+};

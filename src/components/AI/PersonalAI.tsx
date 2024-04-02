@@ -1,11 +1,8 @@
 import { Dialog, Transition } from "@headlessui/react";
 import { classNames } from "../../lib/util";
 import { Fragment, useEffect, useRef, useState } from "react";
-import { getJWTHeaders } from "../../api/authHeader";
 import { getAccessToken } from "../../api/accessToken";
 import { useEmailPageOutletContext } from "../../pages/_emailPage";
-import { list as gList } from "../../api/gmail/reactQuery/reactQueryHelperFunctions";
-import { list as mList } from "../../api/outlook/reactQuery/reactQueryHelperFunctions";
 import {
   handleNewThreadsGoogle,
   handleNewThreadsOutlook,
@@ -13,9 +10,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import { PaperAirplaneIcon } from "@heroicons/react/20/solid";
 import { IEmailThread, db } from "../../lib/db";
-import { OUTLOOK_SELECT_THREADLIST } from "../../api/outlook/constants";
-import { SPEEDFORCE_API_URL } from "../../api/constants";
 import _ from "lodash";
+import { hybridSearch } from "../../api/llm";
 
 interface PersonalAIProps {
   show: boolean;
@@ -89,75 +85,69 @@ export default function PersonalAI({ show, hide }: PersonalAIProps) {
       },
     ]);
 
-    const authHeader = await getJWTHeaders();
     const accessToken = await getAccessToken(selectedEmail.email);
 
-    const res = await fetch(`${SPEEDFORCE_API_URL}/llm/personalAIQuery`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeader,
-      },
-      body: JSON.stringify({
-        user_query: inputMessage,
-        provider: selectedEmail.provider,
-        date: new Date().toString(),
-        accessToken,
-      }),
-    });
+    const { data, error } = await hybridSearch(
+      selectedEmail.email,
+      inputMessage
+    );
 
-    const data = await res.json();
+    let threadIds: string[] = [];
 
-    const threadIds = [];
-    if (selectedEmail.provider === "google") {
-      const listResponse = await gList(accessToken, `q=${data.generatedQuery}`);
-      threadIds.push(
-        ...(listResponse.threads?.map((thread) => thread.id) || [])
-      );
-
-      if (threadIds.length > 0) {
-        await handleNewThreadsGoogle(
-          accessToken,
-          selectedEmail.email,
-          threadIds
-        );
-      }
+    if (!data || error) {
+      setMessages((messages) => [
+        ...messages,
+        {
+          role: "system",
+          content:
+            "I'm sorry, I couldn't find any emails that might be relevant to your query. Sorry!",
+        },
+      ]);
     } else {
-      const listResponse = await mList(
-        accessToken,
-        `mailFolders/Inbox/messages?${OUTLOOK_SELECT_THREADLIST}&$top=20&${data.generatedQuery}`
-      );
-      threadIds.push(
-        ...(_.uniq(listResponse.value.map((thread) => thread.conversationId)) ||
-          [])
-      );
+      threadIds = _.uniq(data.map((itm) => itm.thread_id));
 
       if (threadIds.length > 0) {
-        await handleNewThreadsOutlook(
-          accessToken,
-          selectedEmail.email,
-          threadIds
-        );
+        if (selectedEmail.provider === "google") {
+          await handleNewThreadsGoogle(
+            accessToken,
+            selectedEmail.email,
+            threadIds
+          );
+        } else if (selectedEmail.provider === "outlook") {
+          await handleNewThreadsOutlook(
+            accessToken,
+            selectedEmail.email,
+            threadIds
+          );
+        }
+        // get the relevant emails from dexie
+        const relevantThreads = await db.emailThreads
+          .where("id")
+          .anyOf(threadIds)
+          .toArray();
+
+        setMessages((messages) => [
+          ...messages,
+          {
+            role: "system",
+            content:
+              relevantThreads.length > 0
+                ? "Here's what I found for you!"
+                : "I couldn't find any emails that might be relevant to your query. Sorry!",
+            relevantThreads: relevantThreads,
+          },
+        ]);
+      } else {
+        setMessages((messages) => [
+          ...messages,
+          {
+            role: "system",
+            content:
+              "I'm sorry, I couldn't find any emails that might be relevant to your query. Sorry!",
+          },
+        ]);
       }
     }
-
-    // get the relevant emails from dexie
-    const relevantThreads = await db.emailThreads
-      .where("id")
-      .anyOf(threadIds)
-      .toArray();
-
-    setMessages((messages) => [
-      ...messages,
-      {
-        role: "system",
-        content:
-          threadIds.length > 0
-            ? "Here's what I found for you!"
-            : "I couldn't find any emails that might be relevant to your query. Sorry!",
-        relevantThreads: relevantThreads,
-      },
-    ]);
 
     setLoading(false);
   };
@@ -209,7 +199,7 @@ export default function PersonalAI({ show, hide }: PersonalAIProps) {
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        sendMessage();
+                        void sendMessage();
                       }
                     }}
                   />
