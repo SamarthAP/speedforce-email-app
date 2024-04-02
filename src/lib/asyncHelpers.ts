@@ -129,18 +129,22 @@ export async function handleUpdateDraft(
     return;
   }
 
+  // need to do this bc electron forge compiler complains that thread and message could be null
+  const nonNullThread = thread;
+  const nonNullMessage = message;
+
   const newSnippet = await getSnippetFromHtml(html);
   await executeInstantAsyncAction(
     () => {
       void updateDexieDraft(
         {
-          ...thread,
+          ...nonNullThread,
           subject,
           snippet: newSnippet,
           date: new Date().getTime(),
         },
         {
-          ...message,
+          ...nonNullMessage,
           toRecipients: to,
           htmlData: html,
         }
@@ -149,7 +153,7 @@ export async function handleUpdateDraft(
     async () =>
       await updateDraft(email, provider, draftId, to, cc, bcc, subject, html),
     () => {
-      void updateDexieDraft(thread, message);
+      void updateDexieDraft(nonNullThread, nonNullMessage);
     }
   );
 }
