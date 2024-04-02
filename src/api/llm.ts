@@ -66,3 +66,50 @@ export const summarizeThread = async (
 
   return { data, error };
 };
+
+export const hybridSearch = async (email: string, query: string) => {
+  const authHeader = await getJWTHeaders();
+
+  let data = null;
+  let error = null;
+
+  try {
+    const res: Response = await fetch(
+      SPEEDFORCE_API_URL + "/llm/hybridSearch",
+      {
+        method: "POST",
+        headers: {
+          ...authHeader,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, query }),
+      }
+    );
+
+    if (!res.ok) {
+      dLog("error", {
+        message: "Error hybrid searching - response not ok",
+        location: "hybridSearch",
+        error: res,
+      });
+      error = "Error hybrid searching";
+    } else {
+      const jsonData: {
+        thread_id: string;
+        message_id: string;
+        final_rank: string;
+      }[] = await res.json();
+
+      data = jsonData;
+    }
+  } catch (e) {
+    dLog("error", {
+      message: "Error hybrid searching - caught error",
+      location: "hybridSearch",
+      error: e,
+    });
+    error = "Error hybrid searching";
+  }
+
+  return { data, error };
+};

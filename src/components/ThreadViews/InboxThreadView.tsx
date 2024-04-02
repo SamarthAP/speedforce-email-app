@@ -27,6 +27,16 @@ import {
   InfiniteQueryObserverResult,
 } from "react-query";
 import PersonalAI from "../AI/PersonalAI";
+import { handleArchiveClick, handleStarClick } from "../../lib/asyncHelpers";
+import { markRead } from "../../lib/sync";
+import { useHotkeys } from "react-hotkeys-hook";
+import { HoveredThreadContext } from "../../contexts/HoveredThreadContext";
+import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../../lib/shortcuts";
+import { useKeyPressContext } from "../../contexts/KeyPressContext";
+import { useCommandBarOpenContext } from "../../contexts/CommandBarContext";
+import CommandBar from "../CommandBar";
+import { useDebounceCallback } from "usehooks-ts";
+import { DisableMouseHoverContext } from "../../contexts/DisableMouseHoverContext";
 
 interface InboxThreadViewProps {
   data: ClientInboxTabType;
@@ -50,7 +60,9 @@ export default function InboxThreadView({
   reactQueryData,
 }: InboxThreadViewProps) {
   const { selectedEmail } = useEmailPageOutletContext();
-  const [hoveredThread, setHoveredThread] = useState<IEmailThread | null>(null);
+  const { commandBarIsOpen } = useCommandBarOpenContext();
+  const [hoveredThreadIndex, setHoveredThreadIndex] = useState<number>(-1);
+  const { sequenceInitiated } = useKeyPressContext();
   const [scrollPosition, setScrollPosition] = useState<number>(0);
   const dailyImageMetadata = useLiveQuery(() => db.dailyImageMetadata.get(1));
   const [isBackgroundOn, setIsBackgroundOn] = useState(false);
@@ -59,6 +71,16 @@ export default function InboxThreadView({
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const navigate = useNavigate();
   const [showPersonalAi, setShowPersonalAi] = useState(false);
+  const [disableMouseHover, setDisableMouseHover] = useState(false);
+  const disableMouseHoverContextValue = {
+    disableMouseHover,
+    setDisableMouseHover,
+  };
+
+  const debouncedDisableMouseHover = useDebounceCallback(
+    setDisableMouseHover,
+    300
+  );
 
   const renderCounter = useRef(0);
   renderCounter.current = renderCounter.current + 1;
@@ -87,25 +109,30 @@ export default function InboxThreadView({
     }
   };
 
-  const fetchEmailsIfScreenIsNotFilled = () => {
-    if (scrollRef.current) {
-      const { clientHeight, scrollHeight } = scrollRef.current;
-
-      if (
-        scrollHeight <= clientHeight &&
-        hasNextPage &&
-        !isFetchingNextPage &&
-        !isFetching
-      ) {
-        void fetchNextPage();
-      }
-    }
-  };
-
   useEffect(() => {
+    const fetchEmailsIfScreenIsNotFilled = () => {
+      if (scrollRef.current) {
+        const { clientHeight, scrollHeight } = scrollRef.current;
+
+        if (
+          scrollHeight <= clientHeight &&
+          hasNextPage &&
+          !isFetchingNextPage &&
+          !isFetching
+        ) {
+          void fetchNextPage();
+        }
+      }
+    };
     // fetches emails if the screen is not filled
     fetchEmailsIfScreenIsNotFilled();
-  }, [reactQueryData]);
+  }, [
+    reactQueryData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetching,
+  ]);
 
   // useEffect(() => {
   //   if (scrollRef.current) {
@@ -177,9 +204,147 @@ export default function InboxThreadView({
     });
   };
 
+  const hoveredThreadContextValue = useMemo(
+    () => ({
+      threadIndex: hoveredThreadIndex,
+      setThreadIndex: (index: number) => void setHoveredThreadIndex(index),
+    }),
+    [hoveredThreadIndex, setHoveredThreadIndex]
+  );
+
+  useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE], () => {
+    navigate("/compose");
+  });
+
+  useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SEARCH], () => {
+    navigate("/search");
+  });
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR],
+    () => {
+      if (hoveredThreadIndex > -1 && !sequenceInitiated) {
+        void handleStarClick(
+          threadsList[hoveredThreadIndex],
+          selectedEmail.email,
+          selectedEmail.provider
+        );
+      }
+    },
+    [
+      hoveredThreadIndex,
+      threadsList,
+      selectedEmail.email,
+      selectedEmail.provider,
+      sequenceInitiated,
+    ]
+  );
+
+  // mark hovered thread as done
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MARK_DONE],
+    () => {
+      if (hoveredThreadIndex > -1) {
+        void handleArchiveClick(
+          threadsList[hoveredThreadIndex],
+          selectedEmail.email,
+          selectedEmail.provider
+        );
+      }
+    },
+    [
+      hoveredThreadIndex,
+      threadsList,
+      selectedEmail.email,
+      selectedEmail.provider,
+    ]
+  );
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SELECT],
+    () => {
+      if (!commandBarIsOpen) {
+        if (hoveredThreadIndex > -1) {
+          const thread = threadsList[hoveredThreadIndex];
+          if (thread.unread) {
+            void markRead(
+              selectedEmail.email,
+              selectedEmail.provider,
+              thread.id
+            );
+          }
+          navigate(
+            `/${
+              data.title === "Important"
+                ? "importantThreadFeed"
+                : "otherThreadFeed"
+            }/${hoveredThreadIndex}`
+          );
+        }
+      }
+    },
+    [
+      hoveredThreadIndex,
+      threadsList,
+      selectedEmail.email,
+      selectedEmail.provider,
+      commandBarIsOpen,
+    ]
+  );
+
+  // move hovered thread down
+  useHotkeys(
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_DOWN],
+    ],
+    () => {
+      if (!commandBarIsOpen) {
+        setHoveredThreadIndex((prev) => {
+          if (prev <= -1) {
+            return 0;
+          } else if (prev < threads.length - 1) {
+            setDisableMouseHover(true);
+            debouncedDisableMouseHover(false);
+            return prev + 1;
+          } else {
+            return threads.length - 1;
+          }
+        });
+      }
+    },
+    [threads, commandBarIsOpen, setHoveredThreadIndex]
+  );
+
+  // move hovered thread up
+  useHotkeys(
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_UP],
+    ],
+    () => {
+      if (!commandBarIsOpen) {
+        setHoveredThreadIndex((prev) => {
+          if (prev <= -1) {
+            return 0;
+          } else if (prev > 0) {
+            setDisableMouseHover(true);
+            debouncedDisableMouseHover(false);
+            return prev - 1;
+          } else {
+            return 0;
+          }
+        });
+      }
+    },
+    [threads, commandBarIsOpen, setHoveredThreadIndex]
+  );
+
   return (
     <div
-      className={`overflow-hidden h-screen w-screen flex flex-col fadeIn-animation bg-cover bg-center`}
+      className={`overflow-hidden h-screen w-screen flex flex-col bg-cover bg-center ${
+        isBackgroundOn && backgroundImageUrl ? "fadeIn-animation" : ""
+      }`}
       style={
         isBackgroundOn && backgroundImageUrl
           ? {
@@ -328,21 +493,53 @@ export default function InboxThreadView({
                 />
               </div>
             </div>
-            <ThreadList
-              selectedEmail={selectedEmail}
-              threads={threads}
-              setHoveredThread={setHoveredThread}
-              setScrollPosition={setScrollPosition}
-              handleScroll={handleScroll}
-              scrollRef={scrollRef}
-              canArchiveThread={data.canArchiveThread}
-              canTrashThread={data.canTrashThread}
-              canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
-            />
+            <HoveredThreadContext.Provider value={hoveredThreadContextValue}>
+              <DisableMouseHoverContext.Provider
+                value={disableMouseHoverContextValue}
+              >
+                <ThreadList
+                  selectedEmail={selectedEmail}
+                  threads={threads}
+                  setScrollPosition={setScrollPosition}
+                  handleScroll={handleScroll}
+                  scrollRef={scrollRef}
+                  canArchiveThread={data.canArchiveThread}
+                  canTrashThread={data.canTrashThread}
+                  canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
+                  navigateToFeed={
+                    data.title === "Important"
+                      ? "/importantThreadFeed"
+                      : "/otherThreadFeed"
+                  }
+                />
+              </DisableMouseHoverContext.Provider>
+            </HoveredThreadContext.Provider>
           </div>
-          <AssistBar thread={hoveredThread} />
+          <AssistBar thread={threads[hoveredThreadIndex]} />
         </div>
       </InboxZeroBackgroundContext.Provider>
+      <CommandBar
+        data={[]}
+        // data={[
+        //   {
+        //     title: "Email Commands",
+        //     commands: [
+        //       {
+        //         icon: StarIcon,
+        //         description: "Star",
+        //         action: () => {
+        //           // star thread
+        //           toast("Starred");
+        //         },
+        //         keybind: {
+        //           keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
+        //           isSequential: false,
+        //         },
+        //       },
+        //     ],
+        //   },
+        // ]}
+      />
     </div>
   );
 }

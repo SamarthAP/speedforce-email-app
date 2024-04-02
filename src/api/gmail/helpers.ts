@@ -29,9 +29,9 @@ export function addTabbedMessageToForwardedHTML(
   const to =
     getMessageHeader(message.headers, "To").match(/[\w.-]+@[\w.-]+/g)?.[0] ||
     "";
+  const cc = getMessageHeader(message.headers, "Cc");
   const subject = getMessageHeader(message.headers, "Subject");
   const date = getMessageHeader(message.headers, "Date");
-  // TODO: consider other fields here, including cc, bcc, etc.
 
   if (!from || !date) {
     return { beforeString, afterString };
@@ -42,18 +42,22 @@ export function addTabbedMessageToForwardedHTML(
 
   return {
     beforeString: `${beforeString}
-                <blockquote style="border:none;border-left:solid #cccccc 1.0pt;padding:0cm 0cm 0cm 6.0pt;margin-left:4.8pt;margin-right:0cm">
-                  <div>
-                    <div>From: ${from}</div>
-                    <div>Date: ${formattedDate}</div>
-                    <div>Subject: ${subject}</div>
-                    <div>To: ${to}</div>
-                    <br/>
-                    ${htmlData}
-                    <br/>`,
-    afterString: `</div>
-                </blockquote>
-                <br/><br/>${afterString}`,
+                <div class="speedforce_quote">
+                  <div>---------- Forwarded message ---------</div>
+                  <div class="testclass">From: ${from}</div>
+                  <div>Date: ${formattedDate}</div>
+                  <div>Subject: ${subject}</div>
+                  <div>To: ${to}</div>
+                  ${cc ? "<div>Cc: " + cc + "</div>" : ""}
+                  <br>
+                  <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+                    <div dir="ltr">
+                      ${htmlData}`,
+    afterString: `
+                    </div>
+                  </blockquote>
+                </div>
+                <br><br>${afterString}`,
   };
 }
 
@@ -61,7 +65,7 @@ export async function buildForwardedHTML(
   message: IMessage,
   newMessageHTML = ""
 ) {
-  let beforeString = `${newMessageHTML}<div>---------- Forwarded message ---------</div>`;
+  let beforeString = `${newMessageHTML}`;
   let afterString = "";
 
   ({ beforeString, afterString } = addTabbedMessageToForwardedHTML(

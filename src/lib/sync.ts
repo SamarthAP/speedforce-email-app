@@ -61,6 +61,7 @@ import {
 } from "../api/outlook/helpers";
 import {
   create as gDraftCreate,
+  get as gDraftGet,
   update as gDraftUpdate,
   deleteDraft as gDraftDelete,
 } from "../api/gmail/users/drafts";
@@ -87,6 +88,119 @@ import { NewAttachment } from "../api/model/users.attachment";
 import toast from "react-hot-toast";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 import { CreateDraftResponseDataType } from "../api/model/users.draft";
+import { SENT_FROM_SPEEDFORCE_HTML } from "../api/templates/sentFromSpeedforce";
+import { updateSharedDraftStatus } from "../api/sharedDrafts";
+import { SharedDraftStatusType } from "../api/model/users.shared.draft";
+
+export async function handleNewDraftsGoogle(
+  accessToken: string,
+  email: string,
+  draftIds: string[]
+) {
+  let maxHistoryId = 0;
+  const promises = draftIds.map((draftId) => gDraftGet(accessToken, draftId));
+
+  try {
+    const drafts = await Promise.all(promises);
+    const parsedDrafts: IEmailThread[] = [];
+    const parsedMessages: IMessage[] = [];
+
+    drafts.forEach((draft) => {
+      // let hasInboxLabel = false;
+      const isStarred = draft.message.labelIds?.includes("STARRED") || false;
+      let labelIds: string[] = [];
+
+      if (isStarred) labelIds = upsertLabelIds(labelIds, "STARRED");
+
+      if (parseInt(draft.historyId) > maxHistoryId) {
+        maxHistoryId = parseInt(draft.historyId);
+      }
+
+      let hasAttachments = false;
+      let textData = "";
+      let htmlData = "";
+      const attachments: IAttachment[] = [];
+
+      draft.message.payload.parts?.forEach((part) => {
+        if (part.mimeType === "text/plain") {
+          textData = part.body.data || "";
+        } else if (part.mimeType === "text/html") {
+          htmlData = part.body.data || "";
+        }
+
+        if (part.parts) {
+          part.parts.forEach((nestedPart) => {
+            if (nestedPart.mimeType === "text/plain") {
+              textData = nestedPart.body.data || "";
+            } else if (nestedPart.mimeType === "text/html") {
+              htmlData = nestedPart.body.data || "";
+            }
+          });
+        }
+
+        if (part.filename && part.filename !== "") {
+          attachments.push({
+            filename: part.filename,
+            mimeType: part.mimeType,
+            attachmentId: part.body.attachmentId || "",
+            size: part.body.size || 0,
+          });
+          hasAttachments = true;
+        }
+      });
+
+      if (htmlData === "") {
+        htmlData = draft.message.payload.body.data || "";
+      }
+
+      parsedMessages.push({
+        // Weird behaviour here. When a draft is updated, messageId and threadId are modified.
+        // If we use either of these are as, message will not be overwritten and we have duplicates (and draft loading doesnt know which one to use)
+        // Since there is only 1 message per draft, we can use draft.id as messageId
+        id: draft.id,
+        threadId: draft.id,
+        labelIds: draft.message.labelIds,
+        from: getMessageHeader(draft.message.payload.headers, "From"),
+        toRecipients: getMessageHeader(draft.message.payload.headers, "To")
+          .split(",")
+          .map((recipient) => recipient.trim()),
+        snippet: draft.message.snippet || "",
+        headers: draft.message.payload.headers,
+        textData: decodeGoogleMessageData(textData),
+        htmlData: decodeGoogleMessageData(htmlData),
+        date: parseInt(draft.message.internalDate),
+        attachments,
+      });
+
+      draft.message.labelIds.forEach((id) => {
+        const labelId = GMAIL_FOLDER_IDS_MAP.getKey(id) || id;
+        labelIds = upsertLabelIds(labelIds, labelId);
+      });
+
+      parsedDrafts.push({
+        id: draft.id,
+        historyId: draft.historyId,
+        email: email,
+        from: getMessageHeader(draft.message.payload.headers, "From"),
+        subject: getMessageHeader(draft.message.payload.headers, "Subject"),
+        snippet: draft.message.snippet || "", // this should be the latest message's snippet
+        date: parseInt(draft.message.internalDate),
+        unread: draft.message.labelIds?.includes("UNREAD"),
+        labelIds: labelIds,
+        hasAttachments,
+      });
+    });
+
+    await db.emailThreads.bulkPut(parsedDrafts);
+    await db.messages.bulkPut(parsedMessages);
+
+    return;
+  } catch (e) {
+    dLog("Could not sync mailbox");
+    dLog(e);
+    return;
+  }
+}
 
 export async function handleNewThreadsGoogle(
   accessToken: string,
@@ -228,26 +342,18 @@ export async function handleNewThreadsGoogle(
   }
 }
 
-async function batchGetThreads(
-  accessToken: string,
-  threadIds: string[],
-  batchSize = 3
-) {
+async function batchGetThreads(accessToken: string, threadIds: string[]) {
   const threads = [];
-  const batches = _.chunk(threadIds, batchSize);
-  for (const batch of batches) {
-    const promises = [];
-    for (const threadId of batch) {
-      promises.push(mThreadGet(accessToken, threadId));
-    }
+  const promises = [];
+  for (const threadId of threadIds) {
+    promises.push(mThreadGet(accessToken, threadId));
+  }
 
-    try {
-      const batchThreads = await Promise.all(promises);
-      threads.push(...batchThreads);
-    } catch (e) {
-      dLog("Error getting batch threads");
-      continue;
-    }
+  try {
+    const batchThreads = await Promise.all(promises);
+    threads.push(...batchThreads);
+  } catch (e) {
+    dLog("Error getting batch threads");
   }
 
   return threads;
@@ -260,127 +366,120 @@ export async function handleNewThreadsOutlook(
   additionalLabelIds: string[] = [] // Label ids that should be appended to all threads (e.g. SENT)
 ) {
   try {
-    // Outlook throttle limit is 4 concurrent requests
-    const threads = await batchGetThreads(accessToken, threadsIds, 3);
-
     const parsedThreads: IEmailThread[] = [];
     const parsedMessages: IMessage[] = [];
-    for (const thread of threads) {
-      let unread = false;
-      let isStarred = false;
-      let isImportant = false;
-      let hasAttachments = false;
-      let labelIds: string[] = [];
-      for (const message of thread.value) {
-        if (!message.isRead) {
-          unread = true;
-        }
-        if (message.flag && message.flag.flagStatus === "flagged") {
-          isStarred = true;
-        }
-        if (message.inferenceClassification.toLowerCase() === "focused") {
-          isImportant = true;
-        }
-        if (message.hasAttachments) {
-          hasAttachments = true;
-        }
-      }
 
-      if (isStarred) labelIds = upsertLabelIds(labelIds, "STARRED");
-      if (unread) labelIds = upsertLabelIds(labelIds, "UNREAD");
-      if (isImportant) labelIds = upsertLabelIds(labelIds, "IMPORTANT");
+    // Outlook throttle limit is 4 concurrent requests
+    const batches = _.chunk(threadsIds, 3);
 
-      for (const message of thread.value) {
-        let textData = "";
-        let htmlData = "";
-
-        if (message.body.contentType === "plain") {
-          textData = message.body.content || "";
-        } else if (message.body.contentType === "html") {
-          htmlData = message.body.content || "";
+    for (const batch of batches) {
+      const threads = await batchGetThreads(accessToken, batch);
+      for (const thread of threads) {
+        let unread = false;
+        let isStarred = false;
+        let isImportant = false;
+        let hasAttachments = false;
+        let isDraft = false;
+        let labelIds: string[] = [];
+        for (const message of thread.value) {
+          if (!message.isRead) {
+            unread = true;
+          }
+          if (message.flag && message.flag.flagStatus === "flagged") {
+            isStarred = true;
+          }
+          if (message.inferenceClassification.toLowerCase() === "focused") {
+            isImportant = true;
+          }
+          if (message.hasAttachments) {
+            hasAttachments = true;
+          }
+          if (message.isDraft) {
+            isDraft = true;
+          }
         }
 
-        const attachments: IAttachment[] =
-          message.attachments?.map((attachment) => {
-            return {
-              filename: attachment.name,
-              mimeType: attachment.contentType,
-              attachmentId: attachment.id,
-              size: attachment.size,
-            };
-          }) || [];
-        // // List attachments
-        // if (message.hasAttachments) {
-        //   const { data, error } = await mAttachmentList(
-        //     accessToken,
-        //     message.id
-        //   );
+        if (isStarred) labelIds = upsertLabelIds(labelIds, "STARRED");
+        if (unread) labelIds = upsertLabelIds(labelIds, "UNREAD");
+        if (isImportant) labelIds = upsertLabelIds(labelIds, "IMPORTANT");
 
-        //   if (data && !error) {
-        //     // attachments.data.value.forEach((attachment) => {
-        //     attachments = data.map((attachment) => {
-        //       return {
-        //         filename: attachment.name,
-        //         mimeType: attachment.contentType,
-        //         attachmentId: attachment.id,
-        //         size: attachment.size,
-        //       };
-        //     });
-        //   } else {
-        //     dLog("Error getting attachments");
-        //   }
-        // }
+        for (const message of thread.value) {
+          let textData = "";
+          let htmlData = "";
 
-        // TODO: Add CC, BCC, attachments, etc.
-        parsedMessages.push({
-          id: message.id,
-          threadId: message.conversationId,
-          labelIds:
-            buildMessageLabelIdsOutlook(message).concat(additionalLabelIds),
+          if (message.body.contentType === "plain") {
+            textData = message.body.content || "";
+          } else if (message.body.contentType === "html") {
+            htmlData = message.body.content || "";
+          }
+
+          const attachments: IAttachment[] =
+            message.attachments?.map((attachment) => {
+              return {
+                filename: attachment.name,
+                mimeType: attachment.contentType,
+                attachmentId: attachment.id,
+                size: attachment.size,
+              };
+            }) || [];
+
+          // TODO: Add CC, BCC, attachments, etc.
+          parsedMessages.push({
+            id: message.id,
+            threadId: message.conversationId,
+            labelIds:
+              buildMessageLabelIdsOutlook(message).concat(additionalLabelIds),
+            from:
+              message.from?.emailAddress?.address ||
+              message.sender?.emailAddress?.address ||
+              "No Sender",
+            toRecipients: message.toRecipients.map(
+              (m) => m.emailAddress.address
+            ), // TODO: add multiple recipients
+            snippet: message.bodyPreview || "",
+            headers: buildMessageHeadersOutlook(message),
+            textData,
+            htmlData,
+            date: new Date(message.receivedDateTime).getTime(),
+            attachments: attachments, // TODO: implement for outlook
+          });
+
+          // dLog(message)
+          const folderName = await getFolderNameFromIdOutlook(
+            email,
+            message.parentFolderId
+          );
+          const labelId =
+            OUTLOOK_FOLDER_IDS_MAP.getKey(folderName) || folderName;
+          labelIds = upsertLabelIds(labelIds, labelId);
+        }
+
+        const lastMessageIndex = thread.value.length - 1;
+        parsedThreads.push({
+          id: thread.value[lastMessageIndex].conversationId,
+          historyId: "",
+          email: email,
           from:
-            message.from?.emailAddress?.address ||
-            message.sender?.emailAddress?.address ||
+            thread.value[lastMessageIndex].from?.emailAddress?.address ||
+            thread.value[lastMessageIndex].sender?.emailAddress?.address ||
             "No Sender",
-          toRecipients: message.toRecipients.map((m) => m.emailAddress.address), // TODO: add multiple recipients
-          snippet: message.bodyPreview || "",
-          headers: buildMessageHeadersOutlook(message),
-          textData,
-          htmlData,
-          date: new Date(message.receivedDateTime).getTime(),
-          attachments: attachments, // TODO: implement for outlook
+          subject: thread.value[lastMessageIndex].subject,
+          snippet: thread.value[lastMessageIndex].bodyPreview,
+          date: new Date(
+            isDraft
+              ? thread.value[lastMessageIndex].lastModifiedDateTime
+              : thread.value[lastMessageIndex].receivedDateTime
+          ).getTime(),
+          unread: unread,
+          labelIds: labelIds,
+          hasAttachments: hasAttachments,
         });
-
-        // dLog(message)
-        const folderName = await getFolderNameFromIdOutlook(
-          email,
-          message.parentFolderId
-        );
-        const labelId = OUTLOOK_FOLDER_IDS_MAP.getKey(folderName) || folderName;
-        labelIds = upsertLabelIds(labelIds, labelId);
       }
 
-      const lastMessageIndex = thread.value.length - 1;
-      parsedThreads.push({
-        id: thread.value[lastMessageIndex].conversationId,
-        historyId: "",
-        email: email,
-        from:
-          thread.value[lastMessageIndex].from?.emailAddress?.address ||
-          thread.value[lastMessageIndex].sender?.emailAddress?.address ||
-          "No Sender",
-        subject: thread.value[lastMessageIndex].subject,
-        snippet: thread.value[lastMessageIndex].bodyPreview,
-        date: new Date(
-          thread.value[lastMessageIndex].receivedDateTime
-        ).getTime(),
-        unread: unread,
-        labelIds: labelIds,
-        hasAttachments: hasAttachments,
-      });
+      await db.emailThreads.bulkPut(parsedThreads);
+      await db.messages.bulkPut(parsedMessages);
     }
 
-    await db.emailThreads.bulkPut(parsedThreads);
-    await db.messages.bulkPut(parsedMessages);
     return parsedThreads;
   } catch (e) {
     dLog("Could not sync mailbox");
@@ -597,6 +696,17 @@ export async function sendReply(
   html: string
 ) {
   const accessToken = await getAccessToken(email);
+  const wrappedHtml = `
+    ${html}
+    <br>
+    <div class="speedforce_quote">
+      <p>On ${new Date(message.date).toDateString()}, ${message.from} wrote:</p>
+      <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+        <div dir="ltr">${message.htmlData}</div>
+      </blockquote>
+    </div>
+    <br>
+  `;
   if (provider === "google") {
     const from = email;
     const to =
@@ -616,14 +726,19 @@ export async function sendReply(
       subject,
       headerMessageId,
       threadId,
-      html
+      wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
   } else if (provider === "outlook") {
     const subject = getMessageHeader(message.headers, "Subject");
     const messageId = message.id;
 
     try {
-      await mSendReply(accessToken, subject, messageId, html);
+      await mSendReply(
+        accessToken,
+        subject,
+        messageId,
+        wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
+      );
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error sending reply" };
@@ -640,6 +755,18 @@ export async function sendReplyAll(
   html: string
 ) {
   const accessToken = await getAccessToken(email);
+  const wrappedHtml = `
+    ${html}
+    <br>
+    <div class="speedforce_quote">
+      <p>On ${new Date(message.date).toDateString()} ${message.from} wrote:</p>
+      <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+        <div dir="ltr">${message.htmlData}</div>
+      </blockquote>
+    </div>
+    <br>
+  `;
+
   if (provider === "google") {
     const from = email;
     const to = getToRecipients(message, email);
@@ -654,14 +781,19 @@ export async function sendReplyAll(
       subject,
       headerMessageId,
       threadId,
-      html
+      wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
   } else if (provider === "outlook") {
     const subject = getMessageHeader(message.headers, "Subject");
     const messageId = message.id;
 
     try {
-      await mSendReplyAll(accessToken, subject, messageId, html);
+      await mSendReplyAll(
+        accessToken,
+        subject,
+        messageId,
+        wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
+      );
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error sending reply" };
@@ -676,6 +808,8 @@ export async function forward(
   provider: "google" | "outlook",
   message: IMessage,
   toRecipients: string[],
+  ccRecipients: string[],
+  bccRecipients: string[],
   html: string
 ) {
   const accessToken = await getAccessToken(email);
@@ -687,13 +821,24 @@ export async function forward(
     return await gForward(
       accessToken,
       from,
-      toRecipients,
+      toRecipients.join(","),
+      ccRecipients.join(","),
+      bccRecipients.join(","),
       subject,
-      decodeURIComponent(encodeURIComponent(forwardHTML))
+      decodeURIComponent(
+        encodeURIComponent(forwardHTML.concat(SENT_FROM_SPEEDFORCE_HTML))
+      )
     );
   } else if (provider === "outlook") {
     try {
-      await mForward(accessToken, message.id, toRecipients);
+      // TODO: rework to use MIME instead of endpoint
+      await mForward(
+        accessToken,
+        message.id,
+        toRecipients,
+        ccRecipients,
+        bccRecipients
+      );
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error forwarding message" };
@@ -706,17 +851,36 @@ export async function forward(
 export async function sendEmail(
   email: string,
   provider: "google" | "outlook",
-  to: string,
+  toRecipients: string[],
+  ccRecipients: string[],
+  bccRecipients: string[],
   subject: string,
   html: string
 ) {
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    return await gSendEmail(accessToken, email, to, subject, html);
+    const { data, error } = await gSendEmail(
+      accessToken,
+      email,
+      toRecipients.join(","),
+      ccRecipients.join(","),
+      bccRecipients.join(","),
+      subject,
+      html.concat(SENT_FROM_SPEEDFORCE_HTML)
+    );
+
+    return { data, error };
   } else if (provider === "outlook") {
     try {
-      await mSendEmail(accessToken, to, subject, html);
+      await mSendEmail(
+        accessToken,
+        toRecipients,
+        ccRecipients,
+        bccRecipients,
+        subject,
+        html.concat(SENT_FROM_SPEEDFORCE_HTML)
+      );
 
       return { data: null, error: null };
     } catch (e) {
@@ -730,7 +894,9 @@ export async function sendEmail(
 export async function sendEmailWithAttachments(
   email: string,
   provider: "google" | "outlook",
-  to: string,
+  toRecipients: string[],
+  ccRecipients: string[],
+  bccRecipients: string[],
   subject: string,
   html: string,
   attachments: NewAttachment[]
@@ -738,21 +904,27 @@ export async function sendEmailWithAttachments(
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    return await gSendEmailWithAttachments(
+    const { data, error } = await gSendEmailWithAttachments(
       accessToken,
       email,
-      to,
+      toRecipients.join(","),
+      ccRecipients.join(","),
+      bccRecipients.join(","),
       subject,
-      html,
+      html.concat(SENT_FROM_SPEEDFORCE_HTML),
       attachments
     );
+
+    return { data, error };
   } else if (provider === "outlook") {
     try {
       await mSendEmailWithAttachments(
         accessToken,
-        to,
+        toRecipients,
+        ccRecipients,
+        bccRecipients,
         subject,
-        html,
+        html.concat(SENT_FROM_SPEEDFORCE_HTML),
         attachments
       );
 
@@ -768,8 +940,7 @@ export async function sendEmailWithAttachments(
 export async function deleteThread(
   email: string,
   provider: "google" | "outlook",
-  threadId: string,
-  shouldToast = true
+  threadId: string
 ) {
   const accessToken = await getAccessToken(email);
 
@@ -795,10 +966,6 @@ export async function deleteThread(
     } catch (e) {
       dLog("Error deleting thread");
     }
-  }
-
-  if (shouldToast) {
-    toast.success("Deleted thread");
   }
 }
 
@@ -1080,13 +1247,15 @@ export async function search(
 export async function createDraft(
   email: string,
   provider: "google" | "outlook",
-  toRecipients: string[],
+  to: string[],
+  cc: string[],
+  bcc: string[],
   subject: string,
   content: string
   // attachments: NewAttachment[]
 ) {
   if (
-    toRecipients.length === 0 &&
+    to.length === 0 &&
     !subject &&
     !content
     // attachments.length === 0
@@ -1102,7 +1271,9 @@ export async function createDraft(
     const { data, error } = await gDraftCreate(
       accessToken,
       email,
-      toRecipients.join(","),
+      to.join(","),
+      cc.join(","),
+      bcc.join(","),
       subject,
       content
       // attachments
@@ -1121,7 +1292,9 @@ export async function createDraft(
     try {
       const draft = await mDraftCreate(
         accessToken,
-        toRecipients,
+        to,
+        cc,
+        bcc,
         subject,
         content
         // attachments
@@ -1146,7 +1319,9 @@ export async function updateDraft(
   email: string,
   provider: "google" | "outlook",
   messageId: string,
-  toRecipients: string[],
+  to: string[],
+  cc: string[],
+  bcc: string[],
   subject: string,
   content: string
   // attachments: NewAttachment[]
@@ -1158,7 +1333,9 @@ export async function updateDraft(
       accessToken,
       messageId,
       email,
-      toRecipients.join(","),
+      to.join(","),
+      cc.join(","),
+      bcc.join(","),
       subject,
       content
       // attachments
@@ -1168,7 +1345,9 @@ export async function updateDraft(
       const data = await mDraftUpdate(
         accessToken,
         messageId,
-        toRecipients,
+        to,
+        cc,
+        bcc,
         subject,
         content
         // attachments
@@ -1185,22 +1364,41 @@ export async function updateDraft(
 export async function deleteDraft(
   email: string,
   provider: "google" | "outlook",
-  messageId: string
+  draftId: string,
+  shouldToast = false
 ) {
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    return await gDraftDelete(accessToken, messageId);
-  } else {
-    try {
-      await mDeleteMessage(accessToken, messageId);
-
-      return { data: null, error: null };
-    } catch (e) {
+    const { error } = await gDraftDelete(accessToken, draftId);
+    if (error) {
       dLog("Error deleting draft");
-      return { data: null, error: "Error deleting draft" };
+      return { data: null, error };
+    }
+  } else {
+    const messages = await db.messages
+      .where("threadId")
+      .equals(draftId)
+      .toArray();
+
+    const apiPromises = messages.map((message) => {
+      return mMoveMessage(
+        accessToken,
+        message.id,
+        OUTLOOK_FOLDER_IDS_MAP.getValue(FOLDER_IDS.TRASH) || ""
+      );
+    });
+
+    try {
+      await Promise.all(apiPromises);
+    } catch (e) {
+      dLog("Error deleting thread");
+      return { data: null, error: "Error deleting thread" };
     }
   }
+
+  if (shouldToast) toast.success("Discarded draft");
+  return { data: null, error: null };
 }
 
 export async function sendDraft(

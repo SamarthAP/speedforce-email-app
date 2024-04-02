@@ -1,238 +1,588 @@
-export default function CommandBar() {
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Transition } from "@headlessui/react";
+import { LightBulbIcon } from "../lib/icons";
+import { useNavigate } from "react-router-dom";
+import {
+  ArchiveBoxIcon,
+  ClipboardDocumentIcon,
+  ExclamationCircleIcon,
+  InboxIcon,
+  PaperAirplaneIcon,
+  StarIcon,
+  TrashIcon,
+  UserGroupIcon,
+} from "@heroicons/react/20/solid";
+import { useHotkeys } from "react-hotkeys-hook";
+import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
+import {
+  HoveredCommandBarItemContext,
+  useCommandBarOpenContext,
+  useHoveredCommandBarItemContext,
+} from "../contexts/CommandBarContext";
+import {
+  DisableMouseHoverContext,
+  useDisableMouseHoverContext,
+} from "../contexts/DisableMouseHoverContext";
+import { useDebounceCallback } from "usehooks-ts";
+
+interface CommandBarGroupData {
+  title: string;
+  commands: {
+    icon: React.ElementType;
+    description: string;
+    action: () => void;
+    keybind: {
+      keystrokes: string[];
+      isSequential?: boolean;
+    };
+  }[];
+}
+
+interface CommandBarProps {
+  data: CommandBarGroupData[];
+}
+
+export default function CommandBar({ data }: CommandBarProps) {
+  const [open, setOpen] = useState(false);
+  const commandBarContext = useCommandBarOpenContext();
+  const [hoveredCommandBarItemId, setHoveredCommandBarItemId] = useState("");
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [shortcutsFloaterVisible, setShortcutsFloaterVisible] = useState(() => {
+    const isVisible = localStorage.getItem("shortcutsFloaterVisible");
+
+    if (isVisible === "true") {
+      return true;
+    }
+
+    return false;
+  });
+  const [disableMouseHover, setDisableMouseHover] = useState(false);
+  const disableMouseHoverContextValue = {
+    disableMouseHover,
+    setDisableMouseHover,
+  };
+
+  useEffect(() => {
+    if (open) {
+      commandBarContext.setCommandBarIsOpen(true);
+    } else {
+      commandBarContext.setCommandBarIsOpen(false);
+    }
+  }, [open, commandBarContext]);
+
+  const hoveredCommadBarItemContextValue = useMemo(
+    () => ({
+      itemId: hoveredCommandBarItemId,
+      setItemId: (id: string) => void setHoveredCommandBarItemId(id),
+    }),
+    [hoveredCommandBarItemId, setHoveredCommandBarItemId]
+  );
+
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      const visible = localStorage.getItem("shortcutsFloaterVisible");
+      setShortcutsFloaterVisible(visible === "true");
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
+  const debouncedDisableMouseHover = useDebounceCallback(
+    setDisableMouseHover,
+    300
+  );
+
+  const defaultData: CommandBarGroupData[] = [
+    {
+      title: "Navigation",
+      commands: [
+        {
+          icon: InboxIcon,
+          description: "Go To Important",
+          action: () => {
+            navigate("/");
+          },
+          keybind: {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "i"],
+            isSequential: true,
+          },
+        },
+        {
+          icon: InboxIcon,
+          description: "Go To Other",
+          action: () => {
+            navigate("/other");
+          },
+          keybind: {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "o"],
+            isSequential: true,
+          },
+        },
+        {
+          icon: StarIcon,
+          description: "Go To Starred",
+          action: () => {
+            navigate("/starred");
+          },
+          keybind: {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "s"],
+            isSequential: true,
+          },
+        },
+        {
+          icon: PaperAirplaneIcon,
+          description: "Go To Sent",
+          action: () => {
+            navigate("/sent");
+          },
+          keybind: {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "t"],
+            isSequential: true,
+          },
+        },
+        {
+          icon: ClipboardDocumentIcon,
+          description: "Go To Drafts",
+          action: () => {
+            navigate("/drafts");
+          },
+          keybind: {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "d"],
+            isSequential: true,
+          },
+        },
+        {
+          icon: ArchiveBoxIcon,
+          description: "Go To Done",
+          action: () => {
+            navigate("/done");
+          },
+          keybind: {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "e"],
+            isSequential: true,
+          },
+        },
+        {
+          icon: ExclamationCircleIcon,
+          description: "Go To Spam",
+          action: () => {
+            navigate("/spam");
+          },
+          keybind: {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "!"],
+            isSequential: true,
+          },
+        },
+        {
+          icon: TrashIcon,
+          description: "Go To Deleted",
+          action: () => {
+            navigate("/deleted");
+          },
+          keybind: {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "#"],
+            isSequential: true,
+          },
+        },
+        {
+          icon: UserGroupIcon,
+          description: "Go To Shared Drafts",
+          action: () => {
+            navigate("/sharedDrafts");
+          },
+          keybind: {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "$"],
+            isSequential: true,
+          },
+        },
+      ],
+    },
+    {
+      title: "Help",
+      commands: [
+        {
+          icon: LightBulbIcon,
+          description: shortcutsFloaterVisible
+            ? "Hide keyboard shortcut hints"
+            : "Show keyboard shortcut hints",
+          action: () => {
+            if (shortcutsFloaterVisible) {
+              localStorage.setItem("shortcutsFloaterVisible", "false");
+              window.dispatchEvent(new StorageEvent("storage"));
+            } else {
+              localStorage.setItem("shortcutsFloaterVisible", "true");
+              window.dispatchEvent(new StorageEvent("storage"));
+            }
+          },
+          keybind: {
+            keystrokes: ["Shift", "/"],
+            isSequential: false,
+          },
+        },
+      ],
+    },
+  ];
+
+  const mergedData = [...defaultData, ...data];
+
+  let filteredData = mergedData;
+
+  if (search) {
+    filteredData = [];
+
+    for (let i = 0; i < mergedData.length; i++) {
+      const group = mergedData[i];
+
+      if (group.title.toLowerCase().includes(search.toLowerCase()))
+        filteredData.push(group);
+
+      const filteredCommands = group.commands.filter((command) =>
+        command.description.toLowerCase().includes(search.toLowerCase())
+      );
+
+      if (filteredCommands.length > 0) {
+        filteredData.push({
+          title: group.title,
+          commands: filteredCommands,
+        });
+      }
+    }
+  }
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SELECT],
+    () => {
+      if (!commandBarContext.commandBarIsOpen) return;
+
+      let hoveredItem = null;
+
+      for (let i = 0; i < filteredData.length; i++) {
+        const group = filteredData[i];
+
+        for (let j = 0; j < group.commands.length; j++) {
+          const command = group.commands[j];
+
+          if (command.description === hoveredCommandBarItemId) {
+            hoveredItem = command;
+            break;
+          }
+        }
+
+        if (hoveredItem) {
+          break;
+        }
+      }
+
+      if (hoveredItem) {
+        hoveredItem.action();
+        setOpen(false);
+      }
+    },
+    [hoveredCommandBarItemId, filteredData, commandBarContext.commandBarIsOpen]
+  );
+
+  useHotkeys(
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_UP],
+    ],
+    () => {
+      if (!commandBarContext.commandBarIsOpen) return;
+
+      const items = document.querySelectorAll(".command-bar-item");
+
+      if (hoveredCommandBarItemId === "") {
+        if (items.length > 0) {
+          return setHoveredCommandBarItemId(items[0].innerHTML || "");
+        }
+      }
+
+      const currentIndex = Array.from(items).findIndex(
+        (item) => item.innerHTML === hoveredCommandBarItemId
+      );
+
+      if (currentIndex === -1) {
+        return setHoveredCommandBarItemId("");
+      } else if (currentIndex === 0) {
+        return;
+      } else {
+        setDisableMouseHover(true);
+        debouncedDisableMouseHover(false);
+        return setHoveredCommandBarItemId(
+          items[currentIndex - 1].innerHTML || ""
+        );
+      }
+    },
+    [
+      hoveredCommandBarItemId,
+      setHoveredCommandBarItemId,
+      commandBarContext.commandBarIsOpen,
+    ]
+  );
+
+  useHotkeys(
+    [
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
+      DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_DOWN],
+    ],
+    () => {
+      if (!commandBarContext.commandBarIsOpen) return;
+
+      const items = document.querySelectorAll(".command-bar-item");
+
+      if (hoveredCommandBarItemId === "") {
+        if (items.length > 0) {
+          return setHoveredCommandBarItemId(items[0].innerHTML || "");
+        }
+      }
+
+      const currentIndex = Array.from(items).findIndex(
+        (item) => item.innerHTML === hoveredCommandBarItemId
+      );
+
+      if (currentIndex === -1) {
+        return setHoveredCommandBarItemId("");
+      } else if (currentIndex === items.length - 1) {
+        return;
+      } else {
+        setDisableMouseHover(true);
+        debouncedDisableMouseHover(false);
+        return setHoveredCommandBarItemId(
+          items[currentIndex + 1].innerHTML || ""
+        );
+      }
+    },
+    [
+      hoveredCommandBarItemId,
+      setHoveredCommandBarItemId,
+      commandBarContext.commandBarIsOpen,
+    ]
+  );
+
+  // Toggle the menu when ⌘K is pressed
+  useEffect(() => {
+    const down = (e: any) => {
+      if (e.key === "k" && e.metaKey) {
+        e.preventDefault();
+        setOpen((open) => !open);
+      }
+
+      if (e.key === "Escape") {
+        // if cursor is not in the input, close the command bar
+        if (document.activeElement !== inputRef.current) {
+          setOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
+
+  const onKeyUp = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      event.key === "Escape" ||
+      event.key === "ArrowUp" ||
+      event.key === "ArrowDown"
+    ) {
+      if (inputRef.current) {
+        inputRef.current.blur();
+      }
+    }
+  };
+
   return (
-    <div className="relative z-10" role="dialog" aria-modal="true">
-      {/* <!--
-    Background backdrop, show/hide based on modal state.
+    <Transition appear show={open} as={Fragment}>
+      <div
+        // as="div"
+        className="relative z-10"
+        // onClose={() => {
+        //   setOpen(false);
+        // }}
+      >
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/25" />
+        </Transition.Child>
 
-    Entering: "ease-out duration-300"
-      From: "opacity-0"
-      To: "opacity-100"
-    Leaving: "ease-in duration-200"
-      From: "opacity-100"
-      To: "opacity-0"
-  --> */}
-      <div className="fixed inset-0 bg-gray-500 bg-opacity-25 transition-opacity"></div>
-
-      <div className="fixed inset-0 z-10 overflow-y-auto p-4 sm:p-6 md:p-20">
-        {/* <!--
-      Command palette, show/hide based on modal state.
-
-      Entering: "ease-out duration-300"
-        From: "opacity-0 scale-95"
-        To: "opacity-100 scale-100"
-      Leaving: "ease-in duration-200"
-        From: "opacity-100 scale-100"
-        To: "opacity-0 scale-95"
-    --> */}
-        <div className="mx-auto max-w-2xl transform divide-y divide-gray-500 divide-opacity-10 overflow-hidden rounded-xl bg-white bg-opacity-80 shadow-2xl ring-1 ring-black ring-opacity-5 backdrop-blur backdrop-filter transition-all">
-          <div className="relative">
-            <svg
-              className="pointer-events-none absolute left-4 top-3.5 h-5 w-5 text-gray-900 text-opacity-40"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
+        <div className="fixed inset-0">
+          <div className="flex flex-col items-center pt-[16vh] min-h-full">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
             >
-              <path
-                fill-rule="evenodd"
-                d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                clip-rule="evenodd"
-              />
-            </svg>
-            <input
-              type="text"
-              className="h-12 w-full border-0 bg-transparent pl-11 pr-4 text-gray-900 focus:ring-0 sm:text-sm"
-              placeholder="Search..."
-            ></input>
-          </div>
-
-          {/* <!-- Default state, show/hide based on command palette state. --> */}
-          <ul className="max-h-80 scroll-py-2 divide-y divide-gray-500 divide-opacity-10 overflow-y-auto">
-            <li className="p-2">
-              <h2 className="mb-2 mt-4 px-3 text-xs font-semibold text-gray-900">
-                Recent searches
-              </h2>
-              <ul className="text-sm text-gray-700">
-                {/* <!-- Active: "bg-gray-900 bg-opacity-5 text-gray-900" --> */}
-                <li className="group flex cursor-default select-none items-center rounded-md px-3 py-2">
-                  {/* <!-- Not Active: "text-opacity-40" --> */}
-                  <svg
-                    className="h-6 w-6 flex-none text-gray-900 text-opacity-40"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    aria-hidden="true"
+              <div className="max-w-2xl min-h-72 max-h-[360px] overflow-hidden w-full flex flex-col rounded-lg bg-white dark:bg-zinc-900 p-2 border border-slate-200 dark:border-zinc-700">
+                <HoveredCommandBarItemContext.Provider
+                  value={hoveredCommadBarItemContextValue}
+                >
+                  <input
+                    autoFocus
+                    ref={inputRef}
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      setHoveredCommandBarItemId("");
+                    }}
+                    onKeyUp={onKeyUp}
+                    placeholder="Type a command"
+                    className="pl-1 py-2 mb-2 border-b border-b-slate-200 dark:border-b-zinc-700 w-full outline-none bg-transparent text-sm dark:placeholder-zinc-600 placeholder-slate-300 dark:text-white text-black"
+                  ></input>
+                  <DisableMouseHoverContext.Provider
+                    value={disableMouseHoverContextValue}
                   >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"
-                    />
-                  </svg>
-                  <span className="ml-3 flex-auto truncate">
-                    Workflow Inc. / Website Redesign
-                  </span>
-                  {/* <!-- Not Active: "hidden" --> */}
-                  <span className="ml-3 hidden flex-none text-gray-500">
-                    Jump to...
-                  </span>
-                </li>
-              </ul>
-            </li>
-            <li className="p-2">
-              <h2 className="sr-only">Quick actions</h2>
-              <ul className="text-sm text-gray-700">
-                {/* <!-- Active: "bg-gray-900 bg-opacity-5 text-gray-900" --> */}
-                <li className="group flex cursor-default select-none items-center rounded-md px-3 py-2">
-                  {/* <!-- Not Active: "text-opacity-40" --> */}
-                  <svg
-                    className="h-6 w-6 flex-none text-gray-900 text-opacity-40"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                    />
-                  </svg>
-                  <span className="ml-3 flex-auto truncate">
-                    Add new file...
-                  </span>
-                  <span className="ml-3 flex-none text-xs font-semibold text-gray-500">
-                    <kbd className="font-sans">⌘</kbd>
-                    <kbd className="font-sans">N</kbd>
-                  </span>
-                </li>
-                <li className="group flex cursor-default select-none items-center rounded-md px-3 py-2">
-                  <svg
-                    className="h-6 w-6 flex-none text-gray-900 text-opacity-40"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M12 10.5v6m3-3H9m4.06-7.19l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"
-                    />
-                  </svg>
-                  <span className="ml-3 flex-auto truncate">
-                    Add new folder...
-                  </span>
-                  <span className="ml-3 flex-none text-xs font-semibold text-gray-500">
-                    <kbd className="font-sans">⌘</kbd>
-                    <kbd className="font-sans">F</kbd>
-                  </span>
-                </li>
-                <li className="group flex cursor-default select-none items-center rounded-md px-3 py-2">
-                  <svg
-                    className="h-6 w-6 flex-none text-gray-900 text-opacity-40"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M5.25 8.25h15m-16.5 7.5h15m-1.8-13.5l-3.9 19.5m-2.1-19.5l-3.9 19.5"
-                    />
-                  </svg>
-                  <span className="ml-3 flex-auto truncate">
-                    Add hashtag...
-                  </span>
-                  <span className="ml-3 flex-none text-xs font-semibold text-gray-500">
-                    <kbd className="font-sans">⌘</kbd>
-                    <kbd className="font-sans">H</kbd>
-                  </span>
-                </li>
-                <li className="group flex cursor-default select-none items-center rounded-md px-3 py-2">
-                  <svg
-                    className="h-6 w-6 flex-none text-gray-900 text-opacity-40"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"
-                    />
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M6 6h.008v.008H6V6z"
-                    />
-                  </svg>
-                  <span className="ml-3 flex-auto truncate">Add label...</span>
-                  <span className="ml-3 flex-none text-xs font-semibold text-gray-500">
-                    <kbd className="font-sans">⌘</kbd>
-                    <kbd className="font-sans">L</kbd>
-                  </span>
-                </li>
-              </ul>
-            </li>
-          </ul>
-
-          {/* <!-- Results, show/hide based on command palette state. --> */}
-          <ul className="max-h-96 overflow-y-auto p-2 text-sm text-gray-700">
-            {/* <!-- Active: "bg-gray-900 bg-opacity-5 text-gray-900" --> */}
-            <li className="group flex cursor-default select-none items-center rounded-md px-3 py-2">
-              {/* <!-- Not Active: "text-opacity-40" --> */}
-              <svg
-                className="h-6 w-6 flex-none text-gray-900 text-opacity-40"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.5"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"
-                />
-              </svg>
-              <span className="ml-3 flex-auto truncate">
-                Workflow Inc. / Website Redesign
-              </span>
-              {/* <!-- Not Active: "hidden" --> */}
-              <span className="ml-3 hidden flex-none text-gray-500">
-                Jump to...
-              </span>
-            </li>
-          </ul>
-
-          {/**!-- Empty state, show/hide based on command palette state.**/}
-          <div className="px-6 py-14 text-center sm:px-14">
-            <svg
-              className="mx-auto h-6 w-6 text-gray-900 text-opacity-40"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"
-              />
-            </svg>
-            <p className="mt-4 text-sm text-gray-900">
-              We couldn't find any projects with that term. Please try again.
-            </p>
+                    <div className="overflow-y-scroll hide-scroll">
+                      {filteredData.map((group, index) => (
+                        <CommandGroup
+                          key={index}
+                          title={group.title}
+                          commands={group.commands}
+                          setCommandBar={(open: boolean) => setOpen(open)}
+                        />
+                      ))}
+                    </div>
+                  </DisableMouseHoverContext.Provider>
+                </HoveredCommandBarItemContext.Provider>
+              </div>
+            </Transition.Child>
           </div>
         </div>
+      </div>
+    </Transition>
+  );
+}
+
+function CommandGroup({
+  title,
+  commands,
+  setCommandBar,
+}: {
+  title: string;
+  commands: {
+    icon: React.ElementType;
+    description: string;
+    action: () => void;
+    keybind: {
+      keystrokes: string[];
+      isSequential?: boolean;
+    };
+  }[];
+  setCommandBar: (open: boolean) => void;
+}) {
+  return (
+    <div className="select-none">
+      <div className="text-xs pl-2 py-2 text-slate-400 dark:text-zinc-500">
+        {title}
+      </div>
+      <div>
+        {commands.map((command, index) => (
+          <CommandItem
+            key={index}
+            Icon={command.icon}
+            action={command.action}
+            description={command.description}
+            keybind={command.keybind}
+            setCommandBar={setCommandBar}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CommandItem({
+  Icon,
+  description,
+  action,
+  keybind,
+  setCommandBar,
+}: {
+  Icon: React.ElementType;
+  description: string;
+  action: () => void;
+  keybind: {
+    keystrokes: string[];
+    isSequential?: boolean;
+  };
+  setCommandBar: (open: boolean) => void;
+}) {
+  // make ref
+  const itemRef = useRef<HTMLDivElement>(null);
+  const hoveredCommandBarItemContext = useHoveredCommandBarItemContext();
+  const disableMouseHoverContext = useDisableMouseHoverContext();
+
+  const isHovered = hoveredCommandBarItemContext.itemId === description;
+
+  useEffect(() => {
+    if (isHovered && itemRef.current) {
+      itemRef.current.scrollIntoView({
+        behavior: "smooth", // smooth or instant
+        block: "nearest",
+        inline: "nearest",
+      });
+    }
+  }, [isHovered]);
+
+  return (
+    <div
+      ref={itemRef}
+      onMouseEnter={() => {
+        if (!disableMouseHoverContext.disableMouseHover) {
+          hoveredCommandBarItemContext.setItemId(description);
+        }
+      }}
+      onClick={() => {
+        action();
+        setCommandBar(false);
+      }}
+      className={`p-2 w-full flex justify-between rounded-lg ${
+        isHovered ? "dark:bg-zinc-800 bg-slate-100" : ""
+      }`}
+    >
+      <div className="flex pl-2 gap-x-3 items-center">
+        <div className="flex items-center">
+          <Icon className="h-4 w-4 text-slate-400 dark:text-zinc-500" />
+        </div>
+
+        <span
+          // Note: created a fake classname command-bar-item to query it for moving up and down.
+          className="command-bar-item text-slate-400 dark:text-zinc-500 text-sm"
+        >
+          {description}
+        </span>
+      </div>
+
+      <div className="flex gap-x-1">
+        {keybind.keystrokes.map((keystroke, index) => (
+          <div key={index} className="flex items-center gap-x-1">
+            {keybind.isSequential && index > 0 ? (
+              <div className="text-xs text-slate-400 dark:text-zinc-500 select-none">
+                then
+              </div>
+            ) : null}
+            <div className="h-[24px] min-w-[24px] px-2 flex items-center justify-center rounded-md bg-slate-400/60 dark:bg-zinc-500/40 text-white dark:text-zinc-900 text-xs select-none">
+              {keystroke}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
