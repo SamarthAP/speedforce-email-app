@@ -1,8 +1,6 @@
 import { XCircleIcon } from "@heroicons/react/20/solid";
 import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useLocalStorage } from "usehooks-ts";
 
 export interface ShortcutsFloaterProps {
   items: {
@@ -34,8 +32,6 @@ export default function ShortcutsFloater({ items }: ShortcutsFloaterProps) {
       window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
-
-  useLocalStorage;
 
   useHotkeys(
     "Shift+Slash",
