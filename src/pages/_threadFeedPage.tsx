@@ -13,7 +13,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Message from "../components/Message";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import { handleArchiveClick, handleStarClick } from "../lib/asyncHelpers";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   KeyPressProvider,
   useKeyPressContext,
@@ -24,6 +24,8 @@ import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
 import CommandBar from "../components/CommandBar";
 import { getMessageHeader, listUnsubscribe } from "../lib/util";
 import toast from "react-hot-toast";
+import { useTimeout } from "usehooks-ts";
+import { markRead } from "../lib/sync";
 
 interface GenericThreadFeedPageProps {
   selectedEmail: ISelectedEmail;
@@ -214,6 +216,7 @@ export default function GenericThreadFeedPage({
             <Titlebar />
             <ThreadFeedSection
               thread={threads[indexNumber]}
+              threadId={threads[indexNumber].id}
               selectedEmail={selectedEmail}
               originalPageUrl={originalPageUrl}
             />
@@ -306,16 +309,17 @@ export default function GenericThreadFeedPage({
 
 function ThreadFeedSection({
   thread,
+  threadId,
   selectedEmail,
   originalPageUrl,
 }: {
   thread: IEmailThread;
+  threadId: string;
   selectedEmail: ISelectedEmail;
   originalPageUrl: string;
 }) {
   const navigate = useNavigate();
   const { sequenceInitiated } = useKeyPressContext();
-  const threadId = thread.id;
 
   const messages = useLiveQuery(() => {
     return db.messages
@@ -337,6 +341,18 @@ function ThreadFeedSection({
     },
     [thread, selectedEmail.email, selectedEmail.provider, sequenceInitiated]
   );
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (thread.unread) {
+        void markRead(selectedEmail.email, selectedEmail.provider, threadId);
+      }
+    }, 1000);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [threadId, selectedEmail.email, selectedEmail.provider, thread.unread]);
 
   return (
     <div className="w-full h-full flex overflow-hidden">
