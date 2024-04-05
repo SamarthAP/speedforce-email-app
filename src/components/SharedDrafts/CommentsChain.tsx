@@ -47,16 +47,19 @@ export default function CommentsChain({
   const [commentText, setCommentText] = useState("");
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
 
-  const { data, refetch } = useQuery("sharedDraftComments", async () => {
-    if (!threadId) return;
+  const { data, refetch } = useQuery(
+    ["sharedDraftComments", threadId],
+    async () => {
+      if (!threadId) return;
 
-    const { data, error } = await listCommentsForDraft(threadId);
-    if (error) {
-      return null;
+      const { data, error } = await listCommentsForDraft(threadId);
+      if (error) {
+        return null;
+      }
+
+      return data;
     }
-
-    return data;
-  });
+  );
 
   const handleComment = useCallback(async () => {
     const { error } = await addCommentToDraft(

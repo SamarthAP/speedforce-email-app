@@ -43,6 +43,8 @@ export interface IMessage {
   labelIds: string[];
   from: string;
   toRecipients: string[];
+  ccRecipients: string[];
+  bccRecipients: string[];
   snippet: string;
   headers: {
     name: string;

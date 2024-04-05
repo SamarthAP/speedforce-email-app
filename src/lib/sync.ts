@@ -164,6 +164,12 @@ export async function handleNewDraftsGoogle(
         toRecipients: getMessageHeader(draft.message.payload.headers, "To")
           .split(",")
           .map((recipient) => recipient.trim()),
+        ccRecipients: getMessageHeader(draft.message.payload.headers, "Cc")
+          .split(",")
+          .map((recipient) => recipient.trim()),
+        bccRecipients: getMessageHeader(draft.message.payload.headers, "Bcc")
+          .split(",")
+          .map((recipient) => recipient.trim()),
         snippet: draft.message.snippet || "",
         headers: draft.message.payload.headers,
         textData: decodeGoogleMessageData(textData),
@@ -296,6 +302,12 @@ export async function handleNewThreadsGoogle(
           labelIds: message.labelIds,
           from: getMessageHeader(message.payload.headers, "From"),
           toRecipients: getMessageHeader(message.payload.headers, "To")
+            .split(",")
+            .map((recipient) => recipient.trim()),
+          ccRecipients: getMessageHeader(message.payload.headers, "Cc")
+            .split(",")
+            .map((recipient) => recipient.trim()),
+          bccRecipients: getMessageHeader(message.payload.headers, "Bcc")
             .split(",")
             .map((recipient) => recipient.trim()),
           snippet: message.snippet || "",
@@ -435,7 +447,13 @@ export async function handleNewThreadsOutlook(
               "No Sender",
             toRecipients: message.toRecipients.map(
               (m) => m.emailAddress.address
-            ), // TODO: add multiple recipients
+            ),
+            ccRecipients: message.ccRecipients.map(
+              (m) => m.emailAddress.address
+            ),
+            bccRecipients: message.bccRecipients.map(
+              (m) => m.emailAddress.address
+            ),
             snippet: message.bodyPreview || "",
             headers: buildMessageHeadersOutlook(message),
             textData,

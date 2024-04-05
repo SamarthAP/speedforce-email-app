@@ -146,6 +146,8 @@ export async function handleUpdateDraft(
         {
           ...nonNullMessage,
           toRecipients: to,
+          ccRecipients: cc,
+          bccRecipients: bcc,
           htmlData: html,
         }
       );
