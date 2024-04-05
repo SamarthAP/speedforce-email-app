@@ -4,6 +4,7 @@ import { LightBulbIcon } from "../lib/icons";
 import { useNavigate } from "react-router-dom";
 import {
   ArchiveBoxIcon,
+  ArrowLeftOnRectangleIcon,
   ClipboardDocumentIcon,
   ExclamationCircleIcon,
   InboxIcon,
@@ -24,6 +25,7 @@ import {
   useDisableMouseHoverContext,
 } from "../contexts/DisableMouseHoverContext";
 import { useDebounceCallback } from "usehooks-ts";
+import { fullSignout } from "../lib/auth";
 
 interface CommandBarGroupData {
   title: string;
@@ -222,6 +224,22 @@ export default function CommandBar({ data }: CommandBarProps) {
           },
           keybind: {
             keystrokes: ["Shift", "/"],
+            isSequential: false,
+          },
+        },
+      ],
+    },
+    {
+      title: "Account",
+      commands: [
+        {
+          icon: ArrowLeftOnRectangleIcon,
+          description: "Sign out / log out of Speedforce",
+          action: () => {
+            void fullSignout();
+          },
+          keybind: {
+            keystrokes: [],
             isSequential: false,
           },
         },
