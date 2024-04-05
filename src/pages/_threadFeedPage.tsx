@@ -24,7 +24,6 @@ import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
 import CommandBar from "../components/CommandBar";
 import { getMessageHeader, listUnsubscribe } from "../lib/util";
 import toast from "react-hot-toast";
-import { useTimeout } from "usehooks-ts";
 import { markRead } from "../lib/sync";
 
 interface GenericThreadFeedPageProps {
