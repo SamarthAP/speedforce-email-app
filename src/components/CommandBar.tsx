@@ -400,11 +400,11 @@ export default function CommandBar({ data }: CommandBarProps) {
   return (
     <Transition appear show={open} as={Fragment}>
       <div
-        // as="div"
         className="relative z-10"
-        // onClose={() => {
-        //   setOpen(false);
-        // }}
+        onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+          if (e.target != document.getElementById("outside-commandbar")) return;
+          setOpen(false);
+        }}
       >
         <Transition.Child
           as={Fragment}
@@ -419,7 +419,10 @@ export default function CommandBar({ data }: CommandBarProps) {
         </Transition.Child>
 
         <div className="fixed inset-0">
-          <div className="flex flex-col items-center pt-[16vh] min-h-full">
+          <div
+            id="outside-commandbar"
+            className="flex flex-col items-center pt-[16vh] min-h-full"
+          >
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
