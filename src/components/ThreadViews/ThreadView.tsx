@@ -133,6 +133,15 @@ export default function ThreadView({
     navigate("/search");
   };
 
+  const navigateToDraft = async (threadId: string) => {
+    const message = await db.messages.where({ threadId }).toArray();
+    if (message.length == 1) {
+      navigate(`/draft/${message[0].draftId}`);
+    } else {
+      navigate(`/thread/${threadId}`);
+    }
+  };
+
   const setSelectedEmail = async (email: IEmail) => {
     await db.selectedEmail.put({
       id: 1,
@@ -197,7 +206,7 @@ export default function ThreadView({
           void markRead(selectedEmail.email, selectedEmail.provider, thread.id);
         }
         if (data.isDraftMode) {
-          navigate(`/draft/${thread.id}`);
+          void navigateToDraft(thread.id);
         } else {
           navigate(`/thread/${thread.id}`);
         }

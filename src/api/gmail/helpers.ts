@@ -1,6 +1,9 @@
-import { IMessage } from "../../lib/db";
+import { db, IMessage } from "../../lib/db";
 import { getMessageHeader, formatDateForForwardTemplate } from "../../lib/util";
 import _ from "lodash";
+import { list as gDraftsList } from "./users/drafts";
+import { getAccessToken } from "../accessToken";
+import { GoogleDraftType } from "../model/users.draft";
 
 export function getToRecipients(message: IMessage, email: string): string[] {
   const from =
@@ -75,4 +78,69 @@ export async function buildForwardedHTML(
   ));
 
   return `${beforeString}${afterString}`;
+}
+
+export async function getDraftByMessageId(email: string, messageId: string) {
+  const accessToken = await getAccessToken(email);
+
+  const dexieDraft = await db.messages.where("id").equals(messageId).first();
+
+  if (dexieDraft) {
+    return dexieDraft.draftId;
+  }
+
+  const { data, error } = await gDraftsList(accessToken);
+  if (error) {
+    return null;
+  }
+
+  const draft = data?.drafts.find((d) => d.message?.id === messageId);
+  return draft?.id || null;
+}
+
+// Update draft in Dexie after saving draft
+// Thread id and message id are subject to change
+export async function updateDexieDraftAfterSaving(
+  draftId: string,
+  newDraft: GoogleDraftType
+) {
+  // Validate new draft
+  if (!newDraft.id || !newDraft.message?.id || !newDraft.message?.threadId)
+    return;
+
+  const existingMessage = await db.messages
+    .where("draftId")
+    .equals(draftId)
+    .first();
+  if (!existingMessage) return;
+
+  const existingThread = await db.emailThreads
+    .where("id")
+    .equals(existingMessage.threadId)
+    .first();
+  if (!existingThread) return;
+
+  if (
+    existingMessage.id === newDraft.message.id &&
+    existingMessage.threadId === newDraft.message.threadId
+  )
+    return;
+
+  // Since we are modifying the primary key, we need to delete and re-insert
+  await db.emailThreads.put({
+    ...existingThread,
+    id: newDraft.message.threadId,
+  });
+
+  await db.messages.put({
+    ...existingMessage,
+    id: newDraft.message.id,
+    threadId: newDraft.message.threadId,
+    draftId: newDraft.id,
+  });
+
+  await db.drafts.update(draftId, { threadId: newDraft.message.threadId });
+
+  await db.emailThreads.delete(existingMessage.threadId);
+  await db.messages.delete(existingMessage.id);
 }

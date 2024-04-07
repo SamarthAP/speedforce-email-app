@@ -9,17 +9,13 @@ import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
 import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 
-const filterThreadsFnc = (selectedEmail: ISelectedEmail) =>
-  db.emailThreads
-    .where("email")
-    .equals(selectedEmail.email)
-    .and(
-      (thread) =>
-        thread.labelIds.includes(FOLDER_IDS.DRAFTS) &&
-        !thread.labelIds.includes(FOLDER_IDS.TRASH)
-    )
-    .reverse()
-    .sortBy("date");
+const filterThreadsFnc = async (selectedEmail: ISelectedEmail) => {
+  const draftIds = (
+    await db.drafts.where("email").equals(selectedEmail.email).toArray()
+  ).map((draft) => draft.threadId);
+
+  return db.emailThreads.where("id").anyOf(draftIds).reverse().sortBy("date");
+};
 
 // TODO: May be able to abstract this away as well
 // Possible that other pages have different functionality (e.g. Drafts?) so keeping this as a separate page for now

@@ -37,9 +37,16 @@ export interface IEmailThread {
   hasAttachments: boolean;
 }
 
+export interface IDraft {
+  id: string; // Gmail: drafts.draftId | Outlook: message.id
+  email: string;
+  threadId: string; // Gmail: threadId | Outlook: conversationId
+}
+
 export interface IMessage {
   id: string;
   threadId: string;
+  draftId: string | null; // Gmail: drafts.draftId | Outlook: message.id
   labelIds: string[];
   from: string;
   toRecipients: string[];
@@ -94,6 +101,7 @@ export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
   emailThreads!: Table<IEmailThread, string>;
+  drafts!: Table<IDraft, string>;
   messages!: Table<IMessage, string>;
   outlookFolders!: Table<IOutlookFolder, string>;
   contacts!: Table<IContact, string>;
@@ -124,6 +132,9 @@ export class SubClassedDexie extends Dexie {
     this.version(7)
       .stores(dexieSchemas[7].schema)
       .upgrade(dexieSchemas[7].upgradeFnc);
+    this.version(8)
+      .stores(dexieSchemas[8].schema)
+      .upgrade(dexieSchemas[8].upgradeFnc);
   }
 }
 

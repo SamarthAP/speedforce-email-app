@@ -105,8 +105,9 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
       },
 
       isDirty: () => {
-        if (!editor) return false;
-        return editor.getHTML() !== initialEditorContentState;
+        // Avoid save right when clicking into draft before state is set
+        if (!editor || !initialEditorContentState) return false;
+        return editor.getHTML().trim() != initialEditorContentState.trim();
       },
     }));
 

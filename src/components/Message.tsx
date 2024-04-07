@@ -1,4 +1,4 @@
-import { createRef, useState } from "react";
+import { createRef, useCallback, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { IMessage, ISelectedEmail } from "../lib/db";
 import {
@@ -14,15 +14,22 @@ import {
   StarIcon as StarIconSolid,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
-import { sendReply, sendReplyAll, forward } from "../lib/sync";
+import {
+  sendReply,
+  sendReplyAll,
+  forward,
+  // sendEmailWithAttachments,
+  // sendEmail,
+} from "../lib/sync";
 import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
 import toast from "react-hot-toast";
 import { EmailSelectorInput } from "./EmailSelectorInput";
-import Tiptap from "./Editors/TiptapEditor";
+import Tiptap, { TipTapEditorHandle } from "./Editors/TiptapEditor";
 import { NewAttachment } from "../api/model/users.attachment";
 import { dLog } from "../lib/noProd";
+import TiptapEditor from "./Editors/TiptapEditor";
 
 interface MessageProps {
   message: IMessage;
@@ -122,6 +129,28 @@ export default function Message({
       setUnsubscribingFromList(false);
     });
   };
+
+  if (message.draftId) {
+    // Don't show the body of the message if it's a draft
+    // Next fix: show the editor, create drafts on replies
+
+    // return (
+    //   <div className="w-full h-auto flex flex-col border border-slate-200 dark:border-zinc-700">
+    //     <TiptapEditor
+    //       initialContent={message.htmlData}
+    //       attachments={attachments}
+    //       setAttachments={setAttachments}
+    //       sendEmail={async (content: string) => void dLog(content)}
+    //       canSendEmail={true}
+    //       sendingEmail={false}
+    //       saveDraft={async () => {
+    //         return { error: null };
+    //       }}
+    //     />
+    //   </div>
+    // );
+    return null;
+  }
 
   return (
     <div className="w-full h-auto flex flex-col border border-slate-200 dark:border-zinc-700">
@@ -339,3 +368,160 @@ export default function Message({
     </div>
   );
 }
+
+interface MessageDraftProps {
+  selectedEmail: ISelectedEmail;
+  message: IMessage;
+}
+
+// const MessageDraft = ({ selectedEmail, message }: MessageDraftProps) => {
+//   const [to, setTo] = useState<string[]>(message.toRecipients);
+//   const [cc, setCc] = useState<string[]>(message.ccRecipients);
+//   const [bcc, setBcc] = useState<string[]>(message.bccRecipients);
+//   const [subject, setSubject] = useState("");
+//   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
+//   const [sendingReply, setSendingReply] = useState(false);
+//   const editorRef = useRef<TipTapEditorHandle>(null);
+
+//   const isDirty = useCallback(() => {
+//     const isHtmlDirty = editorRef.current?.isDirty() || false;
+
+//     return (
+//       to.toString() != message.toRecipients.toString() ||
+//       cc.toString() != message.ccRecipients.toString() ||
+//       bcc.toString() != message.bccRecipients.toString() ||
+//       isHtmlDirty
+//     );
+//   }, [
+//     to,
+//     cc,
+//     bcc,
+//     message.toRecipients,
+//     message.ccRecipients,
+//     message.bccRecipients,
+//   ]);
+
+//   const saveDraft = useCallback(
+//     async (
+//       email: string,
+//       provider: "google" | "outlook",
+//       to: string[],
+//       cc: string[],
+//       bcc: string[],
+//       subject: string,
+//       html: string
+//     ) => {
+//       if (!isDirty()) {
+//         // No changes, no need to save
+//         return { error: null };
+//       }
+
+//       // The save endpoint for outlook expects the message id, whereas the save endpoint for gmail expects the draft id
+//       // For simplicity sake, for shared drafts we will always use the message id
+//       const draftIdToUpdate =
+//         provider === "google" ? message.draftId : message.id;
+
+//       await handleUpdateDraft(
+//         email,
+//         provider,
+//         draftIdToUpdate,
+//         to,
+//         cc,
+//         bcc,
+//         subject,
+//         html
+//       );
+
+//       const newSnippet = await getSnippetFromHtml(html);
+//       await saveSharedDraft(email, {
+//         id: threadId,
+//         to,
+//         cc,
+//         bcc,
+//         subject,
+//         html,
+//         snippet: newSnippet,
+//         date: new Date().getTime(),
+//       });
+
+//       return { error: null };
+//     },
+//     [threadId, isDirty]
+//   );
+
+//   const handleSendEmail = useCallback(async () => {
+//     // if (!threadId) return;
+
+//     const html = editorRef.current?.getHTML() || "";
+//     setSendingReply(true);
+//     let error: string | null = null;
+
+//     if (attachments.length > 0) {
+//       // send with attachments
+//       ({ error } = await sendEmailWithAttachments(
+//         selectedEmail.email,
+//         selectedEmail.provider,
+//         to,
+//         cc,
+//         bcc,
+//         subject,
+//         html,
+//         attachments
+//       ));
+//     } else {
+//       // send without attachments
+//       ({ error } = await sendEmail(
+//         selectedEmail.email,
+//         selectedEmail.provider,
+//         to,
+//         cc,
+//         bcc,
+//         subject,
+//         html
+//       ));
+//     }
+//   }, [
+//     attachments,
+//     bcc,
+//     cc,
+//     selectedEmail.email,
+//     selectedEmail.provider,
+//     subject,
+//     to,
+//   ]);
+
+//   return (
+//     <div className="text-sm dark:text-zinc-400 text-slate-500 mb-0.5">
+//       <EmailSelectorInput
+//         selectedEmail={selectedEmail}
+//         alignLabels="left"
+//         disableCC={selectedEmail.provider === "outlook"}
+//         toProps={{
+//           text: "To",
+//           emails: to,
+//           setEmails: setTo,
+//         }}
+//         ccProps={{
+//           emails: cc,
+//           setEmails: setCc,
+//         }}
+//         bccProps={{
+//           emails: bcc,
+//           setEmails: setBcc,
+//         }}
+//       />
+
+//       <Tiptap
+//         initialContent={message.htmlData}
+//         attachments={attachments}
+//         setAttachments={setAttachments}
+//         canSendEmail={to.length > 0 || cc.length > 0 || bcc.length > 0}
+//         sendEmail={handleSendReply}
+//         sendingEmail={sendingReply}
+//         saveDraft={async () => {
+//           return { error: null };
+//         }}
+//       />
+//     </div>
+//   );
+// };

@@ -3,14 +3,23 @@
 
 import toast from "react-hot-toast";
 import { FOLDER_IDS } from "../api/constants";
-import { IEmailThread, IMessage, db } from "./db";
-import { archiveThread, starThread, unstarThread, updateDraft } from "./sync";
+import { IEmailThread, db } from "./db";
+import {
+  archiveThread,
+  deleteDraft,
+  starThread,
+  trashThread,
+  unstarThread,
+  updateDraft,
+} from "./sync";
 import {
   getSnippetFromHtml,
   updateDexieDraft,
   updateLabelIdsForEmailThread,
 } from "./util";
 import _ from "lodash";
+import { updateSharedDraftStatus } from "../api/sharedDrafts";
+import { SharedDraftStatusType } from "../api/model/users.shared.draft";
 
 // Usage: instantEffectFnc, rollbackFnc can be async, but the intent is that they execute much quicker (e.g. dexie operations)
 export const executeInstantAsyncAction = async (
@@ -110,24 +119,13 @@ export async function handleUpdateDraft(
   subject: string,
   html: string
 ) {
-  let thread: IEmailThread | null = null;
-  let message: IMessage | null = null;
+  const draft = await db.drafts.get({ id: draftId });
+  if (!draft) return;
 
-  if (provider === "google") {
-    // Google drafts are analogous to email threads
-    thread = (await db.emailThreads.get({ id: draftId })) || null;
-    message = (await db.messages.get({ threadId: draftId })) || null;
-  } else {
-    // Outlook drafts are analogous to email messages
-    message = (await db.messages.get({ id: draftId })) || null;
-    if (message) {
-      thread = (await db.emailThreads.get({ id: message.threadId })) || null;
-    }
-  }
+  const thread = await db.emailThreads.get({ id: draft.threadId });
+  const message = (await db.messages.get({ draftId: draftId })) || null;
 
-  if (!thread || !message) {
-    return;
-  }
+  if (!thread || !message) return;
 
   // need to do this bc electron forge compiler complains that thread and message could be null
   const nonNullThread = thread;
@@ -159,3 +157,93 @@ export async function handleUpdateDraft(
     }
   );
 }
+
+export async function handleDiscardDraft(
+  email: string,
+  provider: "google" | "outlook",
+  draftId: string
+) {
+  const draft = await db.drafts.get({ id: draftId });
+  if (!draft) return;
+
+  const thread = await db.emailThreads.get({ id: draft.threadId });
+  const message =
+    (await db.messages.where("draftId").equals(draftId).first()) || null;
+  if (!thread || !message) return;
+
+  await executeInstantAsyncAction(
+    async () => {
+      if (!draft) return;
+
+      await db.drafts.delete(draftId);
+      await db.emailThreads.delete(thread.id);
+      await db.messages.delete(message.id);
+    },
+    async () => {
+      await deleteDraft(email, provider, draftId, true);
+
+      // Mark the shared draft as discarded so that the other user can't see it
+      await updateSharedDraftStatus(
+        thread.id,
+        email,
+        SharedDraftStatusType.DISCARDED
+      );
+    },
+    async () => {
+      await db.drafts.put(draft);
+      await db.emailThreads.put(thread);
+      await db.messages.put(message);
+    }
+  );
+}
+
+// Trash a thread thats not a draft
+export async function handleTrashThread(
+  email: string,
+  provider: "google" | "outlook",
+  thread: IEmailThread
+) {
+  const labelsToRemove = _.intersection(thread.labelIds, [
+    FOLDER_IDS.INBOX,
+    FOLDER_IDS.SENT,
+  ]);
+
+  await executeInstantAsyncAction(
+    () =>
+      void updateLabelIdsForEmailThread(
+        thread.id,
+        [FOLDER_IDS.TRASH],
+        labelsToRemove
+      ),
+    async () => {
+      await trashThread(email, provider, thread.id);
+    },
+    () => {
+      void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [
+        FOLDER_IDS.TRASH,
+      ]);
+      toast("Unable to trash thread");
+    }
+  );
+}
+
+// export async function handleSendMessage(
+//   email: string,
+//   provider: "google" | "outlook",
+//   draftId: string,
+//   to: string[],
+//   cc: string[],
+//   bcc: string[],
+//   subject: string,
+//   html: string,
+//   attachments: NewAttachment[] = []
+// ) {
+//   await executeInstantAsyncAction(
+//     () => {
+
+//     },
+//     async () =>
+//       await updateDraft(email, provider, threadId, to, cc, bcc, subject, html),
+//     () => void toast("Unable to send message")
+//   );
+// }

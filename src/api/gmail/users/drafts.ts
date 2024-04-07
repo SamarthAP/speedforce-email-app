@@ -13,7 +13,8 @@ export const create = async (
   cc: string | null,
   bcc: string | null,
   subject: string,
-  messageContent: string
+  messageContent: string,
+  replyTo: string | null = null
 ) => {
   let data: GoogleDraftType | null = null;
   let error: string | null = null;
@@ -27,6 +28,7 @@ export const create = async (
       (to ? `To: ${to}\n` : "") + // To is technically an optional field if CC is provided
       (cc ? `Cc: ${cc}\n` : "") +
       (bcc ? `Bcc: ${bcc}\n` : "") +
+      (replyTo ? `In-Reply-To: ${replyTo}\n` : "") +
       "\n" +
       messageContent
   )
@@ -60,6 +62,25 @@ export const create = async (
   return { data, error };
 };
 
+export const list = async (accessToken: string) => {
+  let data: GoogleDraftsListDataType | null = null;
+  let error: string | null = null;
+
+  const res: Response = await fetch(`${GMAIL_API_URL}/drafts?maxResults=20`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!res.ok) {
+    error = "Error fetching drafts";
+    return { data, error };
+  }
+
+  data = (await res.json()) as GoogleDraftsListDataType;
+  return { data, error };
+};
+
 export const get = async (accessToken: string, draftId: string) => {
   const res = await fetch(`${GMAIL_API_URL}/drafts/${draftId}?format=full`, {
     headers: {
@@ -83,9 +104,10 @@ export const update = async (
   cc: string | null,
   bcc: string | null,
   subject: string,
-  messageContent: string
+  messageContent: string,
+  replyTo: string | null = null
 ) => {
-  let data: GoogleDraftsListDataType | null = null;
+  let data: GoogleDraftType | null = null;
   let error: string | null = null;
 
   const encodedDraft = Base64.encode(
@@ -97,6 +119,7 @@ export const update = async (
       (to ? `To: ${to}\n` : "") + // To is technically an optional field if CC is provided
       (cc ? `Cc: ${cc}\n` : "") +
       (bcc ? `Bcc: ${bcc}\n` : "") +
+      (replyTo ? `In-Reply-To: ${replyTo}\n` : "") +
       "\n" +
       messageContent
   )

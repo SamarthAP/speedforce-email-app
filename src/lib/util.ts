@@ -115,7 +115,7 @@ export function extractTextFromNode(node: Node, textNodes: string[]) {
   }
 }
 
-export function extractTextFromHTML(html: string) {
+export function extractTextFromHTML(html: string, delimiter = "-") {
   const div = document.createElement("div");
   div.innerHTML = html;
   div.querySelectorAll("style, script").forEach((element) => element.remove());
@@ -126,7 +126,7 @@ export function extractTextFromHTML(html: string) {
     extractTextFromNode(child, textNodes);
   }
 
-  return textNodes.join("-");
+  return textNodes.join(delimiter);
 }
 
 // Specify a list of labels to add or remove from a thread
@@ -167,7 +167,7 @@ export async function updateDexieDraft(
 }
 
 export async function getSnippetFromHtml(html: string) {
-  const text = extractTextFromHTML(html);
+  const text = extractTextFromHTML(html, " ");
   return text.slice(0, 100);
 }
 

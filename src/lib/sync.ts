@@ -21,7 +21,12 @@ import {
   listOtherContacts,
 } from "../api/gmail/people/contact";
 import { watch as watchGmail } from "../api/gmail/notifications/pushNotifications";
-import { getToRecipients, buildForwardedHTML } from "../api/gmail/helpers";
+import {
+  getToRecipients,
+  buildForwardedHTML,
+  getDraftByMessageId,
+  updateDexieDraftAfterSaving,
+} from "../api/gmail/helpers";
 
 import {
   get as mThreadGet,
@@ -71,7 +76,14 @@ import {
   send as mDraftSend,
 } from "../api/outlook/users/drafts";
 import { getAccessToken } from "../api/accessToken";
-import { IAttachment, IContact, IEmailThread, IMessage, db } from "./db";
+import {
+  IAttachment,
+  IContact,
+  IDraft,
+  IEmailThread,
+  IMessage,
+  db,
+} from "./db";
 import {
   buildSearchQuery,
   decodeGoogleMessageData,
@@ -89,8 +101,6 @@ import toast from "react-hot-toast";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 import { CreateDraftResponseDataType } from "../api/model/users.draft";
 import { SENT_FROM_SPEEDFORCE_HTML } from "../api/templates/sentFromSpeedforce";
-import { updateSharedDraftStatus } from "../api/sharedDrafts";
-import { SharedDraftStatusType } from "../api/model/users.shared.draft";
 
 export async function handleNewDraftsGoogle(
   accessToken: string,
@@ -102,8 +112,9 @@ export async function handleNewDraftsGoogle(
 
   try {
     const drafts = await Promise.all(promises);
-    const parsedDrafts: IEmailThread[] = [];
+    const parsedThreads: IEmailThread[] = [];
     const parsedMessages: IMessage[] = [];
+    const parsedDrafts: IDraft[] = [];
 
     drafts.forEach((draft) => {
       // let hasInboxLabel = false;
@@ -157,8 +168,9 @@ export async function handleNewDraftsGoogle(
         // Weird behaviour here. When a draft is updated, messageId and threadId are modified.
         // If we use either of these are as, message will not be overwritten and we have duplicates (and draft loading doesnt know which one to use)
         // Since there is only 1 message per draft, we can use draft.id as messageId
-        id: draft.id,
-        threadId: draft.id,
+        id: draft.message.id,
+        threadId: draft.message.threadId,
+        draftId: draft.id,
         labelIds: draft.message.labelIds,
         from: getMessageHeader(draft.message.payload.headers, "From"),
         toRecipients: getMessageHeader(draft.message.payload.headers, "To")
@@ -183,8 +195,8 @@ export async function handleNewDraftsGoogle(
         labelIds = upsertLabelIds(labelIds, labelId);
       });
 
-      parsedDrafts.push({
-        id: draft.id,
+      parsedThreads.push({
+        id: draft.message.threadId,
         historyId: draft.historyId,
         email: email,
         from: getMessageHeader(draft.message.payload.headers, "From"),
@@ -195,10 +207,17 @@ export async function handleNewDraftsGoogle(
         labelIds: labelIds,
         hasAttachments,
       });
+
+      parsedDrafts.push({
+        id: draft.id,
+        threadId: draft.message.threadId,
+        email: email,
+      });
     });
 
-    await db.emailThreads.bulkPut(parsedDrafts);
+    await db.emailThreads.bulkPut(parsedThreads);
     await db.messages.bulkPut(parsedMessages);
+    await db.drafts.bulkPut(parsedDrafts);
 
     return;
   } catch (e) {
@@ -223,8 +242,9 @@ export async function handleNewThreadsGoogle(
     const threads = await Promise.all(promises);
     const parsedThreads: IEmailThread[] = [];
     const parsedMessages: IMessage[] = [];
+    const parsedDrafts: IDraft[] = [];
 
-    threads.forEach((thread) => {
+    for (const thread of threads) {
       // let hasInboxLabel = false;
       let isStarred = false;
       let labelIds: string[] = [];
@@ -249,7 +269,7 @@ export async function handleNewThreadsGoogle(
       }
 
       let hasAttachments = false;
-      thread.messages.forEach((message) => {
+      for (const message of thread.messages) {
         // multipart/alternative is text and html, multipart/mixed is attachment
         // const textData =
         //   message.payload.mimeType === "multipart/alternative"
@@ -296,9 +316,23 @@ export async function handleNewThreadsGoogle(
           htmlData = message.payload.body.data || "";
         }
 
+        // If message is a draft, get draft id
+        let draftId: string | null = null;
+        if (message.labelIds.includes("DRAFT")) {
+          draftId = await getDraftByMessageId(email, message.id);
+          if (draftId) {
+            parsedDrafts.push({
+              id: draftId,
+              threadId: message.threadId,
+              email: email,
+            });
+          }
+        }
+
         parsedMessages.push({
           id: message.id,
           threadId: message.threadId,
+          draftId,
           labelIds: message.labelIds,
           from: getMessageHeader(message.payload.headers, "From"),
           toRecipients: getMessageHeader(message.payload.headers, "To")
@@ -322,7 +356,7 @@ export async function handleNewThreadsGoogle(
           const labelId = GMAIL_FOLDER_IDS_MAP.getKey(id) || id;
           labelIds = upsertLabelIds(labelIds, labelId);
         });
-      });
+      }
 
       const lastMessageIndex = thread.messages.length - 1;
       parsedThreads.push({
@@ -340,11 +374,12 @@ export async function handleNewThreadsGoogle(
         labelIds: labelIds,
         hasAttachments,
       });
-    });
+    }
 
     // save threads
     await db.emailThreads.bulkPut(parsedThreads);
     await db.messages.bulkPut(parsedMessages);
+    await db.drafts.bulkPut(parsedDrafts);
 
     return;
   } catch (e) {
@@ -380,6 +415,7 @@ export async function handleNewThreadsOutlook(
   try {
     const parsedThreads: IEmailThread[] = [];
     const parsedMessages: IMessage[] = [];
+    const parsedDrafts: IDraft[] = [];
 
     // Outlook throttle limit is 4 concurrent requests
     const batches = _.chunk(threadsIds, 3);
@@ -435,10 +471,19 @@ export async function handleNewThreadsOutlook(
               };
             }) || [];
 
+          if (message.isDraft) {
+            parsedDrafts.push({
+              id: message.id,
+              threadId: message.conversationId,
+              email: email,
+            });
+          }
+
           // TODO: Add CC, BCC, attachments, etc.
           parsedMessages.push({
             id: message.id,
             threadId: message.conversationId,
+            draftId: message.isDraft ? message.id : null,
             labelIds:
               buildMessageLabelIdsOutlook(message).concat(additionalLabelIds),
             from:
@@ -496,6 +541,7 @@ export async function handleNewThreadsOutlook(
 
       await db.emailThreads.bulkPut(parsedThreads);
       await db.messages.bulkPut(parsedMessages);
+      await db.drafts.bulkPut(parsedDrafts);
     }
 
     return parsedThreads;
@@ -1347,7 +1393,7 @@ export async function updateDraft(
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    return await gDraftUpdate(
+    const { data, error } = await gDraftUpdate(
       accessToken,
       messageId,
       email,
@@ -1358,6 +1404,14 @@ export async function updateDraft(
       content
       // attachments
     );
+
+    if (error || !data) {
+      return { data: null, error: "Error updating draft" };
+    }
+
+    await updateDexieDraftAfterSaving(messageId, data);
+
+    return { data, error };
   } else {
     try {
       const data = await mDraftUpdate(
@@ -1394,11 +1448,9 @@ export async function deleteDraft(
       return { data: null, error };
     }
   } else {
-    const messages = await db.messages
-      .where("threadId")
-      .equals(draftId)
-      .toArray();
+    const messages = await db.messages.where("id").equals(draftId).toArray();
 
+    // TODO: change this to actually delete messages
     const apiPromises = messages.map((message) => {
       return mMoveMessage(
         accessToken,

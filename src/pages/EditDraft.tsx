@@ -36,6 +36,7 @@ import CommentsChain from "../components/SharedDrafts/CommentsChain";
 import { useQuery } from "react-query";
 import { handleUpdateDraft } from "../lib/asyncHelpers";
 import { SharedDraftStatusType } from "../api/model/users.shared.draft";
+import { useLiveQuery } from "dexie-react-hooks";
 
 interface EditDraftProps {
   selectedEmail: ISelectedEmail;
@@ -65,7 +66,13 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   const editorRef = useRef<TipTapEditorHandle>(null);
 
   const navigate = useNavigate();
-  const { threadId } = useParams();
+  const { draftId } = useParams();
+  const threadId = useLiveQuery(async () => {
+    if (!draftId) return null;
+
+    const message = await db.messages.where("draftId").equals(draftId).first();
+    return message?.threadId || null;
+  }, [draftId]);
 
   const isDirty = useCallback(() => {
     if (!initialData) return false;
@@ -129,15 +136,15 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       subject: string,
       html: string
     ) => {
-      if (!threadId) return { error: "No thread id" };
+      if (!draftId || !threadId) return { error: "No thread id" };
       if (!isDirty()) {
         // No changes, no need to save
         return { error: null };
       }
 
       const message = await db.messages
-        .where("threadId")
-        .equals(threadId)
+        .where("draftId")
+        .equals(draftId)
         .first();
 
       if (!message || !message.id) {
@@ -146,7 +153,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
       // The save endpoint for outlook expects the message id, whereas the save endpoint for gmail expects the draft id
       // For simplicity sake, for shared drafts we will always use the message id
-      const draftIdToUpdate = provider === "google" ? threadId : message.id;
+      // Might be able to remove this line of code and just use draftid?
+      const draftIdToUpdate =
+        provider === "google" ? message.draftId || "" : message.id;
 
       await handleUpdateDraft(
         email,
@@ -173,7 +182,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
       return { error: null };
     },
-    [threadId, isDirty]
+    [draftId, threadId, isDirty]
   );
 
   // Use this function if there is no dependencies that changed other than the html content
@@ -227,9 +236,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     [commandBarIsOpen, setCommandBarIsOpen]
   );
 
-  // content is passed in as live data from editor as it is only saved when the user stops typing for 5 seconds
   const handleSendEmail = useCallback(async () => {
-    if (!threadId) return;
+    if (!threadId || !draftId) return;
 
     const html = editorRef.current?.getHTML() || "";
     setSendingEmail(true);
@@ -273,10 +281,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       SharedDraftStatusType.SENT
     );
 
-    if (threadId) {
-      await deleteDraft(selectedEmail.email, selectedEmail.provider, threadId);
-      await deleteDexieThread(threadId);
-    }
+    await deleteDraft(selectedEmail.email, selectedEmail.provider, draftId);
+    await deleteDexieThread(threadId);
+    await db.drafts.delete(draftId);
 
     toast.success("Email sent");
     navigate(-1);
@@ -289,6 +296,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     selectedEmail.email,
     selectedEmail.provider,
     subject,
+    draftId,
     threadId,
     to,
   ]);
@@ -337,17 +345,11 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
           subject: thread.subject || "",
           html: message.htmlData || "",
         });
-      } else {
-        dLog("Unable to load thread");
-        navigate(-1);
       }
     };
 
     if (threadId) {
       void loadDraft(threadId);
-    } else {
-      dLog("Unable to load threadId");
-      navigate(-1);
     }
   }, [threadId, navigate]);
 

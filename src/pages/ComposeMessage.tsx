@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmailSelectorInput } from "../components/EmailSelectorInput";
 import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
-import { ISelectedEmail } from "../lib/db";
+import { db, IDraft, ISelectedEmail } from "../lib/db";
 import { useNavigate } from "react-router-dom";
 import Titlebar from "../components/Titlebar";
 import Sidebar from "../components/Sidebar";
@@ -51,10 +51,11 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
 
-  const [draft, setDraft] = useState<{
-    id: string;
-    threadId: string;
-  }>({ id: "", threadId: "" }); // TODO: Type this
+  const [draft, setDraft] = useState<IDraft>({
+    id: "",
+    threadId: "",
+    email: selectedEmail.email,
+  });
   const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
   const editorRef = useRef<TipTapEditorHandle>(null);
 
@@ -121,6 +122,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
         }
 
         setDraft({
+          ...draft,
           id: data.id,
           threadId: data.threadId,
         });
@@ -128,7 +130,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
 
       return { error: null };
     },
-    [draft.id, draft.threadId]
+    [draft, draft.id, draft.threadId]
   );
 
   // Use this function if there is no dependencies that changed other than the html content
@@ -237,6 +239,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
     // delete draft thread as there will be a new thread for the sent email
     if (draft.threadId) {
       await deleteDexieThread(draft.id);
+      await db.drafts.delete(draft.id);
       await deleteDraft(selectedEmail.email, selectedEmail.provider, draft.id);
     }
 

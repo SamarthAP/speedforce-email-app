@@ -7,9 +7,7 @@ import {
   markRead,
   starThread,
   unstarThread,
-  trashThread,
   deleteThread,
-  deleteDraft,
 } from "../lib/sync";
 import {
   CheckCircleIcon,
@@ -21,7 +19,11 @@ import toast from "react-hot-toast";
 import { HorizontalAttachments } from "./HorizontalAttachments";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
-import { executeInstantAsyncAction } from "../lib/asyncHelpers";
+import {
+  executeInstantAsyncAction,
+  handleDiscardDraft,
+  handleTrashThread,
+} from "../lib/asyncHelpers";
 import {
   addDexieThread,
   deleteDexieThread,
@@ -34,8 +36,6 @@ import { useNavigate } from "react-router-dom";
 import ThreadSummaryHoverCard from "./ThreadSummaryHoverCard";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useHoveredThreadContext } from "../contexts/HoveredThreadContext";
-import { updateSharedDraftStatus } from "../api/sharedDrafts";
-import { SharedDraftStatusType } from "../api/model/users.shared.draft";
 import { useDisableMouseHoverContext } from "../contexts/DisableMouseHoverContext";
 
 function isToday(date: Date) {
@@ -277,10 +277,19 @@ function ThreadListRow({
     }
   }, [isHovered]);
 
+  const navigateToDraft = async (threadId: string) => {
+    const message = await db.messages.where({ threadId }).toArray();
+    if (message.length == 1) {
+      navigate(`/draft/${message[0].draftId}`);
+    } else {
+      navigate(`/thread/${threadId}`);
+    }
+  };
+
   function handleThreadClick(thread: IEmailThread) {
     // setScrollPosition(scrollRef.current?.scrollTop || 0);
     if (isDrafts) {
-      navigate(`/draft/${thread.id}`);
+      void navigateToDraft(thread.id);
     } else {
       if (thread.unread) {
         void markRead(selectedEmail.email, selectedEmail.provider, thread.id);
@@ -355,47 +364,25 @@ function ThreadListRow({
   }
 
   async function handleTrashClick(thread: IEmailThread) {
-    const labelsToRemove = _.intersection(thread.labelIds, [
-      FOLDER_IDS.INBOX,
-      FOLDER_IDS.SENT,
-    ]);
+    if (isDrafts) {
+      const message = await db.messages
+        .where("threadId")
+        .equals(thread.id)
+        .first();
+      if (!message || !message.draftId) return;
 
-    await executeInstantAsyncAction(
-      () =>
-        void updateLabelIdsForEmailThread(
-          thread.id,
-          [FOLDER_IDS.TRASH],
-          labelsToRemove
-        ),
-      async () => {
-        if (isDrafts) {
-          await deleteDraft(
-            selectedEmail.email,
-            selectedEmail.provider,
-            thread.id,
-            isDrafts
-          );
-
-          await updateSharedDraftStatus(
-            thread.id,
-            selectedEmail.email,
-            SharedDraftStatusType.DISCARDED
-          );
-        } else {
-          await trashThread(
-            selectedEmail.email,
-            selectedEmail.provider,
-            thread.id
-          );
-        }
-      },
-      () => {
-        void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [
-          FOLDER_IDS.TRASH,
-        ]);
-        toast("Unable to trash thread");
-      }
-    );
+      await handleDiscardDraft(
+        selectedEmail.email,
+        selectedEmail.provider,
+        message.draftId
+      );
+    } else {
+      await handleTrashThread(
+        selectedEmail.email,
+        selectedEmail.provider,
+        thread
+      );
+    }
   }
 
   const message = useLiveQuery(() => {
