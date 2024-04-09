@@ -29,6 +29,7 @@ import {
   handleNewDraftsGoogle,
   handleNewThreadsOutlook,
   createDraftForReplyAll,
+  createDraftForForward,
 } from "../lib/sync";
 import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
@@ -126,10 +127,7 @@ const Message = forwardRef<MessageHandle, MessageProps>(function Message(
         selectedEmail.email,
         selectedEmail.provider,
         [to],
-        [],
-        [],
         getMessageHeader(message.headers, "Subject") || "",
-        "",
         getMessageHeader(message.headers, "Message-ID"),
         message.threadId,
         message.id
@@ -146,9 +144,7 @@ const Message = forwardRef<MessageHandle, MessageProps>(function Message(
         selectedEmail.provider,
         [...from, ...to].filter((email) => email !== selectedEmail.email),
         getMessageHeader(message.headers, "Cc").match(/[\w.-]+@[\w.-]+/g) || [],
-        [],
         getMessageHeader(message.headers, "Subject") || "",
-        "",
         getMessageHeader(message.headers, "Message-ID"),
         message.threadId,
         message.id
@@ -159,12 +155,9 @@ const Message = forwardRef<MessageHandle, MessageProps>(function Message(
           ? await buildForwardedHTML(message)
           : "";
 
-      ({ data, error } = await createDraftForReply(
+      ({ data, error } = await createDraftForForward(
         selectedEmail.email,
         selectedEmail.provider,
-        [],
-        [],
-        [],
         getMessageHeader(message.headers, "Subject") || "",
         fwdHtml,
         getMessageHeader(message.headers, "Message-ID"),
@@ -442,21 +435,22 @@ const MessageDraft = ({ selectedEmail, message }: MessageDraftProps) => {
   //   },
   //   [threadId, isDirty]
   // );
-  const getReplyHeadersKeyValues = (message: IMessage) => {
-    const headers: { key: string; value: string }[] = [];
 
-    const inReplyTo = getMessageHeader(message.headers, "In-Reply-To");
-    if (inReplyTo) {
-      headers.push({ key: "In-Reply-To", value: inReplyTo });
-    }
+  // const getReplyHeadersKeyValues = (message: IMessage) => {
+  //   const headers: { key: string; value: string }[] = [];
 
-    const references = getMessageHeader(message.headers, "References");
-    if (references) {
-      headers.push({ key: "References", value: references });
-    }
+  //   const inReplyTo = getMessageHeader(message.headers, "In-Reply-To");
+  //   if (inReplyTo) {
+  //     headers.push({ key: "In-Reply-To", value: inReplyTo });
+  //   }
 
-    return headers;
-  };
+  //   const references = getMessageHeader(message.headers, "References");
+  //   if (references) {
+  //     headers.push({ key: "References", value: references });
+  //   }
+
+  //   return headers;
+  // };
 
   const handleSendEmail = useCallback(async () => {
     // if (!threadId) return;
@@ -465,7 +459,6 @@ const MessageDraft = ({ selectedEmail, message }: MessageDraftProps) => {
     const subject = getMessageHeader(message.headers, "Subject") || "";
     setSendingEmail(true);
     let error: string | null = null;
-    const replyHeaders = getReplyHeadersKeyValues(message);
 
     if (attachments.length > 0) {
       // send with attachments
@@ -488,8 +481,7 @@ const MessageDraft = ({ selectedEmail, message }: MessageDraftProps) => {
         cc,
         bcc,
         subject,
-        html,
-        replyHeaders
+        html
       ));
     }
 

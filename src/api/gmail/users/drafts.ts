@@ -63,9 +63,8 @@ export const create = async (
 export const createForReply = async (
   accessToken: string,
   from: string,
-  to: string,
+  to: string | null,
   cc: string | null,
-  bcc: string | null,
   subject: string,
   messageContent: string,
   headerMessageId: string,
@@ -82,7 +81,6 @@ export const createForReply = async (
       `From: ${from}\n` +
       (to ? `To: ${to}\n` : "") + // To is technically an optional field if CC is provided
       (cc ? `Cc: ${cc}\n` : "") +
-      (bcc ? `Bcc: ${bcc}\n` : "") +
       (headerMessageId
         ? `In-Reply-To: ${headerMessageId}\n` +
           `References: ${headerMessageId}\n`

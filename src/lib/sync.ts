@@ -1394,10 +1394,7 @@ export async function createDraftForReply(
   email: string,
   provider: "google" | "outlook",
   to: string[],
-  cc: string[],
-  bcc: string[],
   subject: string,
-  content: string,
   headerMessageId: string,
   threadId: string,
   messageId: string
@@ -1410,10 +1407,9 @@ export async function createDraftForReply(
       accessToken,
       email,
       to.join(","),
-      cc.join(","),
-      bcc.join(","),
+      null,
       subject,
-      content,
+      "",
       headerMessageId,
       threadId
     );
@@ -1453,9 +1449,7 @@ export async function createDraftForReplyAll(
   provider: "google" | "outlook",
   to: string[],
   cc: string[],
-  bcc: string[],
   subject: string,
-  content: string,
   headerMessageId: string,
   threadId: string,
   messageId: string
@@ -1469,9 +1463,8 @@ export async function createDraftForReplyAll(
       email,
       to.join(","),
       cc.join(","),
-      bcc.join(","),
       subject,
-      content,
+      "",
       headerMessageId,
       threadId
     );
@@ -1509,9 +1502,6 @@ export async function createDraftForReplyAll(
 export async function createDraftForForward(
   email: string,
   provider: "google" | "outlook",
-  to: string[],
-  cc: string[],
-  bcc: string[],
   subject: string,
   content: string,
   headerMessageId: string,
@@ -1525,9 +1515,8 @@ export async function createDraftForForward(
     const { data, error } = await gDraftCreateForReply(
       accessToken,
       email,
-      to.join(","),
-      cc.join(","),
-      bcc.join(","),
+      null,
+      null,
       subject,
       content,
       headerMessageId,
