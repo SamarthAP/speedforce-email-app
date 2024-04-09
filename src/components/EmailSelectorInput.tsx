@@ -39,14 +39,17 @@ export function SelectorField({
   if (readOnly) {
     return (
       <div className="flex flex-row flex-wrap pl-5">
-        {emails.map((email, idx) => (
-          <div
-            key={idx}
-            className="flex items-center mr-1.5 my-0.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-2 py-1 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 cursor-default"
-          >
-            <span>{email}</span>
-          </div>
-        ))}
+        {emails.map(
+          (email, idx) =>
+            email.trim() !== "" && (
+              <div
+                key={idx}
+                className="flex items-center mr-1.5 my-0.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-2 py-1 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 cursor-default"
+              >
+                <span>{email}</span>
+              </div>
+            )
+        )}
       </div>
     );
   }
@@ -125,21 +128,24 @@ export function SelectorField({
 
   return (
     <div className="flex flex-row flex-wrap pl-5">
-      {emails.map((email, idx) => (
-        <div
-          key={idx}
-          className="flex items-center mr-1.5 my-0.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-2 py-1 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 cursor-default"
-        >
-          <span>{email}</span>
-          <button
-            onClick={() => setEmails(emails.filter((_, i) => i !== idx))}
-            type="button"
-            className="focus:outline-none"
-          >
-            <XCircleIcon className="w-4 h-4 ml-1" />
-          </button>
-        </div>
-      ))}
+      {emails.map(
+        (email, idx) =>
+          email.trim() !== "" && (
+            <div
+              key={idx}
+              className="flex items-center mr-1.5 my-0.5 rounded-md bg-slate-200 dark:bg-zinc-700 px-2 py-1 text-sm font-semibold text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-gray-300 dark:hover:bg-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 cursor-default"
+            >
+              <span>{email}</span>
+              <button
+                onClick={() => setEmails(emails.filter((_, i) => i !== idx))}
+                type="button"
+                className="focus:outline-none"
+              >
+                <XCircleIcon className="w-4 h-4 ml-1" />
+              </button>
+            </div>
+          )
+      )}
 
       <Combobox as="div" onChange={onSearchSelect}>
         <Combobox.Input

@@ -10,10 +10,10 @@ import SelectedThreadBar from "../components/SelectedThreadBar";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useParams } from "react-router-dom";
-import Message from "../components/Message";
+import Message, { MessageHandle } from "../components/Message";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import { handleArchiveClick, handleStarClick } from "../lib/asyncHelpers";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyPressProvider,
   useKeyPressContext,
@@ -319,6 +319,11 @@ function ThreadFeedSection({
 }) {
   const navigate = useNavigate();
   const { sequenceInitiated } = useKeyPressContext();
+  const [activeDraft, setActiveDraft] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<Map<string, React.RefObject<MessageHandle>>>(
+    new Map()
+  );
 
   const messages = useLiveQuery(() => {
     return db.messages
@@ -326,6 +331,37 @@ function ThreadFeedSection({
       .equals(threadId || "")
       .sortBy("date");
   }, [thread]);
+
+  useEffect(() => {
+    if (messages) {
+      const messageRefsMap = new Map<string, React.RefObject<MessageHandle>>();
+      messages.forEach((message) => {
+        if (!messageRefsMap.has(message.id)) {
+          messageRefsMap.set(message.id, React.createRef<MessageHandle>());
+        }
+      });
+
+      messageRefs.current = messageRefsMap;
+      console.log("messageRefs: ", messageRefs);
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (activeDraft) {
+      // When creating a new draft, scroll to bottom
+      scrollRef.current?.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+
+      const messageRef = messageRefs.current.get(activeDraft);
+      if (messageRef && messageRef.current) {
+        // TODO: implement focus cursor on the message
+        // Notes: might need to segregate message and messageDraft components or else we have to nested pass the ref to the draft component
+        messageRef.current.focusTo();
+      }
+    }
+  }, [activeDraft]);
 
   useHotkeys(
     DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR],
@@ -403,10 +439,15 @@ function ThreadFeedSection({
             )}
           </div>
         </div>
-        <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll">
+        <div
+          className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll"
+          ref={scrollRef}
+        >
           {messages?.map((message, idx) => {
             return (
               <Message
+                ref={messageRefs.current.get(message.id)}
+                onCreateDraft={setActiveDraft}
                 message={message}
                 key={message.id}
                 selectedEmail={selectedEmail}

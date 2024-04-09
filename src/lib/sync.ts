@@ -66,12 +66,16 @@ import {
 } from "../api/outlook/helpers";
 import {
   create as gDraftCreate,
+  createForReply as gDraftCreateForReply,
   get as gDraftGet,
   update as gDraftUpdate,
   deleteDraft as gDraftDelete,
 } from "../api/gmail/users/drafts";
 import {
   create as mDraftCreate,
+  createForReply as mDraftCreateForReply,
+  createForReplyAll as mDraftCreateForReplyAll,
+  createForForward as mDraftCreateForForward,
   update as mDraftUpdate,
   send as mDraftSend,
 } from "../api/outlook/users/drafts";
@@ -105,7 +109,8 @@ import { SENT_FROM_SPEEDFORCE_HTML } from "../api/templates/sentFromSpeedforce";
 export async function handleNewDraftsGoogle(
   accessToken: string,
   email: string,
-  draftIds: string[]
+  draftIds: string[],
+  isReply = false
 ) {
   let maxHistoryId = 0;
   const promises = draftIds.map((draftId) => gDraftGet(accessToken, draftId));
@@ -215,7 +220,11 @@ export async function handleNewDraftsGoogle(
       });
     });
 
-    await db.emailThreads.bulkPut(parsedThreads);
+    // Do not update the thread if this is a reply since it will not change
+    if (!isReply) {
+      await db.emailThreads.bulkPut(parsedThreads);
+    }
+
     await db.messages.bulkPut(parsedMessages);
     await db.drafts.bulkPut(parsedDrafts);
 
@@ -1350,6 +1359,7 @@ export async function createDraft(
 
     resp = {
       id: data.id || "",
+      messageId: data.message?.id || "",
       threadId: data.message?.threadId || "",
     };
   } else {
@@ -1368,6 +1378,181 @@ export async function createDraft(
 
       resp = {
         id: draft.id || "",
+        messageId: draft.id || "",
+        threadId: draft.conversationId || "",
+      };
+    } catch (e) {
+      dLog("Error creating draft");
+      return { data: null, error: "Error creating draft" };
+    }
+  }
+
+  return { data: resp, error: null };
+}
+
+export async function createDraftForReply(
+  email: string,
+  provider: "google" | "outlook",
+  to: string[],
+  cc: string[],
+  bcc: string[],
+  subject: string,
+  content: string,
+  headerMessageId: string,
+  threadId: string,
+  messageId: string
+) {
+  let resp: CreateDraftResponseDataType | null = null;
+
+  const accessToken = await getAccessToken(email);
+  if (provider === "google") {
+    const { data, error } = await gDraftCreateForReply(
+      accessToken,
+      email,
+      to.join(","),
+      cc.join(","),
+      bcc.join(","),
+      subject,
+      content,
+      headerMessageId,
+      threadId
+    );
+
+    if (error || !data) {
+      dLog("Error creating draft");
+      return { data: null, error: "Error creating draft" };
+    }
+
+    resp = {
+      id: data.id || "",
+      messageId: data.message?.id || "",
+      threadId: data.message?.threadId || "",
+    };
+  } else {
+    try {
+      const draft = await mDraftCreateForReply(accessToken, messageId);
+
+      if (!draft) return { data: null, error: "Error creating draft" };
+
+      resp = {
+        id: draft.id || "",
+        messageId: draft.id || "",
+        threadId: draft.conversationId || "",
+      };
+    } catch (e) {
+      dLog("Error creating draft");
+      return { data: null, error: "Error creating draft" };
+    }
+  }
+
+  return { data: resp, error: null };
+}
+
+export async function createDraftForReplyAll(
+  email: string,
+  provider: "google" | "outlook",
+  to: string[],
+  cc: string[],
+  bcc: string[],
+  subject: string,
+  content: string,
+  headerMessageId: string,
+  threadId: string,
+  messageId: string
+) {
+  let resp: CreateDraftResponseDataType | null = null;
+
+  const accessToken = await getAccessToken(email);
+  if (provider === "google") {
+    const { data, error } = await gDraftCreateForReply(
+      accessToken,
+      email,
+      to.join(","),
+      cc.join(","),
+      bcc.join(","),
+      subject,
+      content,
+      headerMessageId,
+      threadId
+    );
+
+    if (error || !data) {
+      dLog("Error creating draft");
+      return { data: null, error: "Error creating draft" };
+    }
+
+    resp = {
+      id: data.id || "",
+      messageId: data.message?.id || "",
+      threadId: data.message?.threadId || "",
+    };
+  } else {
+    try {
+      const draft = await mDraftCreateForReplyAll(accessToken, messageId);
+
+      if (!draft) return { data: null, error: "Error creating draft" };
+
+      resp = {
+        id: draft.id || "",
+        messageId: draft.id || "",
+        threadId: draft.conversationId || "",
+      };
+    } catch (e) {
+      dLog("Error creating draft");
+      return { data: null, error: "Error creating draft" };
+    }
+  }
+
+  return { data: resp, error: null };
+}
+
+export async function createDraftForForward(
+  email: string,
+  provider: "google" | "outlook",
+  to: string[],
+  cc: string[],
+  bcc: string[],
+  subject: string,
+  content: string,
+  headerMessageId: string,
+  threadId: string,
+  messageId: string
+) {
+  let resp: CreateDraftResponseDataType | null = null;
+
+  const accessToken = await getAccessToken(email);
+  if (provider === "google") {
+    const { data, error } = await gDraftCreateForReply(
+      accessToken,
+      email,
+      to.join(","),
+      cc.join(","),
+      bcc.join(","),
+      subject,
+      content,
+      headerMessageId,
+      threadId
+    );
+
+    if (error || !data) {
+      dLog("Error creating draft");
+      return { data: null, error: "Error creating draft" };
+    }
+
+    resp = {
+      id: data.id || "",
+      messageId: data.message?.id || "",
+      threadId: data.message?.threadId || "",
+    };
+  } else {
+    try {
+      const draft = await mDraftCreateForForward(accessToken, messageId);
+
+      if (!draft) return { data: null, error: "Error creating draft" };
+
+      resp = {
+        id: draft.id || "",
+        messageId: draft.id || "",
         threadId: draft.conversationId || "",
       };
     } catch (e) {
@@ -1389,6 +1574,59 @@ export async function updateDraft(
   subject: string,
   content: string
   // attachments: NewAttachment[]
+) {
+  const accessToken = await getAccessToken(email);
+
+  if (provider === "google") {
+    const { data, error } = await gDraftUpdate(
+      accessToken,
+      messageId,
+      email,
+      to.join(","),
+      cc.join(","),
+      bcc.join(","),
+      subject,
+      content
+      // attachments
+    );
+
+    if (error || !data) {
+      return { data: null, error: "Error updating draft" };
+    }
+
+    await updateDexieDraftAfterSaving(messageId, data);
+
+    return { data, error };
+  } else {
+    try {
+      const data = await mDraftUpdate(
+        accessToken,
+        messageId,
+        to,
+        cc,
+        bcc,
+        subject,
+        content
+        // attachments
+      );
+
+      return { data, error: null };
+    } catch (e) {
+      dLog("Error updating draft");
+      return { data: null, error: "Error updating draft" };
+    }
+  }
+}
+
+export async function updateDraftForReply(
+  email: string,
+  provider: "google" | "outlook",
+  messageId: string,
+  to: string[],
+  cc: string[],
+  bcc: string[],
+  subject: string,
+  content: string
 ) {
   const accessToken = await getAccessToken(email);
 

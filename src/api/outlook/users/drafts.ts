@@ -1,5 +1,4 @@
 import { OutlookDraftDataType } from "../../model/users.draft";
-// import { NewAttachment } from "../../model/users.attachment";
 import { OUTLOOK_API_URL } from "../constants";
 
 export const create = async (
@@ -53,6 +52,84 @@ export const create = async (
     method: "POST",
     body: JSON.stringify(body),
   });
+
+  if (!response.ok) {
+    throw Error("Error creating draft");
+  } else {
+    data = await response.json();
+  }
+
+  return data;
+};
+
+export const createForReply = async (
+  accessToken: string,
+  messageId: string
+) => {
+  let data: OutlookDraftDataType | null = null;
+
+  const response = await fetch(
+    `${OUTLOOK_API_URL}/me/messages/${messageId}/createReply`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    }
+  );
+
+  if (!response.ok) {
+    throw Error("Error creating draft");
+  } else {
+    data = await response.json();
+  }
+
+  return data;
+};
+
+export const createForReplyAll = async (
+  accessToken: string,
+  messageId: string
+) => {
+  let data: OutlookDraftDataType | null = null;
+
+  const response = await fetch(
+    `${OUTLOOK_API_URL}/me/messages/${messageId}/createReplyAll`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    }
+  );
+
+  if (!response.ok) {
+    throw Error("Error creating draft");
+  } else {
+    data = await response.json();
+  }
+
+  return data;
+};
+
+export const createForForward = async (
+  accessToken: string,
+  messageId: string
+) => {
+  let data: OutlookDraftDataType | null = null;
+
+  const response = await fetch(
+    `${OUTLOOK_API_URL}/me/messages/${messageId}/createForward`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    }
+  );
 
   if (!response.ok) {
     throw Error("Error creating draft");

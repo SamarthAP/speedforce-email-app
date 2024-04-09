@@ -104,5 +104,6 @@ export interface OutlookDraftDataType {
 
 export interface CreateDraftResponseDataType {
   id: string;
+  messageId: string;
   threadId: string;
 }
