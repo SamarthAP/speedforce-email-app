@@ -4,12 +4,19 @@ import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useMemo, useState } from "react";
+import {
+  createRef,
+  RefObject,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ArchiveBoxXMarkIcon,
   ArrowSmallLeftIcon,
 } from "@heroicons/react/20/solid";
-import Message from "../components/Message";
+import { Message, MessageDraft, MessageHandle } from "../components/Message";
 import { useHotkeys } from "react-hotkeys-hook";
 import SelectedThreadBar from "../components/SelectedThreadBar";
 import {
@@ -33,6 +40,9 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
   const { sequenceInitiated } = useKeyPressContext();
   const { threadId } = useParams();
   const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
+  const [activeDraft, setActiveDraft] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<Map<string, RefObject<MessageHandle>>>(new Map());
 
   const messages = useLiveQuery(() => {
     return db.messages
@@ -48,20 +58,6 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
   const thread = useLiveQuery(() => {
     return db.emailThreads.get(threadId || "");
   }, [threadId]);
-
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !commandBarIsOpen) {
-        navigate(-1);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyPress);
-    };
-  }, [navigate, commandBarIsOpen]);
 
   const commandBarContextValue = useMemo(
     () => ({
@@ -102,6 +98,57 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
     },
     [selectedEmail.email, selectedEmail.provider, listUnsubscribeHeader]
   );
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ESCAPE],
+    () => {
+      if (!commandBarIsOpen) {
+        // Save drafts on escape
+        if (messages && messageRefs) {
+          for (const message of messages) {
+            const messageRef = messageRefs.current.get(message.id);
+
+            if (messageRef && messageRef.current) {
+              messageRef.current.saveDraft();
+            }
+          }
+        }
+
+        navigate(-1);
+      }
+    },
+    [navigate, commandBarIsOpen, messages]
+  );
+
+  useEffect(() => {
+    if (messages) {
+      const messageRefsMap = new Map<string, RefObject<MessageHandle>>();
+      messages.forEach((message) => {
+        if (!messageRefsMap.has(message.id)) {
+          messageRefsMap.set(message.id, createRef<MessageHandle>());
+        }
+      });
+
+      messageRefs.current = messageRefsMap;
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (activeDraft) {
+      // When creating a new draft, scroll to bottom
+      scrollRef.current?.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+
+      const messageRef = messageRefs.current.get(activeDraft);
+      if (messageRef && messageRef.current) {
+        // TODO: implement focus cursor on the message
+        // Notes: might need to segregate message and messageDraft components or else we have to nested pass the ref to the draft component
+        messageRef.current.focusTo();
+      }
+    }
+  }, [activeDraft]);
 
   const unsubscribeFromList = () => {
     if (listUnsubscribeHeader) {
@@ -170,14 +217,26 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
                     ) : null}
                   </div>
                 </div>
-                <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll">
+                <div
+                  className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll"
+                  ref={scrollRef}
+                >
                   {messages?.map((message, idx) => {
-                    return (
-                      <Message
-                        message={message}
+                    return message.draftId ? (
+                      <MessageDraft
                         key={message.id}
+                        ref={messageRefs.current.get(message.id)}
                         selectedEmail={selectedEmail}
+                        message={message}
+                      />
+                    ) : (
+                      <Message
+                        key={message.id}
+                        ref={messageRefs.current.get(message.id)}
+                        selectedEmail={selectedEmail}
+                        message={message}
                         isLast={idx === messages.length - 1}
+                        onCreateDraft={setActiveDraft}
                       />
                     );
                   })}

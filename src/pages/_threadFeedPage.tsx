@@ -10,10 +10,17 @@ import SelectedThreadBar from "../components/SelectedThreadBar";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useParams } from "react-router-dom";
-import Message, { MessageHandle } from "../components/Message";
+import { Message, MessageDraft, MessageHandle } from "../components/Message";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import { handleArchiveClick, handleStarClick } from "../lib/asyncHelpers";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  createRef,
+  RefObject,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   KeyPressProvider,
   useKeyPressContext,
@@ -141,16 +148,6 @@ export default function GenericThreadFeedPage({
   );
 
   useHotkeys(
-    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ESCAPE],
-    () => {
-      if (!commandBarIsOpen) {
-        navigate(originalPageUrl);
-      }
-    },
-    [navigate, commandBarIsOpen]
-  );
-
-  useHotkeys(
     DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE],
     () => {
       navigate("/compose");
@@ -218,6 +215,7 @@ export default function GenericThreadFeedPage({
               threadId={threads[indexNumber].id}
               selectedEmail={selectedEmail}
               originalPageUrl={originalPageUrl}
+              commandBarIsOpen={commandBarIsOpen}
             />
             <ShortcutsFloater
               items={[
@@ -311,19 +309,19 @@ function ThreadFeedSection({
   threadId,
   selectedEmail,
   originalPageUrl,
+  commandBarIsOpen,
 }: {
   thread: IEmailThread;
   threadId: string;
   selectedEmail: ISelectedEmail;
   originalPageUrl: string;
+  commandBarIsOpen: boolean;
 }) {
   const navigate = useNavigate();
   const { sequenceInitiated } = useKeyPressContext();
   const [activeDraft, setActiveDraft] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const messageRefs = useRef<Map<string, React.RefObject<MessageHandle>>>(
-    new Map()
-  );
+  const messageRefs = useRef<Map<string, RefObject<MessageHandle>>>(new Map());
 
   const messages = useLiveQuery(() => {
     return db.messages
@@ -332,17 +330,37 @@ function ThreadFeedSection({
       .sortBy("date");
   }, [thread]);
 
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ESCAPE],
+    () => {
+      if (!commandBarIsOpen) {
+        // Save drafts on escape
+        if (messages && messageRefs) {
+          for (const message of messages) {
+            const messageRef = messageRefs.current.get(message.id);
+
+            if (messageRef && messageRef.current) {
+              messageRef.current.saveDraft();
+            }
+          }
+        }
+
+        navigate(originalPageUrl);
+      }
+    },
+    [navigate, commandBarIsOpen, messages]
+  );
+
   useEffect(() => {
     if (messages) {
-      const messageRefsMap = new Map<string, React.RefObject<MessageHandle>>();
+      const messageRefsMap = new Map<string, RefObject<MessageHandle>>();
       messages.forEach((message) => {
         if (!messageRefsMap.has(message.id)) {
-          messageRefsMap.set(message.id, React.createRef<MessageHandle>());
+          messageRefsMap.set(message.id, createRef<MessageHandle>());
         }
       });
 
       messageRefs.current = messageRefsMap;
-      console.log("messageRefs: ", messageRefs);
     }
   }, [messages]);
 
@@ -444,12 +462,19 @@ function ThreadFeedSection({
           ref={scrollRef}
         >
           {messages?.map((message, idx) => {
-            return (
+            return message.draftId ? (
+              <MessageDraft
+                key={message.id}
+                ref={messageRefs.current.get(message.id)}
+                selectedEmail={selectedEmail}
+                message={message}
+              />
+            ) : (
               <Message
+                key={message.id}
                 ref={messageRefs.current.get(message.id)}
                 onCreateDraft={setActiveDraft}
                 message={message}
-                key={message.id}
                 selectedEmail={selectedEmail}
                 isLast={idx === messages.length - 1}
               />

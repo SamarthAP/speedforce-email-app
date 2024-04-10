@@ -365,24 +365,30 @@ function ThreadListRow({
 
   async function handleTrashClick(thread: IEmailThread) {
     if (isDrafts) {
-      const message = await db.messages
+      const messages = await db.messages
         .where("threadId")
         .equals(thread.id)
-        .first();
-      if (!message || !message.draftId) return;
+        .toArray();
 
-      await handleDiscardDraft(
-        selectedEmail.email,
-        selectedEmail.provider,
-        message.draftId
-      );
-    } else {
-      await handleTrashThread(
-        selectedEmail.email,
-        selectedEmail.provider,
-        thread
-      );
+      if (messages.length === 1 && messages[0].draftId) {
+        await handleDiscardDraft(
+          selectedEmail.email,
+          selectedEmail.provider,
+          messages[0].draftId
+        );
+
+        return;
+      }
     }
+
+    // Trash the thread if its not a standalone draft
+    await handleTrashThread(
+      selectedEmail.email,
+      selectedEmail.provider,
+      thread
+    );
+
+    toast.success(isDrafts ? "Draft discarded" : "Email deleted");
   }
 
   const message = useLiveQuery(() => {

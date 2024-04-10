@@ -69,6 +69,7 @@ import {
   createForReply as gDraftCreateForReply,
   get as gDraftGet,
   update as gDraftUpdate,
+  updateForReply as gDraftUpdateForReply,
   deleteDraft as gDraftDelete,
 } from "../api/gmail/users/drafts";
 import {
@@ -1086,7 +1087,6 @@ export async function trashThread(
     }
   }
 
-  toast.success("Trashed thread");
   return { data: null, error: null };
 }
 
@@ -1556,7 +1556,7 @@ export async function createDraftForForward(
 export async function updateDraft(
   email: string,
   provider: "google" | "outlook",
-  messageId: string,
+  draftId: string,
   to: string[],
   cc: string[],
   bcc: string[],
@@ -1569,7 +1569,7 @@ export async function updateDraft(
   if (provider === "google") {
     const { data, error } = await gDraftUpdate(
       accessToken,
-      messageId,
+      draftId,
       email,
       to.join(","),
       cc.join(","),
@@ -1583,14 +1583,14 @@ export async function updateDraft(
       return { data: null, error: "Error updating draft" };
     }
 
-    await updateDexieDraftAfterSaving(messageId, data);
+    await updateDexieDraftAfterSaving(draftId, data);
 
     return { data, error };
   } else {
     try {
       const data = await mDraftUpdate(
         accessToken,
-        messageId,
+        draftId,
         to,
         cc,
         bcc,
@@ -1610,25 +1610,30 @@ export async function updateDraft(
 export async function updateDraftForReply(
   email: string,
   provider: "google" | "outlook",
-  messageId: string,
+  draftId: string,
   to: string[],
   cc: string[],
   bcc: string[],
   subject: string,
-  content: string
+  content: string,
+  headerMessageId: string,
+  threadId: string,
+  messageId: string
 ) {
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
-    const { data, error } = await gDraftUpdate(
+    const { data, error } = await gDraftUpdateForReply(
       accessToken,
-      messageId,
+      draftId,
       email,
       to.join(","),
       cc.join(","),
       bcc.join(","),
       subject,
-      content
+      content,
+      headerMessageId,
+      threadId
       // attachments
     );
 

@@ -11,6 +11,7 @@ import {
   trashThread,
   unstarThread,
   updateDraft,
+  updateDraftForReply,
 } from "./sync";
 import {
   getSnippetFromHtml,
@@ -158,6 +159,67 @@ export async function handleUpdateDraft(
   );
 }
 
+export async function handleUpdateDraftForReply(
+  email: string,
+  provider: "google" | "outlook",
+  draftId: string,
+  to: string[],
+  cc: string[],
+  bcc: string[],
+  subject: string,
+  html: string,
+  headerMessageId: string,
+  threadId: string,
+  messageId: string
+) {
+  const draft = await db.drafts.get({ id: draftId });
+  if (!draft) return;
+
+  const thread = await db.emailThreads.get({ id: draft.threadId });
+  const message = (await db.messages.get({ draftId: draftId })) || null;
+
+  if (!thread || !message) return;
+
+  // need to do this bc electron forge compiler complains that thread and message could be null
+  const nonNullThread = thread;
+  const nonNullMessage = message;
+
+  await executeInstantAsyncAction(
+    () => {
+      void updateDexieDraft(
+        {
+          ...nonNullThread,
+          date: new Date().getTime(),
+        },
+        {
+          ...nonNullMessage,
+          toRecipients: to,
+          ccRecipients: cc,
+          bccRecipients: bcc,
+          htmlData: html,
+        }
+      );
+    },
+    async () =>
+      await updateDraftForReply(
+        email,
+        provider,
+        draftId,
+        to,
+        cc,
+        bcc,
+        subject,
+        html,
+        headerMessageId,
+        threadId,
+        messageId
+      ),
+    () => {
+      void updateDexieDraft(nonNullThread, nonNullMessage);
+    }
+  );
+}
+
 export async function handleDiscardDraft(
   email: string,
   provider: "google" | "outlook",
@@ -208,20 +270,26 @@ export async function handleTrashThread(
     FOLDER_IDS.SENT,
   ]);
 
+  const drafts = await db.drafts.where("threadId").equals(thread.id).toArray();
   await executeInstantAsyncAction(
-    () =>
+    async () => {
       void updateLabelIdsForEmailThread(
         thread.id,
         [FOLDER_IDS.TRASH],
         labelsToRemove
-      ),
+      );
+
+      await db.drafts.bulkDelete(drafts.map((draft) => draft.id));
+    },
     async () => {
       await trashThread(email, provider, thread.id);
     },
-    () => {
+    async () => {
       void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [
         FOLDER_IDS.TRASH,
       ]);
+
+      await db.drafts.bulkAdd(drafts);
       toast("Unable to trash thread");
     }
   );
