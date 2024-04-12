@@ -164,6 +164,12 @@ export async function handleNewDraftsGoogle(
         toRecipients: getMessageHeader(draft.message.payload.headers, "To")
           .split(",")
           .map((recipient) => recipient.trim()),
+        ccRecipients: getMessageHeader(draft.message.payload.headers, "Cc")
+          .split(",")
+          .map((recipient) => recipient.trim()),
+        bccRecipients: getMessageHeader(draft.message.payload.headers, "Bcc")
+          .split(",")
+          .map((recipient) => recipient.trim()),
         snippet: draft.message.snippet || "",
         headers: draft.message.payload.headers,
         textData: decodeGoogleMessageData(textData),
@@ -296,6 +302,12 @@ export async function handleNewThreadsGoogle(
           labelIds: message.labelIds,
           from: getMessageHeader(message.payload.headers, "From"),
           toRecipients: getMessageHeader(message.payload.headers, "To")
+            .split(",")
+            .map((recipient) => recipient.trim()),
+          ccRecipients: getMessageHeader(message.payload.headers, "Cc")
+            .split(",")
+            .map((recipient) => recipient.trim()),
+          bccRecipients: getMessageHeader(message.payload.headers, "Bcc")
             .split(",")
             .map((recipient) => recipient.trim()),
           snippet: message.snippet || "",
@@ -435,7 +447,13 @@ export async function handleNewThreadsOutlook(
               "No Sender",
             toRecipients: message.toRecipients.map(
               (m) => m.emailAddress.address
-            ), // TODO: add multiple recipients
+            ),
+            ccRecipients: message.ccRecipients.map(
+              (m) => m.emailAddress.address
+            ),
+            bccRecipients: message.bccRecipients.map(
+              (m) => m.emailAddress.address
+            ),
             snippet: message.bodyPreview || "",
             headers: buildMessageHeadersOutlook(message),
             textData,
@@ -696,6 +714,17 @@ export async function sendReply(
   html: string
 ) {
   const accessToken = await getAccessToken(email);
+  const wrappedHtml = `
+    ${html}
+    <br>
+    <div class="speedforce_quote">
+      <p>On ${new Date(message.date).toDateString()}, ${message.from} wrote:</p>
+      <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+        <div dir="ltr">${message.htmlData}</div>
+      </blockquote>
+    </div>
+    <br>
+  `;
   if (provider === "google") {
     const from = email;
     const to =
@@ -715,7 +744,7 @@ export async function sendReply(
       subject,
       headerMessageId,
       threadId,
-      html.concat(SENT_FROM_SPEEDFORCE_HTML)
+      wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
   } else if (provider === "outlook") {
     const subject = getMessageHeader(message.headers, "Subject");
@@ -726,7 +755,7 @@ export async function sendReply(
         accessToken,
         subject,
         messageId,
-        html.concat(SENT_FROM_SPEEDFORCE_HTML)
+        wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
       );
       return { data: null, error: null };
     } catch (e) {
@@ -744,6 +773,18 @@ export async function sendReplyAll(
   html: string
 ) {
   const accessToken = await getAccessToken(email);
+  const wrappedHtml = `
+    ${html}
+    <br>
+    <div class="speedforce_quote">
+      <p>On ${new Date(message.date).toDateString()} ${message.from} wrote:</p>
+      <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+        <div dir="ltr">${message.htmlData}</div>
+      </blockquote>
+    </div>
+    <br>
+  `;
+
   if (provider === "google") {
     const from = email;
     const to = getToRecipients(message, email);
@@ -758,7 +799,7 @@ export async function sendReplyAll(
       subject,
       headerMessageId,
       threadId,
-      html.concat(SENT_FROM_SPEEDFORCE_HTML)
+      wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
   } else if (provider === "outlook") {
     const subject = getMessageHeader(message.headers, "Subject");
@@ -769,7 +810,7 @@ export async function sendReplyAll(
         accessToken,
         subject,
         messageId,
-        html.concat(SENT_FROM_SPEEDFORCE_HTML)
+        wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
       );
       return { data: null, error: null };
     } catch (e) {

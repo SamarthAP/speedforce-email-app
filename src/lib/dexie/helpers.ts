@@ -36,3 +36,14 @@ export const clearEmailFromDb = async (email: string) => {
 
   return null;
 };
+
+export const clearAllEmailsFromDb = async () => {
+  try {
+    db.tables.forEach((table) => void table.clear());
+  } catch (e) {
+    dLog(e);
+    return e;
+  }
+
+  return null;
+};

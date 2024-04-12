@@ -51,6 +51,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const [initialData, setInitialData] = useState<{
     to: string[];
+    cc: string[];
+    bcc: string[];
     subject: string;
     html: string;
   } | null>(null);
@@ -71,25 +73,12 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
     return (
       to.toString() != initialData.to.toString() ||
+      cc.toString() != initialData.cc.toString() ||
+      bcc.toString() != initialData.bcc.toString() ||
       subject !== initialData.subject ||
       isHtmlDirty
     );
-  }, [to, subject, initialData]);
-
-  const setToAndSaveDraft = (emails: string[]) => {
-    setTo(emails);
-    void saveDraft(editorRef.current?.getHTML() || "");
-  };
-
-  const setCcAndSaveDraft = (emails: string[]) => {
-    setCc(emails);
-    void saveDraft(editorRef.current?.getHTML() || "");
-  };
-
-  const setBccAndSaveDraft = (emails: string[]) => {
-    setBcc(emails);
-    void saveDraft(editorRef.current?.getHTML() || "");
-  };
+  }, [to, cc, bcc, subject, initialData]);
 
   const {
     data: sharedDraftData,
@@ -131,7 +120,15 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   }, [shareModalIsOpen, refetchSharedDraft, refetchParticipants]);
 
   const saveDraft = useCallback(
-    async (html: string) => {
+    async (
+      email: string,
+      provider: "google" | "outlook",
+      to: string[],
+      cc: string[],
+      bcc: string[],
+      subject: string,
+      html: string
+    ) => {
       if (!threadId) return { error: "No thread id" };
       if (!isDirty()) {
         // No changes, no need to save
@@ -149,12 +146,11 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
       // The save endpoint for outlook expects the message id, whereas the save endpoint for gmail expects the draft id
       // For simplicity sake, for shared drafts we will always use the message id
-      const draftIdToUpdate =
-        selectedEmail.provider === "google" ? threadId : message.id;
+      const draftIdToUpdate = provider === "google" ? threadId : message.id;
 
       await handleUpdateDraft(
-        selectedEmail.email,
-        selectedEmail.provider,
+        email,
+        provider,
         draftIdToUpdate,
         to,
         cc,
@@ -164,7 +160,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       );
 
       const newSnippet = await getSnippetFromHtml(html);
-      await saveSharedDraft(selectedEmail.email, {
+      await saveSharedDraft(email, {
         id: threadId,
         to,
         cc,
@@ -177,16 +173,51 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
       return { error: null };
     },
+    [threadId, isDirty]
+  );
+
+  // Use this function if there is no dependencies that changed other than the html content
+  const saveDraftWithHtml = useCallback(
+    async (html: string) => {
+      const { error } = await saveDraft(
+        selectedEmail.email,
+        selectedEmail.provider,
+        to,
+        cc,
+        bcc,
+        subject,
+        html
+      );
+
+      if (error) {
+        toast.error("Error saving draft");
+      }
+
+      return { error };
+    },
     [
       selectedEmail.email,
       selectedEmail.provider,
-      subject,
       to,
       cc,
       bcc,
-      threadId,
+      subject,
+      saveDraft,
     ]
   );
+
+  // Save draft when any changes to recipients changes
+  useEffect(() => {
+    void saveDraft(
+      selectedEmail.email,
+      selectedEmail.provider,
+      to,
+      cc,
+      bcc,
+      subject,
+      editorRef.current?.getHTML() || ""
+    );
+  }, [to, cc, bcc]);
 
   const commandBarContextValue = useMemo(
     () => ({
@@ -231,7 +262,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
     // If send fails, try save draft and return
     if (error) {
-      await saveDraft(editorRef.current?.getHTML() || "");
+      await saveDraftWithHtml(html);
       toast.error("Error sending email");
       return setSendingEmail(false);
     }
@@ -254,7 +285,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     bcc,
     cc,
     navigate,
-    saveDraft,
+    saveDraftWithHtml,
     selectedEmail.email,
     selectedEmail.provider,
     subject,
@@ -268,7 +299,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         if (shareModalIsOpen) {
           setShareeModalIsOpen(false);
         } else {
-          void saveDraft(editorRef.current?.getHTML() || "");
+          void saveDraftWithHtml(editorRef.current?.getHTML() || "");
           navigate(-1);
         }
       }
@@ -279,7 +310,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [navigate, shareModalIsOpen, saveDraft, commandBarIsOpen]);
+  }, [navigate, shareModalIsOpen, saveDraftWithHtml, commandBarIsOpen]);
 
   useEffect(() => {
     const loadDraft = async (threadId: string) => {
@@ -293,12 +324,16 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
       if (thread && message && message.id) {
         setTo(message.toRecipients.filter((recipient) => recipient !== ""));
+        setCc(message.ccRecipients.filter((recipient) => recipient !== ""));
+        setBcc(message.bccRecipients.filter((recipient) => recipient !== ""));
         setSubject(thread.subject || "");
         setInitialContent(message.htmlData || "");
         setSnippet(thread.snippet || "");
         setDate(thread.date || 0);
         setInitialData({
           to: message.toRecipients.filter((recipient) => recipient !== ""),
+          cc: message.ccRecipients.filter((recipient) => recipient !== ""),
+          bcc: message.bccRecipients.filter((recipient) => recipient !== ""),
           subject: thread.subject || "",
           html: message.htmlData || "",
         });
@@ -330,7 +365,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                     className="flex flex-row cursor-pointer items-center"
                     onClick={(e) => {
                       e.stopPropagation();
-                      void saveDraft(editorRef.current?.getHTML() || "");
+                      void saveDraftWithHtml(
+                        editorRef.current?.getHTML() || ""
+                      );
                       navigate(-1);
                     }}
                   >
@@ -364,8 +401,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                     />
                   </div>
                 </span>
-                <div className="h-full w-full flex flex-row">
-                  <div className="h-full w-full flex flex-col space-y-2 pt-2 px-4 pb-4 mb-10 overflow-y-scroll hide-scroll">
+                <div className="h-full w-full flex flex-row mb-10 overflow-y-scroll hide-scroll">
+                  <div className="h-full w-full flex flex-col space-y-2 pt-2 px-4 pb-4">
                     <div className="border border-slate-200 dark:border-zinc-700 pt-1">
                       <EmailSelectorInput
                         selectedEmail={selectedEmail}
@@ -373,15 +410,15 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                         toProps={{
                           text: "To",
                           emails: to,
-                          setEmails: setToAndSaveDraft,
+                          setEmails: setTo,
                         }}
                         ccProps={{
                           emails: cc,
-                          setEmails: setCcAndSaveDraft,
+                          setEmails: setCc,
                         }}
                         bccProps={{
                           emails: bcc,
-                          setEmails: setBccAndSaveDraft,
+                          setEmails: setBcc,
                         }}
                       />
                       <div className="flex py-2 border-b border-b-slate-200 dark:border-b-zinc-700">
@@ -393,7 +430,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                           value={subject}
                           onChange={(event) => setSubject(event.target.value)}
                           onBlur={() =>
-                            void saveDraft(editorRef.current?.getHTML() || "")
+                            void saveDraftWithHtml(
+                              editorRef.current?.getHTML() || ""
+                            )
                           }
                           type="text"
                           name="subject"
@@ -419,7 +458,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                             sendingEmail={sendingEmail}
                             sendEmail={handleSendEmail}
                             // setContent={setContentHtml}
-                            saveDraft={saveDraft}
+                            saveDraft={saveDraftWithHtml}
                           />
                         </div>
                       </div>

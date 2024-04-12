@@ -14,7 +14,10 @@ import OrderedList from "@tiptap/extension-ordered-list";
 import BulletList from "@tiptap/extension-bullet-list";
 import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
+import HardBreak from "@tiptap/extension-hard-break";
 import ImagePlugin from "./ImagePlugin";
+import EnterExtension from "./EnterExtension";
+import ParagraphExtension from "./ParagraphExtension";
 import SimpleButton from "../SimpleButton";
 import {
   useImperativeHandle,
@@ -51,7 +54,10 @@ const extensions = [
     },
     openOnClick: false,
   }),
+  HardBreak,
   ImagePlugin,
+  ParagraphExtension,
+  EnterExtension,
 ];
 
 const content = "";
@@ -251,7 +257,10 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
             );
           })}
         </div>
-        <EditorContent editor={editor} className="mt-4 dark:text-white" />
+
+        <div className="editor-content">
+          <EditorContent editor={editor} className="mt-4 dark:text-white" />
+        </div>
 
         <div className="text-left mt-4 mb-2">
           <SimpleButton

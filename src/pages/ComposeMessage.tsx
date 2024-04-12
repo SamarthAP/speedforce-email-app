@@ -60,21 +60,6 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
 
   const navigate = useNavigate();
 
-  const setToAndSaveDraft = (emails: string[]) => {
-    setTo(emails);
-    void saveDraft(editorRef.current?.getHTML() || "");
-  };
-
-  const setCcAndSaveDraft = (emails: string[]) => {
-    setCc(emails);
-    void saveDraft(editorRef.current?.getHTML() || "");
-  };
-
-  const setBccAndSaveDraft = (emails: string[]) => {
-    setBcc(emails);
-    void saveDraft(editorRef.current?.getHTML() || "");
-  };
-
   const commandBarContextValue = useMemo(
     () => ({
       commandBarIsOpen: commandBarIsOpen,
@@ -84,12 +69,20 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
   );
 
   const saveDraft = useCallback(
-    async (html: string) => {
+    async (
+      email: string,
+      provider: "google" | "outlook",
+      to: string[],
+      cc: string[],
+      bcc: string[],
+      subject: string,
+      html: string
+    ) => {
       if (draft.id && draft.threadId) {
         // Async action handle saving draft
         await handleUpdateDraft(
-          selectedEmail.email,
-          selectedEmail.provider,
+          email,
+          provider,
           draft.id,
           to,
           cc,
@@ -100,8 +93,8 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       } else {
         // Create draft
         const { data, error } = await createDraft(
-          selectedEmail.email,
-          selectedEmail.provider,
+          email,
+          provider,
           to,
           cc,
           bcc,
@@ -115,15 +108,13 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
         }
 
         // Add to dexie
-        const accessToken = await getAccessToken(selectedEmail.email);
-        if (selectedEmail.provider === "google") {
-          await handleNewDraftsGoogle(accessToken, selectedEmail.email, [
-            data.id,
-          ]);
-        } else if (selectedEmail.provider === "outlook") {
+        const accessToken = await getAccessToken(email);
+        if (provider === "google") {
+          await handleNewDraftsGoogle(accessToken, email, [data.id]);
+        } else if (provider === "outlook") {
           await handleNewThreadsOutlook(
             accessToken,
-            selectedEmail.email,
+            email,
             [data.threadId],
             []
           );
@@ -137,22 +128,56 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
 
       return { error: null };
     },
+    [draft.id, draft.threadId]
+  );
+
+  // Use this function if there is no dependencies that changed other than the html content
+  const saveDraftWithHtml = useCallback(
+    async (html: string) => {
+      const { error } = await saveDraft(
+        selectedEmail.email,
+        selectedEmail.provider,
+        to,
+        cc,
+        bcc,
+        subject,
+        html
+      );
+
+      if (error) {
+        toast.error("Error saving draft");
+      }
+      return { error };
+    },
     [
-      draft,
       // attachments,
       subject,
       to,
       cc,
       bcc,
+      saveDraft,
       selectedEmail.email,
       selectedEmail.provider,
     ]
   );
 
+  // Save draft when any changes to recipients changes
+  useEffect(() => {
+    void saveDraft(
+      selectedEmail.email,
+      selectedEmail.provider,
+      to,
+      cc,
+      bcc,
+      subject,
+      editorRef.current?.getHTML() || ""
+    );
+  }, [to, cc, bcc]);
+
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !commandBarIsOpen) {
-        void saveDraft(editorRef.current?.getHTML() || "");
+        void saveDraftWithHtml(editorRef.current?.getHTML() || "");
         navigate(-1);
       }
     };
@@ -162,7 +187,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [navigate, saveDraft, commandBarIsOpen]);
+  }, [navigate, saveDraftWithHtml, commandBarIsOpen]);
 
   const handleSendEmail = useCallback(async () => {
     const html = editorRef.current?.getHTML() || "";
@@ -196,7 +221,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
 
     // If send fails, try save draft and return
     if (error) {
-      await saveDraft(html);
+      await saveDraftWithHtml(html);
       toast.error("Error sending email");
       return setSendingEmail(false);
     } else {
@@ -211,7 +236,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
 
     // delete draft thread as there will be a new thread for the sent email
     if (draft.threadId) {
-      await deleteDexieThread(draft.threadId);
+      await deleteDexieThread(draft.id);
       await deleteDraft(selectedEmail.email, selectedEmail.provider, draft.id);
     }
 
@@ -222,7 +247,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
     bcc,
     cc,
     draft,
-    saveDraft,
+    saveDraftWithHtml,
     selectedEmail,
     subject,
     to,
@@ -243,7 +268,9 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                     className="flex flex-row cursor-pointer items-center"
                     onClick={(e) => {
                       e.stopPropagation();
-                      void saveDraft(editorRef.current?.getHTML() || "");
+                      void saveDraftWithHtml(
+                        editorRef.current?.getHTML() || ""
+                      );
                       navigate(-1);
                     }}
                   >
@@ -262,15 +289,15 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                       toProps={{
                         text: "To",
                         emails: to,
-                        setEmails: setToAndSaveDraft,
+                        setEmails: setTo,
                       }}
                       ccProps={{
                         emails: cc,
-                        setEmails: setCcAndSaveDraft,
+                        setEmails: setCc,
                       }}
                       bccProps={{
                         emails: bcc,
-                        setEmails: setBccAndSaveDraft,
+                        setEmails: setBcc,
                       }}
                     />
                     <div className="flex pb-2 pt-1 border-b border-b-slate-200 dark:border-b-zinc-700">
@@ -281,7 +308,9 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                       <input
                         onChange={(event) => setSubject(event.target.value)}
                         onBlur={() =>
-                          void saveDraft(editorRef.current?.getHTML() || "")
+                          void saveDraftWithHtml(
+                            editorRef.current?.getHTML() || ""
+                          )
                         }
                         type="text"
                         name="subject"
@@ -306,7 +335,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                           }
                           sendingEmail={sendingEmail}
                           sendEmail={handleSendEmail}
-                          saveDraft={saveDraft}
+                          saveDraft={saveDraftWithHtml}
                         />
                       </div>
                     </div>
