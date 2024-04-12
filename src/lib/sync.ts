@@ -1049,6 +1049,39 @@ export async function downloadAttachment(
   return { fileName: "", error: "Not implemented" };
 }
 
+export async function getProfilePicture(
+  email: string,
+  provider: "google" | "outlook"
+) {
+  const accessToken = await getAccessToken(email);
+  // const ss = 
+  // const test = await getProfilePicture(accessToken);
+  // get image object from this
+  // get request on the url
+}
+
+
+//downloadProfilePictureLocally
+
+// ipcMain.on("save-profilePicture", (_event, email: string, data: string)=> {
+//   try {
+//     return saveProfilePicture(email, data)
+//   } catch (e) {
+//     return "";
+//   }
+// });
+
+// function saveProfilePicture(email: string, data: string){
+//   const filename = email + `.png`
+//   const filePath = path.join(app.getPath("userData"),filename )
+//   // const extName = path.extname(filename)
+//   // const baseName=path.basename(email, extName)
+//   const bufferData = Buffer.from(data, "base64")
+//   fs.writeFileSync(filePath, bufferData)
+
+//   return filename;
+// }
+
 export async function loadContacts(
   email: string,
   provider: "google" | "outlook"

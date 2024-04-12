@@ -13,6 +13,14 @@ export default function GoToPageHotkeys({
     navigate("/");
   });
 
+  useKeyPressSequence(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SWITCH_ACCOUNTS],
+    "Tab",
+    () => {
+      console.log("you pressed ctrl and tab");
+    }
+  );
+
   useKeyPressSequence(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "o", () => {
     navigate("/other");
   });

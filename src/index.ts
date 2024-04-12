@@ -74,6 +74,17 @@ if (isProd) {
 
 let mainWindow: BrowserWindow | null = null;
 
+function saveProfilePicture(email: string, data: string){
+  const filename = email + `.png`
+  const filePath = path.join(app.getPath("userData"),filename )
+  // const extName = path.extname(filename)
+  // const baseName=path.basename(email, extName)
+  const bufferData = Buffer.from(data, "base64")
+  fs.writeFileSync(filePath, bufferData)
+
+  return filename;
+}
+
 ipcMain.on("save-messages", (_event, messages) => {
   // a simple way to save a user's messages to disk
   // console.log("save-messages", messages);
@@ -334,6 +345,15 @@ function saveFileToDownloadsFolder(filename: string, data: string) {
 ipcMain.handle("save-file", (_event, filename, data) => {
   try {
     return saveFileToDownloadsFolder(filename, data);
+  } catch (e) {
+    return "";
+  }
+});
+
+
+ipcMain.on("save-profilePicture", (_event, email: string, data: string)=> {
+  try {
+    return saveProfilePicture(email, data)
   } catch (e) {
     return "";
   }

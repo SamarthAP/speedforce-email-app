@@ -35,6 +35,7 @@ import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../../lib/shortcuts";
 import { useKeyPressContext } from "../../contexts/KeyPressContext";
 import { useCommandBarOpenContext } from "../../contexts/CommandBarContext";
 import CommandBar from "../CommandBar";
+import AccountBar from "../AccountBar";
 import { useDebounceCallback } from "usehooks-ts";
 import { DisableMouseHoverContext } from "../../contexts/DisableMouseHoverContext";
 
@@ -518,6 +519,7 @@ export default function InboxThreadView({
           <AssistBar thread={threads[hoveredThreadIndex]} />
         </div>
       </InboxZeroBackgroundContext.Provider>
+      <AccountBar />
       <CommandBar
         data={[]}
         // data={[

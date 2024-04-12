@@ -81,6 +81,7 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
   useHotkeys(
     DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SWITCH_TAB],
     () => {
+      console.log("TAB ONLY");
       navigate("/other");
     },
     [navigate]

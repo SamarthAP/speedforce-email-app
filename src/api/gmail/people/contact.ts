@@ -84,3 +84,32 @@ export const listOtherContacts = async (accessToken: string) => {
 
   return { data, error };
 };
+
+
+export const getProfilePicture = async (accessToken: string) => {
+  let data: any;
+  let error: string | null = null;
+  try {
+    const res: Response = await fetch(
+      `https://people.googleapis.com/v1/people/me?personFields=photos`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    if (!res.ok) {
+      error = "Error fetching contacts";
+      console.log('res',res)
+    } else {
+      data = await res.json();
+    }
+  } catch (e) {
+    error = "Error getting profile picture"
+  }
+
+  // saveProfilePicture
+  
+  return {data, error};
+  
+}
