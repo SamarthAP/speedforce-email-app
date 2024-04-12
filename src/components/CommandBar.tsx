@@ -312,7 +312,6 @@ export default function CommandBar({ data }: CommandBarProps) {
     ],
     () => {
       if (!commandBarContext.commandBarIsOpen) return;
-      console.log("command bar - we are moving");
 
       const items = document.querySelectorAll(".command-bar-item");
 
@@ -472,16 +471,14 @@ export default function CommandBar({ data }: CommandBarProps) {
                     value={disableMouseHoverContextValue}
                   >
                     <div className="overflow-y-scroll hide-scroll">
-                      {filteredData.map((group, index) => {
-                        return (
-                          <CommandGroup
-                            key={index}
-                            title={group.title}
-                            commands={group.commands}
-                            setCommandBar={(open: boolean) => setOpen(open)}
-                          />
-                        );
-                      })}
+                      {filteredData.map((group, index) => (
+                        <CommandGroup
+                          key={index}
+                          title={group.title}
+                          commands={group.commands}
+                          setCommandBar={(open: boolean) => setOpen(open)}
+                        />
+                      ))}
                     </div>
                   </DisableMouseHoverContext.Provider>
                 </HoveredCommandBarItemContext.Provider>

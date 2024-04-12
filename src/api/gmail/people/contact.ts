@@ -107,8 +107,6 @@ export const getProfilePicture = async (accessToken: string) => {
   } catch (e) {
     error = "Error getting profile picture"
   }
-
-  // saveProfilePicture
   
   return {data, error};
   

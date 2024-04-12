@@ -155,39 +155,40 @@ export default function AccountBar() {
   );
 
   //doesn't work atm -> idk if we need it
-  useHotkeys(
-    [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_LEFT]],
-    () => {
-      if (!accountBarContext.accountBarIsOpen) return;
+  // useHotkeys(
+  //   [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_LEFT]],
+  //   () => {
+  //     if (!accountBarContext.accountBarIsOpen) return;
 
-      const items = document.querySelectorAll(".account-bar-item");
+  //     const items = document.querySelectorAll(".account-bar-item");
 
-      if (hoveredAccountBarItemId === "") {
-        if (items.length > 0) {
-          return setHoveredAccountBarItemId(items[0].innerHTML || "");
-        }
-      }
+  //     if (hoveredAccountBarItemId === "") {
+  //       if (items.length > 0) {
+  //         return setHoveredAccountBarItemId(items[0].innerHTML || "");
+  //       }
+  //     }
 
-      const currentIndex = Array.from(items).findIndex(
-        (item) => item.innerHTML === hoveredAccountBarItemId
-      );
+  //     const currentIndex = Array.from(items).findIndex(
+  //       (item) => item.innerHTML === hoveredAccountBarItemId
+  //     );
 
-      if (currentIndex === -1) {
-        return setHoveredAccountBarItemId("");
-      } else {
-        setDisableMouseHover(true);
-        debouncedDisableMouseHover(false);
-        return setHoveredAccountBarItemId(
-          items[currentIndex + 1].innerHTML || ""
-        );
-      }
-    },
-    [
-      hoveredAccountBarItemId,
-      setHoveredAccountBarItemId,
-      accountBarContext.accountBarIsOpen,
-    ]
-  );
+  //     if (currentIndex === -1) {
+  //       return setHoveredAccountBarItemId("");
+  //     } else {
+  //       setDisableMouseHover(true);
+  //       debouncedDisableMouseHover(false);
+  //       return setHoveredAccountBarItemId(
+  //         items[currentIndex + 1].innerHTML || ""
+  //       );
+  //     }
+  //   },
+  //   [
+  //     hoveredAccountBarItemId,
+  //     setHoveredAccountBarItemId,
+  //     accountBarContext.accountBarIsOpen,
+  //   ]
+  // );
+
   return (
     <Transition appear show={open} as={Fragment}>
       <div className="relative z-10">

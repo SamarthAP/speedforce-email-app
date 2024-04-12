@@ -113,7 +113,7 @@ export default function AccountActions(props: AccountActionsProps) {
                       <div className="text-sm">{email.email}</div>
                     </div>
                     {email.email === props.selectedEmail.email ? (
-                      <CheckIcon className="h-20 w-20 shrink-0 text-black" />
+                      <CheckIcon className="h-4 w-4 shrink-0 text-black" />
                     ) : (
                       // Spacer
                       <div className="h-4 w-4 ml-2"></div>

@@ -1116,7 +1116,6 @@ export async function downloadAttachment(
   return { fileName: "", error: "Not implemented" };
 }
 
-
 export async function loadContacts(
   email: string,
   provider: "google" | "outlook"
