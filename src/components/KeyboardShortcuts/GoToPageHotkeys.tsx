@@ -13,12 +13,6 @@ export default function GoToPageHotkeys({
     navigate("/");
   });
 
-  useKeyPressSequence(
-    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SWITCH_ACCOUNTS],
-    "Tab",
-    () => {}
-  );
-
   useKeyPressSequence(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "o", () => {
     navigate("/other");
   });

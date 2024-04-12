@@ -74,7 +74,6 @@ if (isProd) {
 
 let mainWindow: BrowserWindow | null = null;
 
-
 ipcMain.on("save-messages", (_event, messages) => {
   // a simple way to save a user's messages to disk
   // console.log("save-messages", messages);
