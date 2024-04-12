@@ -7,6 +7,7 @@ import {
   // IThreadFilter,
 } from "../../model/users.thread";
 import { dLog } from "../../../lib/noProd";
+import { GoogleSendMessageDataType } from "../../model/users.thread";
 
 // in endpoints that will not be called often, we can use the async/await syntax
 // export const list = async (accessToken: string, filter: IThreadFilter) => {
@@ -169,13 +170,15 @@ export const addLabelIds = async (
 export const sendReply = async (
   accessToken: string,
   from: string,
-  to: string[],
+  to: string | null,
+  cc: string | null,
+  bcc: string | null,
   subject: string,
   headerMessageId: string,
   threadId: string,
   messageContent: string
 ) => {
-  let data: any | null = null; // TODO: define type
+  let data: GoogleSendMessageDataType | null = null; // TODO: define type
   let error: string | null = null;
 
   try {
@@ -187,7 +190,10 @@ export const sendReply = async (
         `References: ${headerMessageId}\n` +
         `Subject: Re: ${subject}\n` +
         `From: ${from}\n` +
-        `To: ${to.join(",")}\n\n` +
+        (to ? `To: ${to}\n` : "") + // To is technically an optional field if CC is provided
+        (cc ? `Cc: ${cc}\n` : "") +
+        (bcc ? `Bcc: ${bcc}\n` : "") +
+        "\n" +
         messageContent
     )
       .replace(/\+/g, "-")

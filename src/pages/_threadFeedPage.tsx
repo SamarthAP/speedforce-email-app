@@ -335,10 +335,12 @@ function ThreadFeedSection({
     () => {
       if (!commandBarIsOpen) {
         // Save drafts on escape
+        // TODO: Fix this, for now we have just a short debounce
         if (messages && messageRefs) {
           for (const message of messages) {
             const messageRef = messageRefs.current.get(message.id);
 
+            console.log("messageRef", messageRef);
             if (messageRef && messageRef.current) {
               messageRef.current.saveDraft();
             }

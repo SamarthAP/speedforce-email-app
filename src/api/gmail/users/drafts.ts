@@ -5,6 +5,7 @@ import {
   GoogleDraftsListDataType,
 } from "../../model/users.draft";
 import { GMAIL_API_URL } from "../constants";
+import { IDraft } from "../../../lib/db";
 
 export const create = async (
   accessToken: string,
@@ -291,4 +292,32 @@ export const deleteDraft = async (accessToken: string, draftId: string) => {
   }
 
   return { data: null, error };
+};
+
+export const send = async (accessToken: string, draftId: string) => {
+  let data: GoogleDraftType | null = null;
+  let error: string | null = null;
+
+  try {
+    const res = await fetch(`${GMAIL_API_URL}/drafts/send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        id: draftId,
+      }),
+    });
+
+    if (!res.ok) {
+      error = "Error sending email";
+    } else {
+      data = await res.json();
+    }
+  } catch (e) {
+    error = "Error sending email";
+  }
+
+  return { data, error };
 };

@@ -25,6 +25,26 @@ export const get = async (
   return data;
 };
 
+export const sendEmailByMessageId = async (
+  accessToken: string,
+  messageId: string
+) => {
+  const response = await fetch(
+    `${OUTLOOK_API_URL}/me/messages/${messageId}/send`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      method: "POST",
+    }
+  );
+
+  // Returns 202 Accepted with no response body if successful
+  if (!response.ok) {
+    throw Error("Error sending email");
+  }
+};
+
 export const sendEmail = async (
   accessToken: string,
   toRecipients: string[],

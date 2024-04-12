@@ -28,6 +28,8 @@ import {
   handleNewThreadsOutlook,
   createDraftForReplyAll,
   createDraftForForward,
+  sendDraft,
+  sendReply,
 } from "../lib/sync";
 import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
@@ -187,10 +189,6 @@ export const Message = forwardRef<MessageHandle, MessageProps>(function Message(
     // Send new draft message id to parent component
     onCreateDraft(data.messageId);
   };
-
-  if (message.draftId) {
-    return <MessageDraft selectedEmail={selectedEmail} message={message} />;
-  }
 
   return (
     <div className="w-full h-auto flex flex-col border border-slate-200 dark:border-zinc-700">
@@ -496,40 +494,28 @@ export const MessageDraft = forwardRef<MessageHandle, MessageDraftProps>(
 
     const handleSendEmail = useCallback(async () => {
       // if (!threadId) return;
+      setSendingEmail(true);
 
       const html = editorRef.current?.getHTML() || "";
-      const subject = getMessageHeader(message.headers, "Subject") || "";
-      setSendingEmail(true);
-      let error: string | null = null;
+      const { data, error } = await sendReply(
+        selectedEmail.email,
+        selectedEmail.provider,
+        to,
+        cc,
+        bcc,
+        getMessageHeader(message.headers, "Subject") || "",
+        message.date,
+        html,
+        getMessageHeader(message.headers, "Message-ID"),
+        message.threadId,
+        message.id
+      );
 
-      if (attachments.length > 0) {
-        // send with attachments
-        ({ error } = await sendEmailWithAttachments(
-          selectedEmail.email,
-          selectedEmail.provider,
-          to,
-          cc,
-          bcc,
-          subject,
-          html,
-          attachments
-        ));
-      } else {
-        // send without attachments
-        ({ error } = await sendEmail(
-          selectedEmail.email,
-          selectedEmail.provider,
-          to,
-          cc,
-          bcc,
-          subject,
-          html
-        ));
-      }
+      console.log(data);
 
       // If send fails, try save draft and return
-      if (error) {
-        // await saveDraftWithHtml(html);
+      if (error || !data || !data.id || !data.threadId) {
+        await saveDraftWithHtml(html);
         toast.error("Error sending email");
         return setSendingEmail(false);
       }
@@ -546,18 +532,30 @@ export const MessageDraft = forwardRef<MessageHandle, MessageDraftProps>(
         message.draftId || ""
       );
       await db.drafts.delete(message.draftId || "");
+      await db.emailThreads.update(message.threadId, {
+        labelIds: [...message.labelIds, "SENT"],
+      });
+
+      if (selectedEmail.provider === "google") {
+        await db.messages.put({ ...message, id: data.id, draftId: null });
+        await db.messages.delete(message.id);
+      } else {
+        await db.messages.update(message.id, { draftId: null });
+      }
 
       toast.success("Email sent");
-      navigate(-1);
+      setSendingEmail(false);
+      // navigate(-1);
     }, [
-      attachments,
+      // attachments,
       bcc,
       cc,
       selectedEmail.email,
       selectedEmail.provider,
       to,
       message,
-      navigate,
+      saveDraftWithHtml,
+      // navigate,
     ]);
 
     return (

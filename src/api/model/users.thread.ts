@@ -74,6 +74,12 @@ export interface GoogleThreadsModifyDataType {
   }[];
 }
 
+export interface GoogleSendMessageDataType {
+  id: string;
+  threadId: string;
+  labelIds: string[];
+}
+
 export interface OutlookThreadsListDataType {
   nextPageToken: string;
   value: OutlookMessageDataType[];

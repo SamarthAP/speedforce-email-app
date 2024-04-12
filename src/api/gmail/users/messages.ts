@@ -91,6 +91,65 @@ export const sendEmail = async (
   return { data, error };
 };
 
+export const sendEmailForReply = async (
+  accessToken: string,
+  from: string,
+  to: string,
+  cc: string | null,
+  bcc: string | null,
+  subject: string,
+  messageContent: string,
+  headerMessageId: string,
+  threadId: string
+) => {
+  let data: any | null = null; // TODO: define type
+  let error: string | null = null;
+
+  try {
+    const encodedReply = Base64.encode(
+      'Content-Type: text/html; charset="UTF-8"\n' +
+        "MIME-Version: 1.0\n" +
+        "Content-Transfer-Encoding: 7bit\n" +
+        `Subject: =?UTF-8?B?${Base64.encode(subject)}?=\n` +
+        `From: ${from}\n` +
+        (to ? `To: ${to}\n` : "") + // To is technically an optional field if CC is provided
+        (cc ? `Cc: ${cc}\n` : "") +
+        (bcc ? `Bcc: ${bcc}\n` : "") +
+        (headerMessageId
+          ? `In-Reply-To: ${headerMessageId}\n` +
+            `References: ${headerMessageId}\n`
+          : "") +
+        "\n" +
+        messageContent
+    )
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    const response = await fetch(`${GMAIL_API_URL}/messages/send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        raw: encodedReply,
+        threadId,
+      }),
+    });
+    if (!response.ok) {
+      error = "Error sending email";
+    } else {
+      data = await response.json();
+    }
+  } catch (e) {
+    dLog(e);
+    error = "Error sending email";
+  }
+
+  return { data, error };
+};
+
 export const sendEmailWithAttachments = async (
   accessToken: string,
   from: string,

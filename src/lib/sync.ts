@@ -44,6 +44,7 @@ import {
   sendEmailWithAttachments as mSendEmailWithAttachments,
   sendReply as mSendReply,
   sendReplyAll as mSendReplyAll,
+  sendEmailByMessageId as mSendEmailByMessageId,
 } from "../api/outlook/users/message";
 import {
   // list as mAttachmentList,
@@ -71,6 +72,7 @@ import {
   update as gDraftUpdate,
   updateForReply as gDraftUpdateForReply,
   deleteDraft as gDraftDelete,
+  send as gDraftSend,
 } from "../api/gmail/users/drafts";
 import {
   create as mDraftCreate,
@@ -763,164 +765,224 @@ export async function archiveThread(
   return { data: null, error: null };
 }
 
+// export async function sendReply(
+//   email: string,
+//   provider: "google" | "outlook",
+//   message: IMessage,
+//   html: string
+// ) {
+//   const accessToken = await getAccessToken(email);
+//   const wrappedHtml = `
+//     ${html}
+//     <br>
+//     <div class="speedforce_quote">
+//       <p>On ${new Date(message.date).toDateString()}, ${message.from} wrote:</p>
+//       <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+//         <div dir="ltr">${message.htmlData}</div>
+//       </blockquote>
+//     </div>
+//     <br>
+//   `;
+//   if (provider === "google") {
+//     const from = email;
+//     const to =
+//       getMessageHeader(message.headers, "From").match(
+//         /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g
+//       )?.[0] ||
+//       getMessageHeader(message.headers, "To") ||
+//       "";
+//     const subject = getMessageHeader(message.headers, "Subject");
+//     const headerMessageId = getMessageHeader(message.headers, "Message-ID");
+//     const threadId = message.threadId;
+
+//     return await gSendReply(
+//       accessToken,
+//       from,
+//       [to],
+//       subject,
+//       headerMessageId,
+//       threadId,
+//       wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
+//     );
+//   } else if (provider === "outlook") {
+//     const subject = getMessageHeader(message.headers, "Subject");
+//     const messageId = message.id;
+
+//     try {
+//       await mSendReply(
+//         accessToken,
+//         subject,
+//         messageId,
+//         wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
+//       );
+//       return { data: null, error: null };
+//     } catch (e) {
+//       return { data: null, error: "Error sending reply" };
+//     }
+//   }
+
+//   return { data: null, error: "Not implemented" };
+// }
+
 export async function sendReply(
   email: string,
   provider: "google" | "outlook",
-  message: IMessage,
-  html: string
-) {
-  const accessToken = await getAccessToken(email);
-  const wrappedHtml = `
-    ${html}
-    <br>
-    <div class="speedforce_quote">
-      <p>On ${new Date(message.date).toDateString()}, ${message.from} wrote:</p>
-      <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
-        <div dir="ltr">${message.htmlData}</div>
-      </blockquote>
-    </div>
-    <br>
-  `;
-  if (provider === "google") {
-    const from = email;
-    const to =
-      getMessageHeader(message.headers, "From").match(
-        /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g
-      )?.[0] ||
-      getMessageHeader(message.headers, "To") ||
-      "";
-    const subject = getMessageHeader(message.headers, "Subject");
-    const headerMessageId = getMessageHeader(message.headers, "Message-ID");
-    const threadId = message.threadId;
-
-    return await gSendReply(
-      accessToken,
-      from,
-      [to],
-      subject,
-      headerMessageId,
-      threadId,
-      wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
-    );
-  } else if (provider === "outlook") {
-    const subject = getMessageHeader(message.headers, "Subject");
-    const messageId = message.id;
-
-    try {
-      await mSendReply(
-        accessToken,
-        subject,
-        messageId,
-        wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
-      );
-      return { data: null, error: null };
-    } catch (e) {
-      return { data: null, error: "Error sending reply" };
-    }
-  }
-
-  return { data: null, error: "Not implemented" };
-}
-
-export async function sendReplyAll(
-  email: string,
-  provider: "google" | "outlook",
-  message: IMessage,
-  html: string
-) {
-  const accessToken = await getAccessToken(email);
-  const wrappedHtml = `
-    ${html}
-    <br>
-    <div class="speedforce_quote">
-      <p>On ${new Date(message.date).toDateString()} ${message.from} wrote:</p>
-      <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
-        <div dir="ltr">${message.htmlData}</div>
-      </blockquote>
-    </div>
-    <br>
-  `;
-
-  if (provider === "google") {
-    const from = email;
-    const to = getToRecipients(message, email);
-    const subject = getMessageHeader(message.headers, "Subject");
-    const headerMessageId = getMessageHeader(message.headers, "Message-ID");
-    const threadId = message.threadId;
-
-    return await gSendReply(
-      accessToken,
-      from,
-      to,
-      subject,
-      headerMessageId,
-      threadId,
-      wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
-    );
-  } else if (provider === "outlook") {
-    const subject = getMessageHeader(message.headers, "Subject");
-    const messageId = message.id;
-
-    try {
-      await mSendReplyAll(
-        accessToken,
-        subject,
-        messageId,
-        wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
-      );
-      return { data: null, error: null };
-    } catch (e) {
-      return { data: null, error: "Error sending reply" };
-    }
-  }
-
-  return { data: null, error: "Not implemented" };
-}
-
-export async function forward(
-  email: string,
-  provider: "google" | "outlook",
-  message: IMessage,
   toRecipients: string[],
   ccRecipients: string[],
   bccRecipients: string[],
-  html: string
+  subject: string,
+  date: number,
+  html: string,
+  headerMessageId: string,
+  threadId: string,
+  messageId: string
 ) {
   const accessToken = await getAccessToken(email);
-  if (provider === "google") {
-    const from = email;
-    const subject = getMessageHeader(message.headers, "Subject");
-    const forwardHTML = await buildForwardedHTML(message, html);
+  const wrappedHtml = `
+    ${html}
+    <br>
+    <div class="speedforce_quote">
+      <p>On ${new Date(date).toDateString()}, ${email} wrote:</p>
+      <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+        <div dir="ltr">${html}</div>
+      </blockquote>
+    </div>
+    <br>
+  `;
 
-    return await gForward(
+  if (provider === "google") {
+    const { data, error } = await gSendReply(
       accessToken,
-      from,
+      email,
       toRecipients.join(","),
       ccRecipients.join(","),
       bccRecipients.join(","),
       subject,
-      decodeURIComponent(
-        encodeURIComponent(forwardHTML.concat(SENT_FROM_SPEEDFORCE_HTML))
-      )
+      headerMessageId,
+      threadId,
+      wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
+
+    return { data, error };
   } else if (provider === "outlook") {
     try {
-      // TODO: rework to use MIME instead of endpoint
-      await mForward(
-        accessToken,
-        message.id,
-        toRecipients,
-        ccRecipients,
-        bccRecipients
-      );
-      return { data: null, error: null };
+      await mSendEmailByMessageId(accessToken, messageId);
+
+      return {
+        data: {
+          id: messageId,
+          threadId: threadId,
+          labelIds: ["SENT"],
+        },
+        error: null,
+      };
     } catch (e) {
-      return { data: null, error: "Error forwarding message" };
+      return { data: null, error: "Error sending reply" };
     }
   }
 
   return { data: null, error: "Not implemented" };
 }
+
+// export async function sendReplyAll(
+//   email: string,
+//   provider: "google" | "outlook",
+//   message: IMessage,
+//   html: string
+// ) {
+//   const accessToken = await getAccessToken(email);
+//   const wrappedHtml = `
+//     ${html}
+//     <br>
+//     <div class="speedforce_quote">
+//       <p>On ${new Date(message.date).toDateString()} ${message.from} wrote:</p>
+//       <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+//         <div dir="ltr">${message.htmlData}</div>
+//       </blockquote>
+//     </div>
+//     <br>
+//   `;
+
+//   if (provider === "google") {
+//     const from = email;
+//     const to = getToRecipients(message, email);
+//     const subject = getMessageHeader(message.headers, "Subject");
+//     const headerMessageId = getMessageHeader(message.headers, "Message-ID");
+//     const threadId = message.threadId;
+
+//     return await gSendReply(
+//       accessToken,
+//       from,
+//       to,
+//       subject,
+//       headerMessageId,
+//       threadId,
+//       wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
+//     );
+//   } else if (provider === "outlook") {
+//     const subject = getMessageHeader(message.headers, "Subject");
+//     const messageId = message.id;
+
+//     try {
+//       await mSendReplyAll(
+//         accessToken,
+//         subject,
+//         messageId,
+//         wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
+//       );
+//       return { data: null, error: null };
+//     } catch (e) {
+//       return { data: null, error: "Error sending reply" };
+//     }
+//   }
+
+//   return { data: null, error: "Not implemented" };
+// }
+
+// export async function forward(
+//   email: string,
+//   provider: "google" | "outlook",
+//   message: IMessage,
+//   toRecipients: string[],
+//   ccRecipients: string[],
+//   bccRecipients: string[],
+//   html: string
+// ) {
+//   const accessToken = await getAccessToken(email);
+//   if (provider === "google") {
+//     const from = email;
+//     const subject = getMessageHeader(message.headers, "Subject");
+//     const forwardHTML = await buildForwardedHTML(message, html);
+
+//     return await gForward(
+//       accessToken,
+//       from,
+//       toRecipients.join(","),
+//       ccRecipients.join(","),
+//       bccRecipients.join(","),
+//       subject,
+//       decodeURIComponent(
+//         encodeURIComponent(forwardHTML.concat(SENT_FROM_SPEEDFORCE_HTML))
+//       )
+//     );
+//   } else if (provider === "outlook") {
+//     try {
+//       // TODO: rework to use MIME instead of endpoint
+//       await mForward(
+//         accessToken,
+//         message.id,
+//         toRecipients,
+//         ccRecipients,
+//         bccRecipients
+//       );
+//       return { data: null, error: null };
+//     } catch (e) {
+//       return { data: null, error: "Error forwarding message" };
+//     }
+//   }
+
+//   return { data: null, error: "Not implemented" };
+// }
 
 export async function sendEmail(
   email: string,
@@ -964,6 +1026,53 @@ export async function sendEmail(
 
   return { data: null, error: "Not implemented" };
 }
+
+// export async function sendEmailForReply(
+//   email: string,
+//   provider: "google" | "outlook",
+//   toRecipients: string[],
+//   ccRecipients: string[],
+//   bccRecipients: string[],
+//   subject: string,
+//   html: string,
+//   headerMessageId: string,
+//   threadId: string
+// ) {
+//   const accessToken = await getAccessToken(email);
+
+//   if (provider === "google") {
+//     const { data, error } = await gSendEmailForReply(
+//       accessToken,
+//       email,
+//       toRecipients.join(","),
+//       ccRecipients.join(","),
+//       bccRecipients.join(","),
+//       subject,
+//       html.concat(SENT_FROM_SPEEDFORCE_HTML),
+//       headerMessageId,
+//       threadId
+//     );
+
+//     return { data, error };
+//   } else if (provider === "outlook") {
+//     try {
+//       await mSendEmail(
+//         accessToken,
+//         toRecipients,
+//         ccRecipients,
+//         bccRecipients,
+//         subject,
+//         html.concat(SENT_FROM_SPEEDFORCE_HTML)
+//       );
+
+//       return { data: null, error: null };
+//     } catch (e) {
+//       return { data: null, error: "Error sending email" };
+//     }
+//   }
+
+//   return { data: null, error: "Not implemented" };
+// }
 
 export async function sendEmailWithAttachments(
   email: string,
@@ -1706,15 +1815,19 @@ export async function deleteDraft(
 export async function sendDraft(
   email: string,
   provider: "google" | "outlook",
-  messageId: string
+  draftId: string
 ) {
   const accessToken = await getAccessToken(email);
 
   if (provider === "google") {
     // TODO: not implemented
+    const { data, error } = await gDraftSend(accessToken, draftId);
+    console.log(data, error);
+
+    return { data, error };
   } else {
     try {
-      await mDraftSend(accessToken, messageId);
+      await mDraftSend(accessToken, draftId);
 
       return { data: null, error: null };
     } catch (e) {

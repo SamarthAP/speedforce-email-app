@@ -26,11 +26,11 @@ import {
   useEffect,
   useState,
 } from "react";
-import { XCircleIcon } from "@heroicons/react/20/solid";
+import { TrashIcon, XCircleIcon } from "@heroicons/react/20/solid";
 import { classNames } from "../../lib/util";
 import { EditLinkModal } from "../modals/EditLinkModal";
 import { NewAttachment } from "../../api/model/users.attachment";
-import { debounce } from "lodash";
+import { debounce, set } from "lodash";
 
 // define your extension array
 const extensions = [
@@ -114,9 +114,8 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
     // debounced save draft function. save draft when user stops typing for 5 seconds
     const debouncedSaveDraft = useCallback(
       debounce((html) => {
-        // setContent(html);
         void saveDraft(html);
-      }, 2000),
+      }, 500),
       [saveDraft]
     );
 
@@ -263,7 +262,7 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
           <EditorContent editor={editor} className="mt-4 dark:text-white" />
         </div>
 
-        <div className="text-left mt-4 mb-2">
+        <div className="flex flex-row text-left mt-4 mb-2">
           <SimpleButton
             onClick={() => {
               // void saveDraft({ content: editor.getHTML() });
@@ -274,6 +273,9 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
             width="w-16"
             disabled={!canSendEmail}
           />
+          {/* <div>
+            <TrashIcon className="w-6 h-6 ml-2" />
+          </div> */}
         </div>
         <EditLinkModal
           initialTextToDisplay={selectedLink?.displayText || ""}
