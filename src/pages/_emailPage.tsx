@@ -3,6 +3,7 @@ import { ISelectedEmail } from "../lib/db";
 import { KeyPressProvider } from "../contexts/KeyPressContext";
 import { useMemo, useState } from "react";
 import { CommandBarOpenContext } from "../contexts/CommandBarContext";
+import { AccountBarOpenContext } from "../contexts/AccountBarContext";
 
 interface OutletContext {
   selectedEmail: ISelectedEmail;
@@ -14,6 +15,7 @@ interface EmailPageProps {
 
 export default function EmailPage({ selectedEmail }: EmailPageProps) {
   const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
+  const [accountBarIsOpen, setAccountBarIsOpen] = useState(false);
 
   const commandBarContextValue = useMemo(
     () => ({
@@ -23,11 +25,21 @@ export default function EmailPage({ selectedEmail }: EmailPageProps) {
     [commandBarIsOpen, setCommandBarIsOpen]
   );
 
+  const accountBarContextValue = useMemo(
+    () => ({
+      accountBarIsOpen: accountBarIsOpen,
+      setAccountBarIsOpen: (isOpen: boolean) => setAccountBarIsOpen(isOpen),
+    }),
+    [accountBarIsOpen, setAccountBarIsOpen]
+  );
+
   return (
     <main className="dark:bg-zinc-900">
       <KeyPressProvider>
         <CommandBarOpenContext.Provider value={commandBarContextValue}>
-          <Outlet context={{ selectedEmail }} />
+          <AccountBarOpenContext.Provider value={accountBarContextValue}>
+            <Outlet context={{ selectedEmail }} />
+          </AccountBarOpenContext.Provider>
         </CommandBarOpenContext.Provider>
       </KeyPressProvider>
     </main>

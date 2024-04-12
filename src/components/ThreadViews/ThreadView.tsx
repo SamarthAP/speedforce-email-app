@@ -36,6 +36,7 @@ import { useKeyPressContext } from "../../contexts/KeyPressContext";
 import CommandBar from "../CommandBar";
 import { useDebounceCallback } from "usehooks-ts";
 import { DisableMouseHoverContext } from "../../contexts/DisableMouseHoverContext";
+import AccountBar from "../AccountBar";
 
 interface ThreadViewProps {
   data: ClientInboxTabType;
@@ -405,6 +406,7 @@ export default function ThreadView({
         //   },
         // ]}
       />
+      <AccountBar />
     </div>
   );
 }

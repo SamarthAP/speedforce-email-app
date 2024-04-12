@@ -1,24 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Transition } from "@headlessui/react";
-import { LightBulbIcon } from "../lib/icons";
-import { useNavigate } from "react-router-dom";
-import {
-  ArchiveBoxIcon,
-  ClipboardDocumentIcon,
-  ExclamationCircleIcon,
-  InboxIcon,
-  PaperAirplaneIcon,
-  StarIcon,
-  TrashIcon,
-  UserGroupIcon,
-} from "@heroicons/react/20/solid";
 import { useHotkeys } from "react-hotkeys-hook";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
-import {
-  HoveredCommandBarItemContext,
-  useCommandBarOpenContext,
-  useHoveredCommandBarItemContext,
-} from "../contexts/CommandBarContext";
 
 import {
   useAccountBarOpenContext,
@@ -31,28 +14,11 @@ import {
 } from "../contexts/DisableMouseHoverContext";
 import { useDebounceCallback } from "usehooks-ts";
 import { useLiveQuery } from "dexie-react-hooks";
-import { IEmail, ISelectedEmail, db } from "../lib/db";
-import useKeyPressSequence from "../hooks/hotkeys";
+import { IEmail, db } from "../lib/db";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
-import { getProfilePicture } from "../api/gmail/people/contact";
-import { getAccessToken } from "../api/accessToken";
-
-interface CommandBarGroupData {
-  title: string;
-  commands: {
-    icon: React.ElementType;
-    description: string;
-    action: () => void;
-    keybind: {
-      keystrokes: string[];
-      isSequential?: boolean;
-    };
-  }[];
-}
-
-// interface CommandBarProps {
-//   data: CommandBarGroupData[];
-// }
+import { downloadProfilePictures } from "../lib/sync";
+import { UserCircleIcon } from "@heroicons/react/24/outline";
+import { classNames } from "../lib/util";
 
 export default function AccountBar() {
   const { selectedEmail } = useEmailPageOutletContext();
@@ -60,25 +26,16 @@ export default function AccountBar() {
   const accountBarContext = useAccountBarOpenContext();
   const [hoveredAccountBarItemId, setHoveredAccountBarItemId] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const spanRef = useRef(null);
   const [currentEmail, setCurrentEmail] = useState<IEmail | null>(null);
 
-  const getStuff = async () => {
-    const accessToken = await getAccessToken(selectedEmail.email);
-    if (accessToken) {
-      console.log("accessToken", accessToken);
-      const test = await getProfilePicture(accessToken);
-      if (test) {
-        console.log("Profile information", test);
-      }
-    }
+  const getProfilePictures = async () => {
+    await downloadProfilePictures();
   };
 
   useEffect(() => {
-    getStuff();
+    getProfilePictures();
   }, []);
   const signedInEmails = useLiveQuery(() => {
-    // return db.emails.orderBy("email").toArray();
     return db.emails
       .orderBy("email")
       .toArray()
@@ -101,20 +58,6 @@ export default function AccountBar() {
       inboxZeroStartDate: email.inboxZeroStartDate,
     });
   };
-  // const test = useLiveQuery(() => {
-  //   return db.emails
-  //     .orderBy("email")
-  //     .toArray()
-  //     .then((emails) => {
-  //       emails.sort((a, b) => {
-  //         if (a.email === selectedEmail.email) return -1;
-  //         if (b.email === selectedEmail.email) return 1;
-  //         return a.email.localeCompare(b.email);
-  //       });
-  //       return emails
-  //     });
-  // }, []);
-
   const [disableMouseHover, setDisableMouseHover] = useState(false);
   const disableMouseHoverContextValue = {
     disableMouseHover,
@@ -125,18 +68,9 @@ export default function AccountBar() {
   useEffect(() => {
     const down = (e: any) => {
       if (e.key === "Tab" && open) {
-        // console.log("we already open");
       } else if (e.key === "Tab" && e.ctrlKey && !open) {
-        console.log("CTRL + TAB");
         e.preventDefault();
         setOpen((open) => true);
-      }
-
-      if (e.key === "Escape") {
-        // if cursor is not in the input, close the command bar
-        if (document.activeElement !== inputRef.current) {
-          setOpen(false);
-        }
       }
     };
 
@@ -153,17 +87,20 @@ export default function AccountBar() {
       document.removeEventListener("keydown", down);
       document.addEventListener("keyup", up);
     };
-  }, [open]);
+  }, []);
 
   useEffect(() => {
     if (open) {
       accountBarContext.setAccountBarIsOpen(true);
     } else {
-      console.log("we are closing");
-      if (currentEmail) {
-        setSelectedEmail(currentEmail);
-      }
       accountBarContext.setAccountBarIsOpen(false);
+
+      // Timeout to prevent accountBar re-ordering before it closes
+      setTimeout(() => {
+        if (currentEmail) {
+          setSelectedEmail(currentEmail);
+        }
+      }, 200);
     }
   }, [open, accountBarContext]);
 
@@ -187,10 +124,7 @@ export default function AccountBar() {
       }`, // Check for Ctrl + Tab
     ],
     () => {
-      console.log("we moving to the right");
-
       const items = document.querySelectorAll(".account-bar-item");
-      console.log("ALL ITEMS", items);
 
       if (hoveredAccountBarItemId === "") {
         if (items.length > 0) {
@@ -201,8 +135,6 @@ export default function AccountBar() {
       var currentIndex = Array.from(items).findIndex(
         (item) => item.innerHTML === hoveredAccountBarItemId
       );
-      console.log("hoveredindex", hoveredAccountBarItemId);
-      console.log("currentindex", currentIndex);
 
       if (currentIndex === -1) {
         return setHoveredAccountBarItemId("");
@@ -222,29 +154,12 @@ export default function AccountBar() {
     ]
   );
 
-  // useEffect(() => {
-  //   console.log("wtf");
-  //   if (!accountBarContext.accountBarIsOpen) return;
-
-  //   useKeyPressSequence(
-  //     DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SWITCH_ACCOUNTS],
-  //     DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SWITCH_TAB],
-  //     () => {
-  //       console.log("we schmoving");
-  //     }
-  //   );
-  // }, [
-  //   hoveredCommandBarItemId,
-  //   setHoveredCommandBarItemId,
-  //   accountBarContext.accountBarIsOpen,
-  // ]);
-
+  //doesn't work atm -> idk if we need it
   useHotkeys(
     [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_LEFT]],
     () => {
       if (!accountBarContext.accountBarIsOpen) return;
 
-      console.log("we moving to the left");
       const items = document.querySelectorAll(".account-bar-item");
 
       if (hoveredAccountBarItemId === "") {
@@ -273,16 +188,9 @@ export default function AccountBar() {
       accountBarContext.accountBarIsOpen,
     ]
   );
-
   return (
     <Transition appear show={open} as={Fragment}>
-      <div
-        // as="div"
-        className="relative z-10"
-        // onClose={() => {
-        //   setOpen(false);
-        // }}
-      >
+      <div className="relative z-10">
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -296,7 +204,7 @@ export default function AccountBar() {
         </Transition.Child>
 
         <div className="fixed inset-0">
-          <div className="flex flex-col items-center pt-[16vh] min-h-full bg-red">
+          <div className="flex flex-col items-center justify-center pt-[16vh] min-h-ful">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -306,7 +214,7 @@ export default function AccountBar() {
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <div className="max-w-2xl h-72 w-full flex flex-row rounded-lg bg-white dark:bg-zinc-900 p-2 border border-slate-200 dark:border-zinc-700">
+              <div className="max-w-2xl h-40 w-full flex flex-row rounded-lg bg-white dark:bg-zinc-900 p-2 border border-slate-200 dark:border-zinc-700">
                 <HoveredAccountBarItemContext.Provider
                   value={hoveredAccountBarItemContextValue}
                 >
@@ -320,6 +228,7 @@ export default function AccountBar() {
                           key={index}
                           description={email.email}
                           email={email}
+                          profilePictureUrl={email.profilePictureUrl}
                           setEmail={setCurrentEmail}
                           setAccountBar={(open: boolean) => setOpen(open)}
                         />
@@ -339,11 +248,13 @@ export default function AccountBar() {
 function AccountItem({
   description,
   email,
+  profilePictureUrl,
   setEmail,
   setAccountBar,
 }: {
   description: string;
   email: IEmail;
+  profilePictureUrl?: string;
   setEmail: React.Dispatch<React.SetStateAction<IEmail | null>>;
   setAccountBar: (open: boolean) => void;
 }) {
@@ -369,11 +280,9 @@ function AccountItem({
         if (!disableMouseHoverContext.disableMouseHover) {
           hoveredAccountBarItemContext.setItemId(description);
         }
-        console.log("entering");
         setEmail(email);
       }}
       onMouseDown={(e) => {
-        // console.log(e);
         if (e.button === 0) {
           if (email) {
             setEmail(email);
@@ -382,28 +291,38 @@ function AccountItem({
           hoveredAccountBarItemContext.setItemId("");
         }
       }}
-      onClick={(event) => {
-        console.log("event");
-        console.log("we clicked the stuff");
+      onClick={() => {
         if (email) {
           setEmail(email);
         }
         setAccountBar(false);
       }}
       className={`p-2 w-full flex justify-center rounded-lg ${
-        isHovered
-          ? //  "bg-red-500" : ""
-            "dark:bg-zinc-800 bg-slate-100"
-          : ""
+        isHovered ? "dark:bg-zinc-800 bg-slate-100" : ""
       }`}
     >
-      <div className="flex gap-x-3 items-center">
+      <div className="flex flex-col gap-x-3 items-center justify-center">
         <div className="flex items-center"></div>
-
+        {profilePictureUrl ? (
+          <img
+            src={profilePictureUrl}
+            alt="Profile Picture"
+            className="h-8 w-8 rounded-full"
+          />
+        ) : (
+          // <div className="h-8 w-8 rounded-full"></div>
+          <UserCircleIcon
+            className={classNames(
+              "h-8 w-8 rounded-full",
+              // isBackgroundOn ? "text-white" : "text-black dark:text-white"
+              "text-black dark:text-white"
+            )}
+          />
+        )}
         <span
           ref={spanRef.current}
           // Note: created a fake classname command-bar-item to query it for moving up and down.
-          className="account-bar-item text-slate-400 dark:text-zinc-500 text-sm"
+          className="account-bar-item text-slate-400 dark:text-zinc-500 text-sm mt-2"
         >
           {description}
         </span>

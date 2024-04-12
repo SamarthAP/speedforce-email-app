@@ -119,3 +119,34 @@ export function getOutlookSubscriptionExpirationDateTime() {
   expirationDateTime.setUTCDate(expirationDateTime.getUTCDate() + 3);
   return expirationDateTime.toISOString();
 }
+
+export const getProfilePictureOutlook  = async (accessToken: string) => {
+  let data: any;
+  let error: string | null = null;
+  try {
+    const res: Response = await fetch(
+      `https://graph.microsoft.com/v1.0/me/photo/$value`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    if (!res.ok) {
+      error = "Error fetching contacts";
+      console.log('res',res)
+    } else {
+      const blob = await res.blob();
+      const reader = new FileReader();
+      data = await new Promise<string | ArrayBuffer | null>((resolve) => {
+        reader.onloadend = () => {
+          resolve(reader.result);
+        };
+        reader.readAsDataURL(blob);
+      });
+    }
+  } catch (e) {
+    error = "Error getting profile picture"
+  }
+  return {data, error};
+}

@@ -24,6 +24,7 @@ import { useEmailPageOutletContext } from "../../pages/_emailPage";
 import CommandBar from "../CommandBar";
 import { useDebounceCallback } from "usehooks-ts";
 import { DisableMouseHoverContext } from "../../contexts/DisableMouseHoverContext";
+import AccountBar from "../AccountBar";
 
 export default function SharedDraftsThreadView() {
   const { selectedEmail } = useEmailPageOutletContext();
@@ -262,6 +263,7 @@ export default function SharedDraftsThreadView() {
         <AssistBar thread={null} />
       </div>
       <CommandBar data={[]} />
+      <AccountBar />
     </div>
   );
 }
