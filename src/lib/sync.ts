@@ -81,7 +81,7 @@ import {
 } from "./util";
 import _ from "lodash";
 import { dLog } from "./noProd";
-import { FOLDER_IDS } from "../api/constants";
+import { FOLDER_IDS, SPEEDFORCE_API_URL } from "../api/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
 import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { NewAttachment } from "../api/model/users.attachment";
@@ -91,6 +91,9 @@ import { CreateDraftResponseDataType } from "../api/model/users.draft";
 import { SENT_FROM_SPEEDFORCE_HTML } from "../api/templates/sentFromSpeedforce";
 import { updateSharedDraftStatus } from "../api/sharedDrafts";
 import { SharedDraftStatusType } from "../api/model/users.shared.draft";
+import { v4 as uuidv4 } from "uuid";
+import { addPixelTracking } from "../api/templates/pixelTracking";
+import { getJWTHeaders } from "../api/authHeader";
 
 export async function handleNewDraftsGoogle(
   accessToken: string,
@@ -714,6 +717,8 @@ export async function sendReply(
   html: string
 ) {
   const accessToken = await getAccessToken(email);
+  const emailUuid = uuidv4();
+  const trackRead = `${SPEEDFORCE_API_URL}/sendMessage/updateReadThreads?uuid=${emailUuid}&email=${email}`;
   const wrappedHtml = `
     ${html}
     <br>
@@ -737,32 +742,42 @@ export async function sendReply(
     const headerMessageId = getMessageHeader(message.headers, "Message-ID");
     const threadId = message.threadId;
 
-    return await gSendReply(
+    const { data, error } = await gSendReply(
       accessToken,
       from,
       [to],
       subject,
       headerMessageId,
       threadId,
-      wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
+      wrappedHtml
+        .concat(SENT_FROM_SPEEDFORCE_HTML)
+        .concat(addPixelTracking(trackRead))
     );
+    if (data) {
+      updateThreadMapper(emailUuid, data.id);
+    }
+    return { data: null, error: null };
   } else if (provider === "outlook") {
     const subject = getMessageHeader(message.headers, "Subject");
     const messageId = message.id;
 
     try {
-      await mSendReply(
+      const { data, error } = await mSendReply(
         accessToken,
         subject,
         messageId,
-        wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
+        wrappedHtml
+          .concat(SENT_FROM_SPEEDFORCE_HTML)
+          .concat(addPixelTracking(trackRead))
       );
+      if (data) {
+        updateThreadMapper(emailUuid, data.messageId);
+      }
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error sending reply" };
     }
   }
-
   return { data: null, error: "Not implemented" };
 }
 
@@ -866,6 +881,26 @@ export async function forward(
   return { data: null, error: "Not implemented" };
 }
 
+export async function updateThreadMapper(uuid: string, messageId: string) {
+  const authHeader = await getJWTHeaders();
+  console.log("MESSAGE ID", messageId);
+  const res = await fetch(`${SPEEDFORCE_API_URL}/sendMessage/updateMapper`, {
+    method: "POST",
+    headers: {
+      ...authHeader,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      uuid: uuid,
+      messageId: messageId,
+    }),
+  });
+
+  if (!res.ok) {
+    // handle error
+  }
+  const data = await res.json();
+}
 export async function sendEmail(
   email: string,
   provider: "google" | "outlook",
@@ -876,7 +911,8 @@ export async function sendEmail(
   html: string
 ) {
   const accessToken = await getAccessToken(email);
-
+  const emailUuid = uuidv4();
+  const trackRead = `${SPEEDFORCE_API_URL}/sendMessage/updateReadThreads?uuid=${emailUuid}&email=${email}`;
   if (provider === "google") {
     const { data, error } = await gSendEmail(
       accessToken,
@@ -885,22 +921,30 @@ export async function sendEmail(
       ccRecipients.join(","),
       bccRecipients.join(","),
       subject,
-      html.concat(SENT_FROM_SPEEDFORCE_HTML)
+      html.concat(SENT_FROM_SPEEDFORCE_HTML).concat(addPixelTracking(trackRead))
     );
 
+    if (data) {
+      updateThreadMapper(emailUuid, data.id);
+    }
     return { data, error };
   } else if (provider === "outlook") {
     try {
-      await mSendEmail(
+      const { data, error } = await mSendEmail(
         accessToken,
         toRecipients,
         ccRecipients,
         bccRecipients,
         subject,
-        html.concat(SENT_FROM_SPEEDFORCE_HTML)
+        html
+          .concat(SENT_FROM_SPEEDFORCE_HTML)
+          .concat(addPixelTracking(trackRead))
       );
 
-      return { data: null, error: null };
+      if (data) {
+        updateThreadMapper(emailUuid, data.messageId);
+      }
+      return { data: data, error: null };
     } catch (e) {
       return { data: null, error: "Error sending email" };
     }
@@ -920,6 +964,8 @@ export async function sendEmailWithAttachments(
   attachments: NewAttachment[]
 ) {
   const accessToken = await getAccessToken(email);
+  const emailUuid = uuidv4();
+  const trackRead = `${SPEEDFORCE_API_URL}/sendMessage/updateReadThreads?uuid=${emailUuid}&email=${email}`;
 
   if (provider === "google") {
     const { data, error } = await gSendEmailWithAttachments(
@@ -929,23 +975,33 @@ export async function sendEmailWithAttachments(
       ccRecipients.join(","),
       bccRecipients.join(","),
       subject,
-      html.concat(SENT_FROM_SPEEDFORCE_HTML),
+      html
+        .concat(SENT_FROM_SPEEDFORCE_HTML)
+        .concat(addPixelTracking(trackRead)),
       attachments
     );
 
+    if (data) {
+      updateThreadMapper(emailUuid, data.id);
+    }
     return { data, error };
   } else if (provider === "outlook") {
     try {
-      await mSendEmailWithAttachments(
+      const { data, error } = await mSendEmailWithAttachments(
         accessToken,
         toRecipients,
         ccRecipients,
         bccRecipients,
         subject,
-        html.concat(SENT_FROM_SPEEDFORCE_HTML),
+        html
+          .concat(SENT_FROM_SPEEDFORCE_HTML)
+          .concat(addPixelTracking(trackRead)),
         attachments
       );
 
+      if (data) {
+        updateThreadMapper(emailUuid, data.id);
+      }
       return { data: null, error: null };
     } catch (e) {
       return { data: null, error: "Error sending email" };
