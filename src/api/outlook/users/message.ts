@@ -33,6 +33,9 @@ export const sendEmail = async (
   subject: string,
   messageContent: string
 ) => {
+  let data: any | null = null;
+  let error: string | null = null;
+
   const response = await fetch(`${OUTLOOK_API_URL}/me/sendmail`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -61,8 +64,26 @@ export const sendEmail = async (
 
   // Returns 202 Accepted with no response body if successful
   if (!response.ok) {
-    throw Error("Error replying to thread");
+    error = "Error sending email";
+  } else {
+    // Get the details of the sent message
+    const messageResponse = await fetch(
+      `${OUTLOOK_API_URL}/me/mailfolders/sentitems/messages?$orderby=createdDateTime desc&$top=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!messageResponse.ok) {
+      error = "Error fetching sent message";
+    } else {
+      const messageData = await messageResponse.json();
+      data = { messageId: messageData.value[0].id };
+    }
   }
+  return { data, error };
 };
 
 export const sendEmailWithAttachments = async (
@@ -74,6 +95,8 @@ export const sendEmailWithAttachments = async (
   messageContent: string,
   attachments: NewAttachment[]
 ) => {
+  let data: any | null = null;
+  let error: string | null = null;
   const response = await fetch(`${OUTLOOK_API_URL}/me/sendmail`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -111,8 +134,26 @@ export const sendEmailWithAttachments = async (
 
   // Returns 202 Accepted with no response body if successful
   if (!response.ok) {
-    throw Error("Error replying to thread");
+    error = "Error sending email";
+  } else {
+    // Get the details of the sent message
+    const messageResponse = await fetch(
+      `${OUTLOOK_API_URL}/me/mailfolders/sentitems/messages?$orderby=createdDateTime desc&$top=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!messageResponse.ok) {
+      error = "Error fetching sent message";
+    } else {
+      const messageData = await messageResponse.json();
+      data = { messageId: messageData.value[0].id };
+    }
   }
+  return { data, error };
 };
 
 export const sendReply = async (
@@ -121,6 +162,8 @@ export const sendReply = async (
   messageId: string,
   messageContent: string
 ) => {
+  let error: string | null = null;
+  let data: any | null;
   const response = await fetch(
     `${OUTLOOK_API_URL}/me/messages/${messageId}/reply`,
     {
@@ -143,8 +186,25 @@ export const sendReply = async (
 
   // Returns 202 Accepted with no response body if successful
   if (!response.ok) {
-    throw Error("Error replying to thread");
+    error = "Error replying to thread";
+  } else {
+    const messageResponse = await fetch(
+      `${OUTLOOK_API_URL}/me/mailfolders/sentitems/messages?$orderby=createdDateTime desc&$top=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!messageResponse.ok) {
+      error = "Error fetching sent message";
+    } else {
+      const messageData = await messageResponse.json();
+      data = { messageId: messageData.value[0].id };
+    }
   }
+  return { data, error };
 };
 
 export const sendReplyAll = async (

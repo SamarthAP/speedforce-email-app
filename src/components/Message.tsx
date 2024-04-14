@@ -1,4 +1,4 @@
-import { createRef, useState } from "react";
+import { createRef, useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { IMessage, ISelectedEmail } from "../lib/db";
 import {
@@ -23,6 +23,9 @@ import { EmailSelectorInput } from "./EmailSelectorInput";
 import Tiptap from "./Editors/TiptapEditor";
 import { NewAttachment } from "../api/model/users.attachment";
 import { dLog } from "../lib/noProd";
+import * as cheerio from "cheerio";
+import { SPEEDFORCE_API_URL } from "../api/constants";
+import { getJWTHeaders } from "../api/authHeader";
 
 interface MessageProps {
   message: IMessage;
@@ -50,11 +53,56 @@ export default function Message({
   const [forwardToCc, setForwardToCc] = useState<string[]>([]);
   const [forwardToBcc, setForwardToBcc] = useState<string[]>([]);
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
+  const [messageRead, setMessageRead] = useState(null);
   const replyRef = createRef<HTMLDivElement>();
   const listUnsubscribeHeader = getMessageHeader(
     message.headers,
     "List-Unsubscribe"
   );
+
+  const removeTrackingPixel = (html: string) => {
+    const $ = cheerio.load(html);
+    $("img").each((i, img) => {
+      const src = $(img).attr("src");
+      if (
+        src &&
+        src.includes("updateReadThreads") &&
+        src.includes(selectedEmail.email)
+      ) {
+        $(img).remove();
+      }
+    });
+
+    return $.html();
+  };
+
+  useEffect(() => {
+    const getMessageRead = async (messageId: string) => {
+      const authHeader = await getJWTHeaders();
+      const res = await fetch(
+        `${SPEEDFORCE_API_URL}/sendMessage/checkMessageRead`,
+        {
+          method: "POST",
+          headers: {
+            ...authHeader,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messageId: messageId,
+          }),
+        }
+      );
+      if (!res.ok) {
+      }
+      const data = await res.json();
+
+      setMessageRead(data?.read?.read_date ?? null);
+    };
+    getMessageRead(message.id);
+  }, []);
+
+  const htmlWithoutTrackingPixel = removeTrackingPixel(message.htmlData);
+  message.htmlData = htmlWithoutTrackingPixel;
 
   const handleClickReply = () => {
     setShowReply((prev) => !prev || editorMode !== "reply");
