@@ -3,14 +3,14 @@
 
 import toast from "react-hot-toast";
 import { FOLDER_IDS } from "../api/constants";
-import { IEmailThread, IMessage, db } from "./db";
-import { archiveThread, starThread, unstarThread, updateDraft } from "./sync";
-import {
-  getSnippetFromHtml,
-  updateDexieDraft,
-  updateLabelIdsForEmailThread,
-} from "./util";
+import { IEmailThread, db } from "./db";
+import { archiveThread, starThread, unstarThread } from "./sync";
+import { updateLabelIdsForEmailThread } from "./util";
 import _ from "lodash";
+import { DraftReplyType, DraftStatusType } from "../api/model/users.draft";
+import { v4 as uuidv4 } from "uuid";
+import { createDraft, updateDraft, updateDraftStatus } from "../api/drafts";
+import { dLog } from "./noProd";
 
 // Usage: instantEffectFnc, rollbackFnc can be async, but the intent is that they execute much quicker (e.g. dexie operations)
 export const executeInstantAsyncAction = async (
@@ -36,7 +36,11 @@ export const executeInstantAsyncAction = async (
       } else {
         rollbackFnc();
       }
+
+      return -1;
     }
+
+    return 0;
   } catch (e) {
     // If asyncEffectFnc throws an error, rollback
     if (rollbackFnc.constructor.name === "AsyncFunction") {
@@ -44,6 +48,8 @@ export const executeInstantAsyncAction = async (
     } else {
       rollbackFnc();
     }
+
+    return -1;
   }
 };
 
@@ -100,6 +106,61 @@ export async function handleStarClick(
   }
 }
 
+export async function handleCreateDraft(
+  email: string,
+  provider: "google" | "outlook",
+  to: string[],
+  cc: string[],
+  bcc: string[],
+  subject: string,
+  html: string,
+  threadId: string | null,
+  replyType: DraftReplyType,
+  inReplyTo: string | null
+) {
+  const newDraftId = uuidv4();
+
+  const status = await executeInstantAsyncAction(
+    async () =>
+      await db.drafts.put({
+        id: newDraftId,
+        email,
+        provider,
+        to: to.join(","),
+        cc: cc.join(","),
+        bcc: bcc.join(","),
+        subject,
+        html,
+        date: Math.floor(new Date().getTime() / 1000),
+        threadId,
+        replyType,
+        inReplyTo,
+      }),
+    async () =>
+      await createDraft(
+        email,
+        provider,
+        newDraftId,
+        to.join(","),
+        cc.join(","),
+        bcc.join(","),
+        subject,
+        html,
+        threadId,
+        replyType,
+        inReplyTo
+      ),
+    async () => await db.drafts.delete(newDraftId)
+  );
+
+  if (status === -1) {
+    dLog("Unable to create draft");
+    return { data: null, error: "Unable to create draft" };
+  }
+
+  return { data: newDraftId, error: null };
+}
+
 export async function handleUpdateDraft(
   email: string,
   provider: "google" | "outlook",
@@ -110,52 +171,63 @@ export async function handleUpdateDraft(
   subject: string,
   html: string
 ) {
-  let thread: IEmailThread | null = null;
-  let message: IMessage | null = null;
-
-  if (provider === "google") {
-    // Google drafts are analogous to email threads
-    thread = (await db.emailThreads.get({ id: draftId })) || null;
-    message = (await db.messages.get({ threadId: draftId })) || null;
-  } else {
-    // Outlook drafts are analogous to email messages
-    message = (await db.messages.get({ id: draftId })) || null;
-    if (message) {
-      thread = (await db.emailThreads.get({ id: message.threadId })) || null;
-    }
+  const draft = await db.drafts.get(draftId);
+  if (!draft) {
+    return { data: null, error: "Draft not found" };
   }
 
-  if (!thread || !message) {
-    return;
-  }
-
-  // need to do this bc electron forge compiler complains that thread and message could be null
-  const nonNullThread = thread;
-  const nonNullMessage = message;
-
-  const newSnippet = await getSnippetFromHtml(html);
-  await executeInstantAsyncAction(
-    () => {
-      void updateDexieDraft(
-        {
-          ...nonNullThread,
-          subject,
-          snippet: newSnippet,
-          date: new Date().getTime(),
-        },
-        {
-          ...nonNullMessage,
-          toRecipients: to,
-          ccRecipients: cc,
-          bccRecipients: bcc,
-          htmlData: html,
-        }
-      );
-    },
+  const status = await executeInstantAsyncAction(
     async () =>
-      await updateDraft(email, provider, draftId, to, cc, bcc, subject, html),
-    () => {
-      void updateDexieDraft(nonNullThread, nonNullMessage);
-    }
+      await db.drafts.update(draftId, {
+        to: to.join(","),
+        cc: cc.join(","),
+        bcc: bcc.join(","),
+        subject,
+        html,
+        date: Math.floor(new Date().getTime() / 1000),
+      }),
+    async () =>
+      await updateDraft(
+        email,
+        provider,
+        draftId,
+        to.join(","),
+        cc.join(","),
+        bcc.join(","),
+        subject,
+        html
+      ),
+    async () => await db.drafts.update(draftId, draft)
   );
+
+  if (status === -1) {
+    dLog("Unable to update draft");
+    return { data: null, error: "Unable to update draft" };
+  }
+
+  return { data: null, error: null };
+}
+
+export async function handleDiscardDraft(
+  email: string,
+  draftId: string,
+  draftStatus: DraftStatusType
+) {
+  const draft = await db.drafts.get(draftId);
+  if (!draft) {
+    return { data: null, error: "Draft not found" };
+  }
+
+  const status = await executeInstantAsyncAction(
+    async () => await db.drafts.delete(draftId),
+    async () => await updateDraftStatus(email, draftId, draftStatus),
+    async () => await db.drafts.put(draft)
+  );
+
+  if (status === -1) {
+    dLog("Unable to create draft");
+    return { data: null, error: "Unable to create draft" };
+  }
+
+  return { data: null, error: null };
 }

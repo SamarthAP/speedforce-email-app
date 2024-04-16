@@ -4,17 +4,15 @@
 // the error state of the query.
 
 import {
-  handleNewDraftsGoogle,
   handleNewThreadsGoogle,
   handleNewThreadsOutlook,
 } from "../../../lib/sync";
 import { getAccessToken } from "../../accessToken";
-import {
-  list as gList,
-  listDrafts as gListDrafts,
-} from "./reactQueryHelperFunctions";
+import { list as gList } from "./reactQueryHelperFunctions";
 import { list as mList } from "../../outlook/reactQuery/reactQueryHelperFunctions";
 import _ from "lodash";
+import { listDrafts } from "../../drafts";
+import { db } from "../../../lib/db";
 
 // Note: must have query param. we don't have an "all mail" folder. queryParam is a string like "labelIds=STARRED"
 export const getThreadsExhaustive = async (
@@ -94,36 +92,24 @@ export const getDraftsExhaustive = async (
     throw Error("Error getting access token");
   }
 
-  if (provider === "google") {
-    const listThreadsResponse = await gListDrafts(accessToken, pageToken);
+  const { data, error } = await listDrafts(email, provider);
+  if (!error && data && data.length > 0) {
+    for (const draft of data) {
+      if (!draft.threadId) continue;
 
-    const nextPageToken = listThreadsResponse.nextPageToken;
-    const threadIds =
-      listThreadsResponse.drafts?.map((thread) => thread.id) || [];
-
-    if (threadIds.length > 0) {
-      await handleNewDraftsGoogle(accessToken, email, threadIds);
+      if (provider === "google") {
+        await handleNewThreadsGoogle(accessToken, email, [draft.threadId]);
+      } else if (provider === "outlook") {
+        await handleNewThreadsOutlook(
+          accessToken,
+          email,
+          [draft.threadId],
+          outlookLabelIds
+        );
+      }
     }
 
-    return nextPageToken;
-  } else if (provider === "outlook") {
-    // Same as get threads exhaustive for outlook
-    const listThreadsResponse = await mList(accessToken, queryParam, pageToken);
-
-    const nextPageToken = listThreadsResponse.nextPageToken;
-    const threadIds = _.uniq(
-      listThreadsResponse.value.map((thread) => thread.conversationId)
-    );
-
-    if (threadIds.length > 0) {
-      await handleNewThreadsOutlook(
-        accessToken,
-        email,
-        threadIds,
-        outlookLabelIds
-      );
-    }
-
-    return nextPageToken;
+    await db.drafts.bulkPut(data);
   }
+  return pageToken;
 };

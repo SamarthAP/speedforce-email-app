@@ -57,6 +57,21 @@ export interface IMessage {
   // TODO: add more fields like cc, bcc, attachments, etc.
 }
 
+export interface IDraft {
+  id: string;
+  email: string;
+  provider: "google" | "outlook";
+  to: string;
+  cc: string;
+  bcc: string;
+  subject: string;
+  html: string;
+  date: number;
+  threadId: string | null;
+  replyType: string;
+  inReplyTo: string | null; // message header for Gmail, messageID for Outlook
+}
+
 // Outlook messages do not contain folder names in response. Store names when fetching to avoid refetching unecessarily
 export interface IOutlookFolder {
   id: string;
@@ -95,6 +110,7 @@ export class SubClassedDexie extends Dexie {
   selectedEmail!: Table<ISelectedEmail, number>;
   emailThreads!: Table<IEmailThread, string>;
   messages!: Table<IMessage, string>;
+  drafts!: Table<IDraft, string>;
   outlookFolders!: Table<IOutlookFolder, string>;
   contacts!: Table<IContact, string>;
   dailyImageMetadata!: Table<IDailyImageMetadata, number>;
@@ -124,6 +140,9 @@ export class SubClassedDexie extends Dexie {
     this.version(7)
       .stores(dexieSchemas[7].schema)
       .upgrade(dexieSchemas[7].upgradeFnc);
+    this.version(8)
+      .stores(dexieSchemas[8].schema)
+      .upgrade(dexieSchemas[8].upgradeFnc);
   }
 }
 

@@ -11,103 +11,107 @@ import ShadowDom from "./ShadowDom";
 import {
   ArrowUturnLeftIcon,
   ArrowUturnRightIcon,
-  StarIcon as StarIconSolid,
 } from "@heroicons/react/24/outline";
-import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
-import { sendReply, sendReplyAll, forward } from "../lib/sync";
 import { AttachmentButton } from "./AttachmentButton";
 import TooltipPopover from "./TooltipPopover";
 import { useTooltip } from "./UseTooltip";
-import toast from "react-hot-toast";
-import { EmailSelectorInput } from "./EmailSelectorInput";
-import Tiptap from "./Editors/TiptapEditor";
 import { NewAttachment } from "../api/model/users.attachment";
-import { dLog } from "../lib/noProd";
+import { DraftReplyType } from "../api/model/users.draft";
+import { handleCreateDraft } from "../lib/asyncHelpers";
+import { buildForwardedHTML } from "../api/gmail/helpers";
 
 interface MessageProps {
   message: IMessage;
   key: string;
   selectedEmail: ISelectedEmail;
   isLast?: boolean;
+  scrollToBottom: () => void;
 }
 
 export default function Message({
   message,
   selectedEmail,
   isLast,
+  scrollToBottom,
 }: MessageProps) {
   // if isLast is true, then show the body and scroll to the bottom of the message
   const [showBody, setShowBody] = useState(isLast || false);
-  const [showReply, setShowReply] = useState(false);
   const [showImages, setShowImages] = useState(true);
-  const [sendingReply, setSendingReply] = useState(false);
   const [unsubscribingFromList, setUnsubscribingFromList] = useState(false);
-  const [attachments, setAttachments] = useState<NewAttachment[]>([]);
-  const [editorMode, setEditorMode] = useState<
-    "reply" | "replyAll" | "forward" | "none"
-  >("none");
-  const [forwardTo, setForwardTo] = useState<string[]>([]);
-  const [forwardToCc, setForwardToCc] = useState<string[]>([]);
-  const [forwardToBcc, setForwardToBcc] = useState<string[]>([]);
+
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
-  const replyRef = createRef<HTMLDivElement>();
   const listUnsubscribeHeader = getMessageHeader(
     message.headers,
     "List-Unsubscribe"
   );
 
-  const handleClickReply = () => {
-    setShowReply((prev) => !prev || editorMode !== "reply");
-    setEditorMode("reply");
-  };
+  const createReplyDraft = async (
+    message: IMessage,
+    replyMode: DraftReplyType
+  ) => {
+    // Use the RFC2822 message id header for gmail, and the message id for outlook replies
+    const inReplyTo =
+      selectedEmail.provider === "google"
+        ? getMessageHeader(message.headers, "Message-ID")
+        : message.id;
 
-  const handleClickReplyAll = () => {
-    setShowReply((prev) => !prev || editorMode !== "replyAll");
-    setEditorMode("replyAll");
-  };
+    if (replyMode === DraftReplyType.REPLY) {
+      const to =
+        getMessageHeader(message.headers, "From").match(
+          /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g
+        )?.[0] ||
+        getMessageHeader(message.headers, "To") ||
+        "";
 
-  const handleClickForward = () => {
-    setShowReply((prev) => !prev || editorMode !== "forward");
-    setEditorMode("forward");
-  };
-
-  const handleSendReply = async (content: string) => {
-    let error: string | null = null;
-
-    setSendingReply(true);
-    if (editorMode === "reply") {
-      ({ error } = await sendReply(
+      await handleCreateDraft(
         selectedEmail.email,
         selectedEmail.provider,
-        message,
-        content
-      ));
-    } else if (editorMode === "replyAll") {
-      ({ error } = await sendReplyAll(
+        [to],
+        [],
+        [],
+        getMessageHeader(message.headers, "Subject") || "",
+        "",
+        message.threadId,
+        DraftReplyType.REPLY,
+        inReplyTo
+      );
+    } else if (replyMode === DraftReplyType.REPLYALL) {
+      const to =
+        getMessageHeader(message.headers, "To").match(/[\w.-]+@[\w.-]+/g) || [];
+      const from =
+        getMessageHeader(message.headers, "From").match(/[\w.-]+@[\w.-]+/g) ||
+        [];
+
+      await handleCreateDraft(
         selectedEmail.email,
         selectedEmail.provider,
-        message,
-        content
-      ));
-    } else {
-      ({ error } = await forward(
+        [...from, ...to].filter((email) => email !== selectedEmail.email),
+        getMessageHeader(message.headers, "Cc").match(/[\w.-]+@[\w.-]+/g) || [],
+        [],
+        getMessageHeader(message.headers, "Subject") || "",
+        "",
+        message.threadId,
+        DraftReplyType.REPLYALL,
+        inReplyTo
+      );
+    } else if (replyMode === DraftReplyType.FORWARD) {
+      const fwdHtml = await buildForwardedHTML(message);
+
+      await handleCreateDraft(
         selectedEmail.email,
         selectedEmail.provider,
-        message,
-        forwardTo,
-        forwardToCc,
-        forwardToBcc,
-        content
-      ));
+        [],
+        [],
+        [],
+        getMessageHeader(message.headers, "Subject") || "",
+        fwdHtml,
+        message.threadId,
+        DraftReplyType.FORWARD,
+        inReplyTo
+      );
     }
 
-    if (error) {
-      toast("Error sending messsage", { icon: "❌", duration: 5000 });
-    } else {
-      setShowReply(false);
-      toast("Message sent", { icon: "📤", duration: 5000 });
-    }
-    setSendingReply(false);
+    scrollToBottom();
   };
 
   const handleUnsubscribe = () => {
@@ -168,7 +172,7 @@ export default function Message({
                 <ArrowUturnLeftIcon
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleClickReply();
+                    void createReplyDraft(message, DraftReplyType.REPLY);
                   }}
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
@@ -182,7 +186,7 @@ export default function Message({
                 <svg
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleClickReplyAll();
+                    void createReplyDraft(message, DraftReplyType.REPLYALL);
                   }}
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -208,7 +212,7 @@ export default function Message({
                 <ArrowUturnRightIcon
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleClickForward();
+                    void createReplyDraft(message, DraftReplyType.FORWARD);
                   }}
                   className="h-4 w-4 dark:text-zinc-400 text-slate-500 mr-2"
                 />
@@ -225,65 +229,6 @@ export default function Message({
           </p>
         </div>
       </div>
-
-      {showReply && showBody && (
-        <div
-          className="p-4 mb-8 border-y border-t-slate-200 dark:border-t-zinc-700"
-          ref={replyRef}
-        >
-          {editorMode === "reply" ? (
-            <div className="text-sm dark:text-zinc-400 text-slate-500 my-2">
-              Write reply to {message.from}
-            </div>
-          ) : editorMode === "replyAll" ? (
-            <div className="text-sm dark:text-zinc-400 text-slate-500 my-2">
-              Write reply to all
-            </div>
-          ) : editorMode === "forward" ? (
-            <div className="text-sm dark:text-zinc-400 text-slate-500 mb-0.5">
-              <EmailSelectorInput
-                selectedEmail={selectedEmail}
-                alignLabels="left"
-                disableCC={selectedEmail.provider === "outlook"}
-                toProps={{
-                  text: "Fwd To",
-                  emails: forwardTo,
-                  setEmails: setForwardTo,
-                }}
-                ccProps={{
-                  emails: forwardToCc,
-                  setEmails: setForwardToCc,
-                }}
-                bccProps={{
-                  emails: forwardToBcc,
-                  setEmails: setForwardToBcc,
-                }}
-              />
-            </div>
-          ) : // <span className="flex flex-row items-center">
-          // </span>
-          null}
-
-          <Tiptap
-            initialContent=""
-            attachments={attachments}
-            setAttachments={setAttachments}
-            canSendEmail={
-              editorMode === "reply" ||
-              editorMode === "replyAll" ||
-              forwardTo.length > 0 ||
-              forwardToCc.length > 0 ||
-              forwardToBcc.length > 0
-            }
-            sendEmail={handleSendReply}
-            sendingEmail={sendingReply}
-            saveDraft={async () => {
-              return { error: null };
-            }}
-          />
-        </div>
-      )}
-
       <div className="flex gap-x-1 px-4 pb-4">
         <button
           className={classNames(

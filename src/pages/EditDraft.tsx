@@ -13,17 +13,12 @@ import TiptapEditor, {
 } from "../components/Editors/TiptapEditor";
 import { dLog } from "../lib/noProd";
 import { NewAttachment } from "../api/model/users.attachment";
-import { deleteDraft, sendEmail, sendEmailWithAttachments } from "../lib/sync";
+import { sendEmail, sendEmailWithAttachments } from "../lib/sync";
 import toast from "react-hot-toast";
-import { deleteDexieThread, getSnippetFromHtml } from "../lib/util";
+import { getSnippetFromHtml } from "../lib/util";
 import SimpleButton from "../components/SimpleButton";
 import { SharedDraftModal } from "../components/modals/ShareDraftModal";
-import {
-  getSharedDraft,
-  loadParticipantsForDraft,
-  saveSharedDraft,
-  updateSharedDraftStatus,
-} from "../api/sharedDrafts";
+import { getSharedDraft, loadParticipantsForDraft } from "../api/sharedDrafts";
 import { KeyPressProvider } from "../contexts/KeyPressContext";
 import { CommandBarOpenContext } from "../contexts/CommandBarContext";
 import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
@@ -34,8 +29,8 @@ import TooltipPopover from "../components/TooltipPopover";
 import { useTooltip } from "../components/UseTooltip";
 import CommentsChain from "../components/SharedDrafts/CommentsChain";
 import { useQuery } from "react-query";
-import { handleUpdateDraft } from "../lib/asyncHelpers";
-import { SharedDraftStatusType } from "../api/model/users.shared.draft";
+import { handleDiscardDraft, handleUpdateDraft } from "../lib/asyncHelpers";
+import { DraftStatusType } from "../api/model/users.draft";
 
 interface EditDraftProps {
   selectedEmail: ISelectedEmail;
@@ -65,7 +60,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   const editorRef = useRef<TipTapEditorHandle>(null);
 
   const navigate = useNavigate();
-  const { threadId } = useParams();
+  const { draftId } = useParams();
 
   const isDirty = useCallback(() => {
     if (!initialData) return false;
@@ -84,10 +79,10 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     data: sharedDraftData,
     isLoading: isSharedDraftLoading,
     refetch: refetchSharedDraft,
-  } = useQuery(["sharedDraftEditor", { threadId }], async () => {
-    if (!threadId) return;
+  } = useQuery(["sharedDraftEditor", { draftId }], async () => {
+    if (!draftId) return;
 
-    const { data, error } = await getSharedDraft(threadId, selectedEmail.email);
+    const { data, error } = await getSharedDraft(draftId, selectedEmail.email);
     if (error) {
       return null;
     }
@@ -96,11 +91,11 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   });
 
   const { data: sharedDraftParticipants, refetch: refetchParticipants } =
-    useQuery("sharedDraftParticipants", async () => {
-      if (!threadId) return;
+    useQuery(["sharedDraftParticipants", { draftId }], async () => {
+      if (!draftId) return;
 
       const { data, error } = await loadParticipantsForDraft(
-        threadId,
+        draftId,
         selectedEmail.email
       );
 
@@ -129,29 +124,16 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       subject: string,
       html: string
     ) => {
-      if (!threadId) return { error: "No thread id" };
+      if (!draftId) return { error: "No thread id" };
       if (!isDirty()) {
         // No changes, no need to save
         return { error: null };
       }
 
-      const message = await db.messages
-        .where("threadId")
-        .equals(threadId)
-        .first();
-
-      if (!message || !message.id) {
-        return { error: "No message found" };
-      }
-
-      // The save endpoint for outlook expects the message id, whereas the save endpoint for gmail expects the draft id
-      // For simplicity sake, for shared drafts we will always use the message id
-      const draftIdToUpdate = provider === "google" ? threadId : message.id;
-
       await handleUpdateDraft(
         email,
         provider,
-        draftIdToUpdate,
+        draftId,
         to,
         cc,
         bcc,
@@ -159,21 +141,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         html
       );
 
-      const newSnippet = await getSnippetFromHtml(html);
-      await saveSharedDraft(email, {
-        id: threadId,
-        to,
-        cc,
-        bcc,
-        subject,
-        html,
-        snippet: newSnippet,
-        date: new Date().getTime(),
-      });
-
       return { error: null };
     },
-    [threadId, isDirty]
+    [draftId, isDirty]
   );
 
   // Use this function if there is no dependencies that changed other than the html content
@@ -229,7 +199,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
 
   // content is passed in as live data from editor as it is only saved when the user stops typing for 5 seconds
   const handleSendEmail = useCallback(async () => {
-    if (!threadId) return;
+    if (!draftId) return;
 
     const html = editorRef.current?.getHTML() || "";
     setSendingEmail(true);
@@ -267,17 +237,11 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       return setSendingEmail(false);
     }
 
-    await updateSharedDraftStatus(
-      threadId,
+    await handleDiscardDraft(
       selectedEmail.email,
-      SharedDraftStatusType.SENT
+      draftId,
+      DraftStatusType.SENT
     );
-
-    if (threadId) {
-      await deleteDraft(selectedEmail.email, selectedEmail.provider, threadId);
-      await deleteDexieThread(threadId);
-    }
-
     toast.success("Email sent");
     navigate(-1);
   }, [
@@ -289,7 +253,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     selectedEmail.email,
     selectedEmail.provider,
     subject,
-    threadId,
+    draftId,
     to,
   ]);
 
@@ -313,29 +277,22 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   }, [navigate, shareModalIsOpen, saveDraftWithHtml, commandBarIsOpen]);
 
   useEffect(() => {
-    const loadDraft = async (threadId: string) => {
-      const thread = await db.emailThreads.get(threadId);
-      const messages = await db.messages
-        .where("threadId")
-        .equals(threadId)
-        .toArray();
-
-      const message = messages[0];
-
-      if (thread && message && message.id) {
-        setTo(message.toRecipients.filter((recipient) => recipient !== ""));
-        setCc(message.ccRecipients.filter((recipient) => recipient !== ""));
-        setBcc(message.bccRecipients.filter((recipient) => recipient !== ""));
-        setSubject(thread.subject || "");
-        setInitialContent(message.htmlData || "");
-        setSnippet(thread.snippet || "");
-        setDate(thread.date || 0);
+    const loadDraft = async (draftId: string) => {
+      const draft = await db.drafts.get(draftId);
+      if (draft) {
+        setTo(draft.to.split(",").filter((recipient) => recipient !== ""));
+        setCc(draft.cc.split(",").filter((recipient) => recipient !== ""));
+        setBcc(draft.bcc.split(",").filter((recipient) => recipient !== ""));
+        setSubject(draft.subject || "");
+        setInitialContent(draft.html || "");
+        setSnippet(getSnippetFromHtml(draft.html || ""));
+        setDate(draft.date || 0);
         setInitialData({
-          to: message.toRecipients.filter((recipient) => recipient !== ""),
-          cc: message.ccRecipients.filter((recipient) => recipient !== ""),
-          bcc: message.bccRecipients.filter((recipient) => recipient !== ""),
-          subject: thread.subject || "",
-          html: message.htmlData || "",
+          to: draft.to.split(",").filter((recipient) => recipient !== ""),
+          cc: draft.cc.split(",").filter((recipient) => recipient !== ""),
+          bcc: draft.bcc.split(",").filter((recipient) => recipient !== ""),
+          subject: draft.subject || "",
+          html: draft.html || "",
         });
       } else {
         dLog("Unable to load thread");
@@ -343,13 +300,13 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       }
     };
 
-    if (threadId) {
-      void loadDraft(threadId);
+    if (draftId) {
+      void loadDraft(draftId);
     } else {
-      dLog("Unable to load threadId");
+      dLog("Unable to load draft");
       navigate(-1);
     }
-  }, [threadId, navigate]);
+  }, [draftId, navigate]);
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col dark:bg-zinc-900">
@@ -465,7 +422,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                     </div>
                   </div>
                   <CommentsChain
-                    threadId={threadId || ""}
+                    threadId={draftId || ""}
                     editMode={true}
                     selectedEmail={selectedEmail}
                     visible={messagePanelIsOpen}
@@ -533,7 +490,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       </KeyPressProvider>
       <SharedDraftModal
         selectedEmail={selectedEmail}
-        draftId={threadId || ""}
+        draftId={draftId || ""}
         sharedParticipants={sharedDraftParticipants || []}
         to={to}
         cc={cc}

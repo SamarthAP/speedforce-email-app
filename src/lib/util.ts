@@ -166,7 +166,7 @@ export async function updateDexieDraft(
   await db.messages.update(message.id, message);
 }
 
-export async function getSnippetFromHtml(html: string) {
+export function getSnippetFromHtml(html: string) {
   const text = extractTextFromHTML(html);
   return text.slice(0, 100);
 }

@@ -6,18 +6,9 @@ import { useNavigate } from "react-router-dom";
 import Titlebar from "../components/Titlebar";
 import Sidebar from "../components/Sidebar";
 import Tiptap, { TipTapEditorHandle } from "../components/Editors/TiptapEditor";
-import {
-  createDraft,
-  sendEmail,
-  sendEmailWithAttachments,
-  deleteDraft,
-  handleNewThreadsOutlook,
-  handleNewDraftsGoogle,
-} from "../lib/sync";
-import { dLog } from "../lib/noProd";
+import { sendEmail, sendEmailWithAttachments } from "../lib/sync";
 import { NewAttachment } from "../api/model/users.attachment";
 import toast from "react-hot-toast";
-import { deleteDexieThread } from "../lib/util";
 import { KeyPressProvider } from "../contexts/KeyPressContext";
 import { CommandBarOpenContext } from "../contexts/CommandBarContext";
 import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
@@ -25,10 +16,12 @@ import ShortcutsFloater from "../components/KeyboardShortcuts/ShortcutsFloater";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import CommandBar from "../components/CommandBar";
 import { newEvent } from "../api/emailActions";
-import { getAccessToken } from "../api/accessToken";
-import { handleUpdateDraft } from "../lib/asyncHelpers";
-import { SharedDraftStatusType } from "../api/model/users.shared.draft";
-import { updateSharedDraftStatus } from "../api/sharedDrafts";
+import {
+  handleCreateDraft,
+  handleDiscardDraft,
+  handleUpdateDraft,
+} from "../lib/asyncHelpers";
+import { DraftReplyType, DraftStatusType } from "../api/model/users.draft";
 
 interface ComposeMessageProps {
   selectedEmail: ISelectedEmail;
@@ -50,11 +43,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
   const [subject, setSubject] = useState("");
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
-
-  const [draft, setDraft] = useState<{
-    id: string;
-    threadId: string;
-  }>({ id: "", threadId: "" }); // TODO: Type this
+  const [draftId, setDraftId] = useState("");
   const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
   const editorRef = useRef<TipTapEditorHandle>(null);
 
@@ -78,12 +67,15 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       subject: string,
       html: string
     ) => {
-      if (draft.id && draft.threadId) {
+      if (!to.length && !cc.length && !bcc.length && !subject && !html)
+        return { error: null };
+
+      if (draftId) {
         // Async action handle saving draft
         await handleUpdateDraft(
           email,
           provider,
-          draft.id,
+          draftId,
           to,
           cc,
           bcc,
@@ -92,43 +84,29 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
         );
       } else {
         // Create draft
-        const { data, error } = await createDraft(
+        const { data, error } = await handleCreateDraft(
           email,
           provider,
           to,
           cc,
           bcc,
           subject,
-          html // request.attachments || attachments
+          html,
+          null,
+          DraftReplyType.STANDALONE,
+          null
         );
 
-        if (error || !data || !data.id || !data.threadId) {
-          dLog(error);
+        if (error || !data) {
           return { error };
         }
 
-        // Add to dexie
-        const accessToken = await getAccessToken(email);
-        if (provider === "google") {
-          await handleNewDraftsGoogle(accessToken, email, [data.id]);
-        } else if (provider === "outlook") {
-          await handleNewThreadsOutlook(
-            accessToken,
-            email,
-            [data.threadId],
-            []
-          );
-        }
-
-        setDraft({
-          id: data.id,
-          threadId: data.threadId,
-        });
+        setDraftId(data);
       }
 
       return { error: null };
     },
-    [draft.id, draft.threadId]
+    [draftId]
   );
 
   // Use this function if there is no dependencies that changed other than the html content
@@ -224,21 +202,14 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       await saveDraftWithHtml(html);
       toast.error("Error sending email");
       return setSendingEmail(false);
-    } else {
-      await updateSharedDraftStatus(
-        draft.threadId,
-        selectedEmail.email,
-        SharedDraftStatusType.SENT
-      );
-
-      void newEvent("SEND_EMAIL");
     }
 
-    // delete draft thread as there will be a new thread for the sent email
-    if (draft.threadId) {
-      await deleteDexieThread(draft.id);
-      await deleteDraft(selectedEmail.email, selectedEmail.provider, draft.id);
-    }
+    await handleDiscardDraft(
+      selectedEmail.email,
+      draftId,
+      DraftStatusType.SENT
+    );
+    void newEvent("SEND_EMAIL");
 
     toast.success("Email sent");
     navigate(-1);
@@ -246,7 +217,7 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
     attachments,
     bcc,
     cc,
-    draft,
+    draftId,
     saveDraftWithHtml,
     selectedEmail,
     subject,

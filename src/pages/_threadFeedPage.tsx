@@ -13,7 +13,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Message from "../components/Message";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import { handleArchiveClick, handleStarClick } from "../lib/asyncHelpers";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyPressProvider,
   useKeyPressContext,
@@ -25,6 +25,7 @@ import CommandBar from "../components/CommandBar";
 import { getMessageHeader, listUnsubscribe } from "../lib/util";
 import toast from "react-hot-toast";
 import { markRead } from "../lib/sync";
+import MessageDraft, { MessageHandle } from "../components/MessageReplyDraft";
 
 interface GenericThreadFeedPageProps {
   selectedEmail: ISelectedEmail;
@@ -141,16 +142,6 @@ export default function GenericThreadFeedPage({
   );
 
   useHotkeys(
-    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ESCAPE],
-    () => {
-      if (!commandBarIsOpen) {
-        navigate(originalPageUrl);
-      }
-    },
-    [navigate, commandBarIsOpen]
-  );
-
-  useHotkeys(
     DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE],
     () => {
       navigate("/compose");
@@ -218,6 +209,7 @@ export default function GenericThreadFeedPage({
               threadId={threads[indexNumber].id}
               selectedEmail={selectedEmail}
               originalPageUrl={originalPageUrl}
+              commandBarIsOpen={commandBarIsOpen}
             />
             <ShortcutsFloater
               items={[
@@ -311,14 +303,18 @@ function ThreadFeedSection({
   threadId,
   selectedEmail,
   originalPageUrl,
+  commandBarIsOpen,
 }: {
   thread: IEmailThread;
   threadId: string;
   selectedEmail: ISelectedEmail;
   originalPageUrl: string;
+  commandBarIsOpen: boolean;
 }) {
   const navigate = useNavigate();
   const { sequenceInitiated } = useKeyPressContext();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const draftRef = useRef<MessageHandle>(null);
 
   const messages = useLiveQuery(() => {
     return db.messages
@@ -326,6 +322,23 @@ function ThreadFeedSection({
       .equals(threadId || "")
       .sortBy("date");
   }, [thread]);
+
+  const drafts = useLiveQuery(async () => {
+    return db.drafts.where("threadId").equals(threadId).sortBy("date");
+  }, [threadId]);
+
+  useHotkeys(
+    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ESCAPE],
+    () => {
+      if (!commandBarIsOpen) {
+        if (draftRef.current) {
+          draftRef.current.saveOnExit();
+        }
+        navigate(originalPageUrl);
+      }
+    },
+    [navigate, commandBarIsOpen]
+  );
 
   useHotkeys(
     DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR],
@@ -352,6 +365,13 @@ function ThreadFeedSection({
       clearTimeout(timeoutId);
     };
   }, [threadId, selectedEmail.email, selectedEmail.provider, thread.unread]);
+
+  const scrollToBottom = () => {
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  };
 
   return (
     <div className="w-full h-full flex overflow-hidden">
@@ -403,7 +423,10 @@ function ThreadFeedSection({
             )}
           </div>
         </div>
-        <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll">
+        <div
+          className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll"
+          ref={scrollRef}
+        >
           {messages?.map((message, idx) => {
             return (
               <Message
@@ -411,9 +434,19 @@ function ThreadFeedSection({
                 key={message.id}
                 selectedEmail={selectedEmail}
                 isLast={idx === messages.length - 1}
+                scrollToBottom={scrollToBottom}
               />
             );
           })}
+
+          {drafts && drafts.length > 0 ? (
+            <MessageDraft
+              ref={draftRef}
+              selectedEmail={selectedEmail}
+              draft={drafts[0]}
+              threadId={threadId}
+            />
+          ) : null}
         </div>
       </div>
       <SelectedThreadBar thread={threadId || ""} email={selectedEmail.email} />
