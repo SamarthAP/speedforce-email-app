@@ -184,7 +184,7 @@ export async function handleUpdateDraft(
         bcc: bcc.join(","),
         subject,
         html,
-        date: Math.floor(new Date().getTime() / 1000),
+        date: Math.floor(new Date().getTime()),
       }),
     async () =>
       await updateDraft(

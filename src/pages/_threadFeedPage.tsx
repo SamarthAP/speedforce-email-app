@@ -382,6 +382,9 @@ function ThreadFeedSection({
             className="flex flex-row cursor-pointer items-center"
             onClick={(e) => {
               e.stopPropagation();
+              if (draftRef.current) {
+                draftRef.current.saveOnExit();
+              }
               navigate(originalPageUrl);
             }}
           >

@@ -17,6 +17,9 @@ import { NewAttachment } from "../api/model/users.attachment";
 import { useNavigate } from "react-router-dom";
 import { DraftReplyType, DraftStatusType } from "../api/model/users.draft";
 import { handleDiscardDraft, handleUpdateDraft } from "../lib/asyncHelpers";
+import { TrashIcon } from "@heroicons/react/20/solid";
+import { useTooltip } from "./UseTooltip";
+import TooltipPopover from "./TooltipPopover";
 
 interface MessageDraftProps {
   selectedEmail: ISelectedEmail;
@@ -43,6 +46,7 @@ const MessageDraft = forwardRef<MessageHandle, MessageDraftProps>(
     // const toCursoRef = useRef<HTMLDivElement>(null);
     // const tiptapRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
+    const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
 
     useImperativeHandle(ref, () => ({
       // TODO: Implement
@@ -115,6 +119,17 @@ const MessageDraft = forwardRef<MessageHandle, MessageDraftProps>(
       },
       [isDirty, draft]
     );
+
+    const discardDraft = useCallback(() => {
+      void handleDiscardDraft(
+        selectedEmail.email,
+        draft.id,
+        DraftStatusType.DISCARDED
+      );
+
+      toast.success("Draft discarded");
+      navigate(-1);
+    }, [selectedEmail.email, draft.id, navigate]);
 
     useEffect(() => {
       void saveDraft(
@@ -209,6 +224,26 @@ const MessageDraft = forwardRef<MessageHandle, MessageDraftProps>(
 
     return (
       <div className="w-full h-auto flex flex-col border border-slate-200 dark:border-zinc-700">
+        <div className="w-full px-4 pt-4 flex flex-row justify-between items-center">
+          <div className="text-sm text-slate-300 dark:text-zinc-600 italic">
+            Draft
+          </div>
+          <button
+            onMouseEnter={(event) => {
+              handleShowTooltip(event, "Discard Draft");
+            }}
+            onMouseLeave={handleHideTooltip}
+            onClick={(
+              event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+            ) => {
+              event.stopPropagation();
+              discardDraft();
+            }}
+            className="ml-1 dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
+          >
+            <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
+          </button>
+        </div>
         <div className="text-sm dark:text-zinc-400 text-slate-500 p-4 mb-0.5">
           <EmailSelectorInput
             selectedEmail={selectedEmail}
@@ -243,6 +278,11 @@ const MessageDraft = forwardRef<MessageHandle, MessageDraftProps>(
             />
           </div>
         </div>
+        <TooltipPopover
+          message={tooltipData.message}
+          showTooltip={tooltipData.showTooltip}
+          coords={tooltipData.coords}
+        />
       </div>
     );
   }

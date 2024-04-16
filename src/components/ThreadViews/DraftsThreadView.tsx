@@ -46,7 +46,10 @@ export default function DraftsThreadView() {
 
   const drafts = useLiveQuery(
     async () => {
-      const allDrafts = await db.drafts.toArray();
+      const allDrafts = await db.drafts
+        .where("email")
+        .equals(selectedEmail.email)
+        .toArray();
       const latestDraftsByThread: { [key: string]: IDraft } = {};
 
       // Filter to keep only the most recent draft per threadId
