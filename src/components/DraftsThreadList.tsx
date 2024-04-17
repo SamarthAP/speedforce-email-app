@@ -4,11 +4,11 @@ import { useHoveredThreadContext } from "../contexts/HoveredThreadContext";
 import { useDisableMouseHoverContext } from "../contexts/DisableMouseHoverContext";
 import { useEffect, useRef } from "react";
 import { getSnippetFromHtml } from "../lib/util";
-import { IDraft, ISelectedEmail } from "../lib/db";
+import { db, IDraft, ISelectedEmail } from "../lib/db";
 import { TrashIcon } from "@heroicons/react/20/solid";
 import { useTooltip } from "./UseTooltip";
 import TooltipPopover from "./TooltipPopover";
-import { handleDiscardDraft } from "../lib/asyncHelpers";
+import { handleDiscardDraft, handleTrashThread } from "../lib/asyncHelpers";
 import toast from "react-hot-toast";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { DraftStatusType } from "../api/model/users.draft";
@@ -93,18 +93,34 @@ export const DraftThreadListRow = ({
   }
 
   async function handleTrashClick(draft: IDraft) {
-    const { error } = await handleDiscardDraft(
-      selectedEmail.email,
-      draft.id,
-      DraftStatusType.DISCARDED
-    );
+    // If there is a threadId, trash the thread
+    if (draft.threadId) {
+      const thread = await db.emailThreads.get(draft.threadId);
+      if (!thread) {
+        toast.error("Error trashing thread");
+        return;
+      }
 
-    if (error) {
-      toast.error("Error discarding draft");
-      return;
+      await handleTrashThread(
+        selectedEmail.email,
+        selectedEmail.provider,
+        thread
+      );
+    } else {
+      // discard draft from drafts table
+      const { error } = await handleDiscardDraft(
+        selectedEmail.email,
+        draft.id,
+        DraftStatusType.DISCARDED
+      );
+
+      if (error) {
+        toast.error("Error discarding draft");
+        return;
+      }
+
+      toast.success("Draft discarded");
     }
-
-    toast.success("Draft discarded");
   }
 
   useEffect(() => {

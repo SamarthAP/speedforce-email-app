@@ -4,7 +4,7 @@
 import toast from "react-hot-toast";
 import { FOLDER_IDS } from "../api/constants";
 import { IEmailThread, db } from "./db";
-import { archiveThread, starThread, unstarThread } from "./sync";
+import { archiveThread, starThread, trashThread, unstarThread } from "./sync";
 import { updateLabelIdsForEmailThread } from "./util";
 import _ from "lodash";
 import { DraftReplyType, DraftStatusType } from "../api/model/users.draft";
@@ -230,4 +230,44 @@ export async function handleDiscardDraft(
   }
 
   return { data: null, error: null };
+}
+
+// Trash a thread thats not a draft
+export async function handleTrashThread(
+  email: string,
+  provider: "google" | "outlook",
+  thread: IEmailThread
+) {
+  const labelsToRemove = _.intersection(thread.labelIds, [
+    FOLDER_IDS.INBOX,
+    FOLDER_IDS.SENT,
+  ]);
+
+  const drafts = await db.drafts.where("threadId").equals(thread.id).toArray();
+  await executeInstantAsyncAction(
+    async () => {
+      void updateLabelIdsForEmailThread(
+        thread.id,
+        [FOLDER_IDS.TRASH],
+        labelsToRemove
+      );
+
+      await db.drafts.bulkDelete(drafts.map((draft) => draft.id));
+    },
+    async () => {
+      const promises = drafts.map((draft) =>
+        updateDraftStatus(email, draft.id, DraftStatusType.DISCARDED)
+      );
+      await trashThread(email, provider, thread.id);
+      await Promise.all(promises);
+    },
+    async () => {
+      void updateLabelIdsForEmailThread(thread.id, labelsToRemove, [
+        FOLDER_IDS.TRASH,
+      ]);
+
+      await db.drafts.bulkAdd(drafts);
+      toast("Unable to trash thread");
+    }
+  );
 }
