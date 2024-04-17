@@ -93,7 +93,6 @@ export const DraftThreadListRow = ({
   }
 
   async function handleTrashClick(draft: IDraft) {
-    console.log("trash", draft);
     const { error } = await handleDiscardDraft(
       selectedEmail.email,
       draft.id,
@@ -169,7 +168,6 @@ export const DraftThreadListRow = ({
                 ) => {
                   event.stopPropagation();
                   void handleTrashClick(draft);
-                  // void handleTrashClick(thread);
                 }}
                 className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
               >

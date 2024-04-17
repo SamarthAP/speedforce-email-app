@@ -30,7 +30,6 @@ export default function DraftsThreadView() {
   const [showPersonalAi, setShowPersonalAi] = useState(false);
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const navigate = useNavigate();
-  // const [threads, setThreads] = useState<IDraft[]>([]);
   const { commandBarIsOpen } = useCommandBarOpenContext();
   const [hoveredThreadIndex, setHoveredThreadIndex] = useState<number>(-1);
   const [disableMouseHover, setDisableMouseHover] = useState(false);
