@@ -85,7 +85,6 @@ export const listOtherContacts = async (accessToken: string) => {
   return { data, error };
 };
 
-
 export const getProfilePicture = async (accessToken: string) => {
   let data: any;
   let error: string | null = null;
@@ -100,14 +99,12 @@ export const getProfilePicture = async (accessToken: string) => {
     );
     if (!res.ok) {
       error = "Error fetching contacts";
-      console.log('res',res)
     } else {
       data = await res.json();
     }
   } catch (e) {
-    error = "Error getting profile picture"
+    error = "Error getting profile picture";
   }
-  
-  return {data, error};
-  
-}
+
+  return { data, error };
+};

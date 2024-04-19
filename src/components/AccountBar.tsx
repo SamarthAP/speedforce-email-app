@@ -20,21 +20,34 @@ import { downloadProfilePictures } from "../lib/sync";
 import { UserCircleIcon } from "@heroicons/react/24/outline";
 import { classNames } from "../lib/util";
 
+const setSelectedEmail = async (email: IEmail) => {
+  await db.selectedEmail.put({
+    id: 1,
+    email: email.email,
+    provider: email.provider,
+    inboxZeroStartDate: email.inboxZeroStartDate,
+  });
+};
+
 export default function AccountBar() {
   const { selectedEmail } = useEmailPageOutletContext();
   const [open, setOpen] = useState(false);
   const accountBarContext = useAccountBarOpenContext();
   const [hoveredAccountBarItemId, setHoveredAccountBarItemId] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
   const [currentEmail, setCurrentEmail] = useState<IEmail | null>(null);
-
-  const getProfilePictures = async () => {
-    await downloadProfilePictures();
+  const [disableMouseHover, setDisableMouseHover] = useState(false);
+  const disableMouseHoverContextValue = {
+    disableMouseHover,
+    setDisableMouseHover,
   };
 
   useEffect(() => {
-    getProfilePictures();
+    const fetchProfilePictures = async () => {
+      await downloadProfilePictures();
+    };
+    fetchProfilePictures();
   }, []);
+
   const signedInEmails = useLiveQuery(() => {
     return db.emails
       .orderBy("email")
@@ -48,27 +61,12 @@ export default function AccountBar() {
         setCurrentEmail(emails[0]);
         return emails;
       });
-  }, [selectedEmail]);
-
-  const setSelectedEmail = async (email: IEmail) => {
-    await db.selectedEmail.put({
-      id: 1,
-      email: email.email,
-      provider: email.provider,
-      inboxZeroStartDate: email.inboxZeroStartDate,
-    });
-  };
-  const [disableMouseHover, setDisableMouseHover] = useState(false);
-  const disableMouseHoverContextValue = {
-    disableMouseHover,
-    setDisableMouseHover,
-  };
+  }, [selectedEmail.email]);
 
   // Toggle the menu when ctrl+tab is pressed
   useEffect(() => {
     const down = (e: any) => {
-      if (e.key === "Tab" && open) {
-      } else if (e.key === "Tab" && e.ctrlKey && !open) {
+      if (e.key === "Tab" && e.ctrlKey && !open) {
         e.preventDefault();
         setOpen((open) => true);
       }
@@ -153,41 +151,6 @@ export default function AccountBar() {
       accountBarContext.accountBarIsOpen,
     ]
   );
-
-  //doesn't work atm -> idk if we need it
-  // useHotkeys(
-  //   [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.ARROW_LEFT]],
-  //   () => {
-  //     if (!accountBarContext.accountBarIsOpen) return;
-
-  //     const items = document.querySelectorAll(".account-bar-item");
-
-  //     if (hoveredAccountBarItemId === "") {
-  //       if (items.length > 0) {
-  //         return setHoveredAccountBarItemId(items[0].innerHTML || "");
-  //       }
-  //     }
-
-  //     const currentIndex = Array.from(items).findIndex(
-  //       (item) => item.innerHTML === hoveredAccountBarItemId
-  //     );
-
-  //     if (currentIndex === -1) {
-  //       return setHoveredAccountBarItemId("");
-  //     } else {
-  //       setDisableMouseHover(true);
-  //       debouncedDisableMouseHover(false);
-  //       return setHoveredAccountBarItemId(
-  //         items[currentIndex + 1].innerHTML || ""
-  //       );
-  //     }
-  //   },
-  //   [
-  //     hoveredAccountBarItemId,
-  //     setHoveredAccountBarItemId,
-  //     accountBarContext.accountBarIsOpen,
-  //   ]
-  // );
 
   return (
     <Transition appear show={open} as={Fragment}>
@@ -311,11 +274,9 @@ function AccountItem({
             className="h-8 w-8 rounded-full"
           />
         ) : (
-          // <div className="h-8 w-8 rounded-full"></div>
           <UserCircleIcon
             className={classNames(
               "h-8 w-8 rounded-full",
-              // isBackgroundOn ? "text-white" : "text-black dark:text-white"
               "text-black dark:text-white"
             )}
           />

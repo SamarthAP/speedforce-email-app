@@ -120,7 +120,7 @@ export function getOutlookSubscriptionExpirationDateTime() {
   return expirationDateTime.toISOString();
 }
 
-export const getProfilePictureOutlook  = async (accessToken: string) => {
+export const getProfilePictureOutlook = async (accessToken: string) => {
   let data: any;
   let error: string | null = null;
   try {
@@ -134,7 +134,6 @@ export const getProfilePictureOutlook  = async (accessToken: string) => {
     );
     if (!res.ok) {
       error = "Error fetching contacts";
-      console.log('res',res)
     } else {
       const blob = await res.blob();
       const reader = new FileReader();
@@ -146,7 +145,7 @@ export const getProfilePictureOutlook  = async (accessToken: string) => {
       });
     }
   } catch (e) {
-    error = "Error getting profile picture"
+    error = "Error getting profile picture";
   }
-  return {data, error};
-}
+  return { data, error };
+};

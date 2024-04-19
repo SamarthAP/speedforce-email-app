@@ -511,25 +511,30 @@ export async function handleNewThreadsOutlook(
 export async function downloadProfilePictures() {
   db.emails.toArray().then((emails) => {
     emails.forEach(async (email) => {
-      if (email.provider === 'google') {
-      const { data, error } = await getProfilePicture(email.accessToken);
-      if (error || !data) {
-        dLog("Error downloading Google ProfilePicture");
-        return;
-      }
-      await db.emails.update(email, { profilePictureUrl: data?.photos?.[0].url });
-      }
-      else {
-        const { data, error } = await getProfilePictureOutlook(email.accessToken);
-        if (error || !data) {
-          dLog("Error downloading Outlook ProfilePicture");
-          return;
+      if (email.lastUpdateDate < new Date().getTime() - 1000 * 60 * 60 * 24) {
+        if (email.provider === "google") {
+          const { data, error } = await getProfilePicture(email.accessToken);
+          if (error || !data) {
+            dLog("Error downloading Google ProfilePicture");
+            return;
+          }
+          await db.emails.update(email, {
+            profilePictureUrl: data?.photos?.[0].url,
+          });
+        } else {
+          const { data, error } = await getProfilePictureOutlook(
+            email.accessToken
+          );
+          if (error || !data) {
+            dLog("Error downloading Outlook ProfilePicture");
+            return;
+          }
+          await db.emails.update(email, { profilePictureUrl: data });
         }
-        await db.emails.update(email, { profilePictureUrl: data });
+        email.lastUpdateDate = new Date().getTime();
       }
+    });
   });
-
-  })
 }
 
 export async function markRead(

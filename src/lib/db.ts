@@ -16,6 +16,7 @@ export interface IEmail {
   expiresAt: number;
   inboxZeroStartDate: number;
   profilePictureUrl?: string;
+  lastUpdateDate: number;
 }
 
 export interface ISelectedEmail {
