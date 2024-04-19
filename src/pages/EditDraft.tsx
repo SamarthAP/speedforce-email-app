@@ -15,10 +15,9 @@ import { dLog } from "../lib/noProd";
 import { NewAttachment } from "../api/model/users.attachment";
 import { sendEmail, sendEmailWithAttachments } from "../lib/sync";
 import toast from "react-hot-toast";
-import { getSnippetFromHtml } from "../lib/util";
 import SimpleButton from "../components/SimpleButton";
 import { SharedDraftModal } from "../components/modals/ShareDraftModal";
-import { getSharedDraft, loadParticipantsForDraft } from "../api/sharedDrafts";
+import { loadParticipantsForDraft } from "../api/drafts";
 import { KeyPressProvider } from "../contexts/KeyPressContext";
 import { CommandBarOpenContext } from "../contexts/CommandBarContext";
 import GoToPageHotkeys from "../components/KeyboardShortcuts/GoToPageHotkeys";
@@ -41,8 +40,6 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   const [cc, setCc] = useState<string[]>([]);
   const [bcc, setBcc] = useState<string[]>([]);
   const [subject, setSubject] = useState("");
-  const [snippet, setSnippet] = useState("");
-  const [date, setDate] = useState(0);
   const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const [initialData, setInitialData] = useState<{
     to: string[];
@@ -54,7 +51,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [initialContent, setInitialContent] = useState("");
   const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
-  const [shareModalIsOpen, setShareeModalIsOpen] = useState(false);
+  const [shareModalIsOpen, setShareModalIsOpen] = useState(false);
   const [messagePanelIsOpen, setMessagePanelIsOpen] = useState(false);
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const editorRef = useRef<TipTapEditorHandle>(null);
@@ -75,21 +72,6 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     );
   }, [to, cc, bcc, subject, initialData]);
 
-  const {
-    data: sharedDraftData,
-    isLoading: isSharedDraftLoading,
-    refetch: refetchSharedDraft,
-  } = useQuery(["sharedDraftEditor", { draftId }], async () => {
-    if (!draftId) return;
-
-    const { data, error } = await getSharedDraft(draftId, selectedEmail.email);
-    if (error) {
-      return null;
-    }
-
-    return data;
-  });
-
   const { data: sharedDraftParticipants, refetch: refetchParticipants } =
     useQuery(["sharedDraftParticipants", { draftId }], async () => {
       if (!draftId) return;
@@ -109,10 +91,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   useEffect(() => {
     if (!shareModalIsOpen) {
       // Refetch when share modal is closed
-      void refetchSharedDraft();
       void refetchParticipants();
     }
-  }, [shareModalIsOpen, refetchSharedDraft, refetchParticipants]);
+  }, [shareModalIsOpen, refetchParticipants]);
 
   const saveDraft = useCallback(
     async (
@@ -261,7 +242,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !commandBarIsOpen) {
         if (shareModalIsOpen) {
-          setShareeModalIsOpen(false);
+          setShareModalIsOpen(false);
         } else {
           void saveDraftWithHtml(editorRef.current?.getHTML() || "");
           navigate(-1);
@@ -285,8 +266,6 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         setBcc(draft.bcc.split(",").filter((recipient) => recipient !== ""));
         setSubject(draft.subject || "");
         setInitialContent(draft.html || "");
-        setSnippet(getSnippetFromHtml(draft.html || ""));
-        setDate(draft.date || 0);
         setInitialData({
           to: draft.to.split(",").filter((recipient) => recipient !== ""),
           cc: draft.cc.split(",").filter((recipient) => recipient !== ""),
@@ -337,24 +316,20 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                 <span className="flex flex-row items-start justify-between px-4">
                   <div className="dark:text-white py-4 w-full">Edit Draft</div>
                   <div className="flex flex-row items-center space-x-2">
-                    {!isSharedDraftLoading &&
-                    sharedDraftData &&
-                    sharedDraftData.id ? (
-                      <button
-                        className="p-2 mt-2 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-full"
-                        onMouseEnter={(event) => {
-                          handleShowTooltip(event, "Comments");
-                        }}
-                        onMouseLeave={handleHideTooltip}
-                        onClick={() => setMessagePanelIsOpen((val) => !val)}
-                      >
-                        <ChatBubbleBottomCenterTextIcon className="h-5 w-5 shrink-0 dark:text-zinc-300 text-black" />
-                      </button>
-                    ) : null}
+                    <button
+                      className="p-2 mt-2 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-full"
+                      onMouseEnter={(event) => {
+                        handleShowTooltip(event, "Comments");
+                      }}
+                      onMouseLeave={handleHideTooltip}
+                      onClick={() => setMessagePanelIsOpen((val) => !val)}
+                    >
+                      <ChatBubbleBottomCenterTextIcon className="h-5 w-5 shrink-0 dark:text-zinc-300 text-black" />
+                    </button>
                     <SimpleButton
                       text="Share"
                       loading={false}
-                      onClick={() => setShareeModalIsOpen(true)}
+                      onClick={() => setShareModalIsOpen(true)}
                     />
                   </div>
                 </span>
@@ -422,7 +397,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                     </div>
                   </div>
                   <CommentsChain
-                    threadId={draftId || ""}
+                    draftId={draftId || ""}
                     editMode={true}
                     selectedEmail={selectedEmail}
                     visible={messagePanelIsOpen}
@@ -492,15 +467,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         selectedEmail={selectedEmail}
         draftId={draftId || ""}
         sharedParticipants={sharedDraftParticipants || []}
-        to={to}
-        cc={cc}
-        bcc={bcc}
-        subject={subject}
-        snippet={snippet}
-        date={date}
-        html={initialContent}
         isDialogOpen={shareModalIsOpen}
-        setIsDialogOpen={setShareeModalIsOpen}
+        setIsDialogOpen={setShareModalIsOpen}
       />
       <TooltipPopover
         message={tooltipData.message}
