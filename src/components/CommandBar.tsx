@@ -192,17 +192,17 @@ export default function CommandBar({ data }: CommandBarProps) {
             isSequential: true,
           },
         },
-        {
-          icon: UserGroupIcon,
-          description: "Go To Shared Drafts",
-          action: () => {
-            navigate("/sharedDrafts");
-          },
-          keybind: {
-            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "$"],
-            isSequential: true,
-          },
-        },
+        // {
+        //   icon: UserGroupIcon,
+        //   description: "Go To Shared Drafts",
+        //   action: () => {
+        //     navigate("/sharedDrafts");
+        //   },
+        //   keybind: {
+        //     keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "$"],
+        //     isSequential: true,
+        //   },
+        // },
       ],
     },
     {

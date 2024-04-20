@@ -315,7 +315,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                 </div>
                 <span className="flex flex-row items-start justify-between px-4">
                   <div className="dark:text-white py-4 w-full">Edit Draft</div>
-                  <div className="flex flex-row items-center space-x-2">
+                  {/* <div className="flex flex-row items-center space-x-2">
                     <button
                       className="p-2 mt-2 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-full"
                       onMouseEnter={(event) => {
@@ -331,7 +331,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                       loading={false}
                       onClick={() => setShareModalIsOpen(true)}
                     />
-                  </div>
+                  </div> */}
                 </span>
                 <div className="h-full w-full flex flex-row mb-10 overflow-y-scroll hide-scroll">
                   <div className="h-full w-full flex flex-col space-y-2 pt-2 px-4 pb-4">
