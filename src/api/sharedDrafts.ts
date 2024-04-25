@@ -12,7 +12,7 @@ export const saveSharedDraft = async (
 ) => {
   try {
     const authHeader = await getJWTHeaders();
-    const res = await fetch(`${SPEEDFORCE_API_URL}/drafts`, {
+    const res = await fetch(`${SPEEDFORCE_API_URL}/shared-drafts`, {
       method: "POST",
       headers: {
         ...authHeader,
@@ -40,7 +40,7 @@ export const updateSharedDraftStatus = async (
   status: SharedDraftStatusType
 ) => {
   const authHeader = await getJWTHeaders();
-  const res = await fetch(`${SPEEDFORCE_API_URL}/drafts/status`, {
+  const res = await fetch(`${SPEEDFORCE_API_URL}/shared-drafts/status`, {
     method: "POST",
     headers: {
       ...authHeader,
@@ -67,18 +67,21 @@ export const shareDraft = async (
 ) => {
   try {
     const authHeader = await getJWTHeaders();
-    const res = await fetch(`${SPEEDFORCE_API_URL}/drafts/participants`, {
-      method: "POST",
-      headers: {
-        ...authHeader,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        draftData,
-        participants,
-      }),
-    });
+    const res = await fetch(
+      `${SPEEDFORCE_API_URL}/shared-drafts/participants`,
+      {
+        method: "POST",
+        headers: {
+          ...authHeader,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          draftData,
+          participants,
+        }),
+      }
+    );
 
     if (!res.ok) {
       return { data: null, error: "Error sharing draft" };
@@ -93,7 +96,7 @@ export const shareDraft = async (
 export const getSharedDraft = async (draftId: string, email: string) => {
   const authHeader = await getJWTHeaders();
   const res = await fetch(
-    `${SPEEDFORCE_API_URL}/drafts?draftId=${draftId}&email=${email}`,
+    `${SPEEDFORCE_API_URL}/shared-drafts?draftId=${draftId}&email=${email}`,
     {
       method: "GET",
       headers: {
@@ -114,7 +117,7 @@ export const listSharedDrafts = async (email: string) => {
   try {
     const authHeader = await getJWTHeaders();
     const res: Response = await fetch(
-      `${SPEEDFORCE_API_URL}/drafts/listSharedDraftsForUser?email=${email}`,
+      `${SPEEDFORCE_API_URL}/shared-drafts/listSharedDraftsForUser?email=${email}`,
       {
         method: "GET",
         headers: {
@@ -155,7 +158,7 @@ export const loadParticipantsForDraft = async (
 ) => {
   const authHeader = await getJWTHeaders();
   const res = await fetch(
-    `${SPEEDFORCE_API_URL}/drafts/listParticipantsForDraft?draftId=${draftId}&email=${email}`,
+    `${SPEEDFORCE_API_URL}/shared-drafts/listParticipantsForDraft?draftId=${draftId}&email=${email}`,
     {
       method: "GET",
       headers: {
@@ -185,7 +188,7 @@ export const addCommentToDraft = async (
   content: string
 ) => {
   const authHeader = await getJWTHeaders();
-  const res = await fetch(`${SPEEDFORCE_API_URL}/drafts/comment`, {
+  const res = await fetch(`${SPEEDFORCE_API_URL}/shared-drafts/comment`, {
     method: "POST",
     headers: {
       ...authHeader,
@@ -208,7 +211,7 @@ export const addCommentToDraft = async (
 export const listCommentsForDraft = async (threadId: string) => {
   const authHeader = await getJWTHeaders();
   const res = await fetch(
-    `${SPEEDFORCE_API_URL}/drafts/comment?threadId=${threadId}`,
+    `${SPEEDFORCE_API_URL}/shared-drafts/comment?threadId=${threadId}`,
     {
       method: "GET",
       headers: {

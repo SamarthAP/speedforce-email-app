@@ -98,42 +98,6 @@ export const get = async (accessToken: string, threadId: string) => {
   return data;
 };
 
-export const forward = async (
-  accessToken: string,
-  messageId: string,
-  toRecipients: string[],
-  ccRecipients: string[],
-  bccRecipients: string[]
-) => {
-  const response = await fetch(
-    `${OUTLOOK_API_URL}/me/messages/${messageId}/forward`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-      body: JSON.stringify({
-        comment: "--- Forwarded message ---",
-        toRecipients: toRecipients.map((email) => ({
-          emailAddress: { address: email.trim() },
-        })),
-        ccRecipients: ccRecipients.map((email) => ({
-          emailAddress: { address: email.trim() },
-        })),
-        bccRecipients: bccRecipients.map((email) => ({
-          emailAddress: { address: email.trim() },
-        })),
-      }),
-    }
-  );
-
-  // Returns 202 Accepted with no response body if successful
-  if (!response.ok) {
-    throw Error("Error replying to thread");
-  }
-};
-
 export const markRead = async (accessToken: string, threadId: string) => {
   const response = await fetch(`${OUTLOOK_API_URL}/me/messages/${threadId}`, {
     headers: {

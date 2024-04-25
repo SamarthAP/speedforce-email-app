@@ -4,7 +4,7 @@ import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArchiveBoxXMarkIcon,
   ArrowSmallLeftIcon,
@@ -23,6 +23,7 @@ import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import CommandBar from "../components/CommandBar";
 import { handleStarClick } from "../lib/asyncHelpers";
 import { getMessageHeader, listUnsubscribe } from "../lib/util";
+import MessageDraft, { MessageHandle } from "../components/MessageReplyDraft";
 
 interface ThreadPageProps {
   selectedEmail: ISelectedEmail;
@@ -33,11 +34,21 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
   const { sequenceInitiated } = useKeyPressContext();
   const { threadId } = useParams();
   const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const draftRef = useRef<MessageHandle>(null);
 
   const messages = useLiveQuery(() => {
     return db.messages
       .where("threadId")
       .equals(threadId || "")
+      .sortBy("date");
+  }, [threadId]);
+
+  const drafts = useLiveQuery(() => {
+    return db.drafts
+      .where("threadId")
+      .equals(threadId || "")
+      .reverse()
       .sortBy("date");
   }, [threadId]);
 
@@ -52,6 +63,9 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !commandBarIsOpen) {
+        if (draftRef.current) {
+          draftRef.current.saveOnExit();
+        }
         navigate(-1);
       }
     };
@@ -113,6 +127,13 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
     }
   };
 
+  const scrollToBottom = () => {
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  };
+
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col dark:bg-zinc-900">
       <KeyPressProvider>
@@ -127,6 +148,9 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
                     className="flex flex-row cursor-pointer items-center"
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (draftRef.current) {
+                        draftRef.current.saveOnExit();
+                      }
                       navigate(-1);
                     }}
                   >
@@ -170,7 +194,10 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
                     ) : null}
                   </div>
                 </div>
-                <div className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll">
+                <div
+                  className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll"
+                  ref={scrollRef}
+                >
                   {messages?.map((message, idx) => {
                     return (
                       <Message
@@ -178,9 +205,19 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
                         key={message.id}
                         selectedEmail={selectedEmail}
                         isLast={idx === messages.length - 1}
+                        scrollToBottom={scrollToBottom}
                       />
                     );
                   })}
+
+                  {drafts && drafts.length > 0 ? (
+                    <MessageDraft
+                      ref={draftRef}
+                      selectedEmail={selectedEmail}
+                      draft={drafts[0]}
+                      threadId={threadId || ""}
+                    />
+                  ) : null}
                 </div>
               </div>
               <SelectedThreadBar

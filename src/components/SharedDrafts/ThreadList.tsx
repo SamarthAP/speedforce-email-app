@@ -5,7 +5,7 @@ import { useDisableMouseHoverContext } from "../../contexts/DisableMouseHoverCon
 import { useEffect, useRef } from "react";
 
 interface SharedDraftThreadListProps {
-  threads: {
+  threads?: {
     id: string;
     threadId: string;
     from: string;
@@ -23,7 +23,7 @@ export const SharedDraftThreadList = ({
 }: SharedDraftThreadListProps) => {
   return (
     <div className="h-full flex flex-col overflow-y-scroll hide-scroll">
-      {threads.length > 0 ? (
+      {threads && threads.length > 0 ? (
         threads.map((thread, index) => (
           <SharedDraftThreadListRow
             thread={thread}
