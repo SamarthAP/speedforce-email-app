@@ -433,7 +433,6 @@ function ThreadListRow({
               .then((response) => {
                 if (response.ok) {
                   void response.json().then((data) => {
-                    console.log("data", data);
                     void db.emailThreads
                       .update(thread.id, {
                         actionItemGenerated: true,
