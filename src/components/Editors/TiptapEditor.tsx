@@ -229,6 +229,10 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
       editor.view.dispatch(transaction);
     };
 
+    const removeLink = () => {
+      editor.commands.unsetLink();
+    };
+
     return (
       <div>
         <TiptapMenuBar editor={editor} addAttachments={addAttachments} />
@@ -281,6 +285,7 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
           isDialogOpen={isEditLinkModalOpen}
           setIsDialogOpen={setIsEditLinkModalOpen}
           editLink={editLink}
+          removeLink={removeLink}
         />
       </div>
     );
