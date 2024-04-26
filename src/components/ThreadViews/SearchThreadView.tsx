@@ -275,7 +275,7 @@ export default function SearchThreadView({
             </DisableMouseHoverContext.Provider>
           </HoveredThreadContext.Provider>
         </div>
-        <AssistBar thread={threads[hoveredThreadIndex]} />
+        <AssistBar />
       </div>
       <CommandBar
         data={[]}

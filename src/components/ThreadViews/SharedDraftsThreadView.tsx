@@ -258,7 +258,7 @@ export default function SharedDraftsThreadView() {
             </DisableMouseHoverContext.Provider>
           </HoveredThreadContext.Provider>
         </div>
-        <AssistBar thread={null} />
+        <AssistBar />
       </div>
       <CommandBar data={[]} />
     </div>
