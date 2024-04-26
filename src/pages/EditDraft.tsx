@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmailSelectorInput } from "../components/EmailSelectorInput";
-import {
-  ArrowSmallLeftIcon,
-  ChatBubbleBottomCenterTextIcon,
-} from "@heroicons/react/24/outline";
+import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
 import { ISelectedEmail, db } from "../lib/db";
 import { useNavigate, useParams } from "react-router-dom";
 import Titlebar from "../components/Titlebar";
@@ -15,7 +12,6 @@ import { dLog } from "../lib/noProd";
 import { NewAttachment } from "../api/model/users.attachment";
 import { sendEmail, sendEmailWithAttachments } from "../lib/sync";
 import toast from "react-hot-toast";
-import SimpleButton from "../components/SimpleButton";
 import { SharedDraftModal } from "../components/modals/ShareDraftModal";
 import { loadParticipantsForDraft } from "../api/drafts";
 import { KeyPressProvider } from "../contexts/KeyPressContext";
