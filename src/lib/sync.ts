@@ -105,7 +105,7 @@ export async function handleNewDraftsGoogle(
     const parsedDrafts: IEmailThread[] = [];
     const parsedMessages: IMessage[] = [];
 
-    drafts.forEach((draft) => {
+    for (const draft of drafts) {
       // let hasInboxLabel = false;
       const isStarred = draft.message.labelIds?.includes("STARRED") || false;
       let labelIds: string[] = [];
@@ -183,6 +183,15 @@ export async function handleNewDraftsGoogle(
         labelIds = upsertLabelIds(labelIds, labelId);
       });
 
+      const { actionItemGenerated, actionItemString } = await db.emailThreads
+        .get(draft.id)
+        .then((thread) => {
+          return {
+            actionItemGenerated: thread?.actionItemGenerated || false,
+            actionItemString: thread?.actionItemString || "",
+          };
+        });
+
       parsedDrafts.push({
         id: draft.id,
         historyId: draft.historyId,
@@ -194,8 +203,10 @@ export async function handleNewDraftsGoogle(
         unread: draft.message.labelIds?.includes("UNREAD"),
         labelIds: labelIds,
         hasAttachments,
+        actionItemGenerated: actionItemGenerated,
+        actionItemString: actionItemString,
       });
-    });
+    }
 
     await db.emailThreads.bulkPut(parsedDrafts);
     await db.messages.bulkPut(parsedMessages);
@@ -224,7 +235,7 @@ export async function handleNewThreadsGoogle(
     const parsedThreads: IEmailThread[] = [];
     const parsedMessages: IMessage[] = [];
 
-    threads.forEach((thread) => {
+    for (const thread of threads) {
       // let hasInboxLabel = false;
       let isStarred = false;
       let labelIds: string[] = [];
@@ -324,6 +335,15 @@ export async function handleNewThreadsGoogle(
         });
       });
 
+      const { actionItemGenerated, actionItemString } = await db.emailThreads
+        .get(thread.id)
+        .then((thread) => {
+          return {
+            actionItemGenerated: thread?.actionItemGenerated || false,
+            actionItemString: thread?.actionItemString || "",
+          };
+        });
+
       const lastMessageIndex = thread.messages.length - 1;
       parsedThreads.push({
         id: thread.id,
@@ -339,8 +359,10 @@ export async function handleNewThreadsGoogle(
         unread: thread.messages[lastMessageIndex].labelIds?.includes("UNREAD"),
         labelIds: labelIds,
         hasAttachments,
+        actionItemGenerated: actionItemGenerated,
+        actionItemString: actionItemString,
       });
-    });
+    }
 
     // save threads
     await db.emailThreads.bulkPut(parsedThreads);
@@ -474,6 +496,16 @@ export async function handleNewThreadsOutlook(
         }
 
         const lastMessageIndex = thread.value.length - 1;
+
+        const { actionItemGenerated, actionItemString } = await db.emailThreads
+          .get(thread.value[lastMessageIndex].conversationId)
+          .then((thread) => {
+            return {
+              actionItemGenerated: thread?.actionItemGenerated || false,
+              actionItemString: thread?.actionItemString || "",
+            };
+          });
+
         parsedThreads.push({
           id: thread.value[lastMessageIndex].conversationId,
           historyId: "",
@@ -492,6 +524,8 @@ export async function handleNewThreadsOutlook(
           unread: unread,
           labelIds: labelIds,
           hasAttachments: hasAttachments,
+          actionItemGenerated: actionItemGenerated,
+          actionItemString: actionItemString,
         });
       }
 

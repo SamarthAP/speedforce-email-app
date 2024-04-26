@@ -35,6 +35,8 @@ export interface IEmailThread {
   unread: boolean;
   labelIds: string[];
   hasAttachments: boolean;
+  actionItemGenerated?: boolean;
+  actionItemString?: string;
 }
 
 export interface IMessage {
@@ -105,6 +107,13 @@ export interface ICachedSummaryCardData {
   threadSummary: string;
 }
 
+export interface IActionItem {
+  threadId: string;
+  email: string;
+  actionItemString: string;
+  completed: boolean;
+}
+
 export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
@@ -116,6 +125,7 @@ export class SubClassedDexie extends Dexie {
   dailyImageMetadata!: Table<IDailyImageMetadata, number>;
   searchHistory!: Table<ISearchQuery, string>;
   cachedSummaryCardData!: Table<ICachedSummaryCardData, string>;
+  actionItems!: Table<IActionItem, string>;
 
   constructor() {
     super("SpeedforceDB");

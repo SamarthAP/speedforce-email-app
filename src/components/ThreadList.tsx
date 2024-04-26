@@ -37,6 +37,9 @@ import { useHoveredThreadContext } from "../contexts/HoveredThreadContext";
 import { updateSharedDraftStatus } from "../api/sharedDrafts";
 import { SharedDraftStatusType } from "../api/model/users.shared.draft";
 import { useDisableMouseHoverContext } from "../contexts/DisableMouseHoverContext";
+import ConvertToActionItem from "./ConvertToActionItem";
+import { getJWTHeaders } from "../api/authHeader";
+import { dLog } from "../lib/noProd";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -81,6 +84,7 @@ interface ThreadListProps {
   canArchiveThread?: boolean;
   canTrashThread?: boolean;
   canPermanentlyDeleteThread?: boolean;
+  canConvertToActionItem?: boolean;
   isDrafts?: boolean;
   navigateToFeed?: string;
 }
@@ -94,6 +98,7 @@ export default function ThreadList({
   canArchiveThread = false,
   canTrashThread = false,
   canPermanentlyDeleteThread = false,
+  canConvertToActionItem = false,
   isDrafts = false,
   navigateToFeed,
 }: ThreadListProps) {
@@ -193,6 +198,7 @@ export default function ThreadList({
               canArchiveThread={canArchiveThread}
               canTrashThread={canTrashThread}
               canPermanentlyDeleteThread={canPermanentlyDeleteThread}
+              canConvertToActionItem={canConvertToActionItem}
               isDrafts={isDrafts}
               setDeleteThreadModalData={setDeleteThreadModalData}
               handleShowTooltip={handleShowTooltip}
@@ -237,6 +243,7 @@ interface ThreadListRowProps {
   canArchiveThread: boolean;
   canTrashThread: boolean;
   canPermanentlyDeleteThread: boolean;
+  canConvertToActionItem: boolean;
   isDrafts: boolean;
   setDeleteThreadModalData: (data: DeleteThreadModalData) => void;
   handleShowTooltip: (
@@ -254,6 +261,7 @@ function ThreadListRow({
   canArchiveThread,
   canTrashThread,
   canPermanentlyDeleteThread,
+  canConvertToActionItem,
   isDrafts,
   setDeleteThreadModalData,
   handleShowTooltip,
@@ -398,6 +406,70 @@ function ThreadListRow({
     );
   }
 
+  useEffect(() => {
+    const abortController = new AbortController();
+    if (canConvertToActionItem) {
+      if (!thread.actionItemGenerated) {
+        getJWTHeaders()
+          .then((authHeader) => {
+            const response = fetch(
+              "https://ai-service.speedforce.me/convertToActionItem",
+              {
+                signal: abortController.signal,
+                method: "POST",
+                headers: {
+                  ...authHeader,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  thread_id: thread.id,
+                  email: selectedEmail.email,
+                  provider: selectedEmail.provider,
+                }),
+              }
+            );
+
+            response
+              .then((response) => {
+                if (response.ok) {
+                  void response.json().then((data) => {
+                    void db.emailThreads
+                      .update(thread.id, {
+                        actionItemGenerated: true,
+                        actionItemString: data.action_item || "",
+                      })
+                      .then(() => {
+                        dLog("thread updated");
+                      })
+                      .catch((error) => {
+                        dLog("Failed to update thread", error);
+                      });
+                  });
+                } else {
+                  throw new Error("Failed to convert email to action item");
+                }
+              })
+              .catch((error) => {
+                dLog("Failed to convert email to action item", error);
+              });
+          })
+          .catch((error) => {
+            dLog("Failed to get auth headers", error);
+          });
+      }
+    }
+
+    return () => {
+      abortController.abort();
+    };
+  }, [
+    canConvertToActionItem,
+    selectedEmail.email,
+    selectedEmail.provider,
+    thread.actionItemGenerated,
+    thread.id,
+  ]);
+
   const message = useLiveQuery(() => {
     return db.messages.where("threadId").equals(thread.id).first();
   });
@@ -421,8 +493,8 @@ function ThreadListRow({
             : ""
         }`}
       >
-        <div className="text-sm flex items-center font-medium pr-4 col-span-2">
-          <div className="flex flex-col items-center justify-center px-2">
+        <div className="text-sm flex items-center font-medium pr-4 col-span-2 gap-x-2 pl-2">
+          <div className="flex flex-col items-center justify-center">
             {thread.labelIds.includes("STARRED") ? (
               <button
                 onMouseEnter={(event) => {
@@ -455,14 +527,29 @@ function ThreadListRow({
               </button>
             )}
           </div>
-          <div className="pr-2">
+          {/* this is so that we don't get an extra space (due to the empty div) on all other pages that dont have action item conversion */}
+          {canConvertToActionItem ? (
+            thread.actionItemGenerated &&
+            thread.actionItemString &&
+            thread.actionItemString.toLowerCase() !== "none" ? (
+              <ConvertToActionItem
+                thread={thread}
+                email={selectedEmail.email}
+                provider={selectedEmail.provider}
+                handleShowTooltip={handleShowTooltip}
+                handleHideTooltip={handleHideTooltip}
+              />
+            ) : (
+              <div className="w-4 h-4 shrink-0"></div>
+            )
+          ) : null}
+          <div className="">
             {thread.unread ? (
               <UnreadDot />
             ) : (
               <div className="h-[6px] w-[6px]"></div>
             )}
           </div>
-
           <span className="truncate text-black dark:text-zinc-100">
             {
               // TODO: Should we make a DraftThreadView or DraftThreadList component to avoid need for live query?
@@ -507,7 +594,7 @@ function ThreadListRow({
                   : new Date(thread.date).toDateString()}
               </span>
 
-              <span className="flex flex-row">
+              <span className="flex flex-row gap-x-1">
                 {canArchiveThread && (
                   <button
                     onMouseEnter={(event) => {
@@ -540,7 +627,7 @@ function ThreadListRow({
                       event.stopPropagation();
                       void handleTrashClick(thread);
                     }}
-                    className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
+                    className="group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
                   >
                     <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
                   </button>
@@ -560,7 +647,7 @@ function ThreadListRow({
                         thread: thread,
                       });
                     }}
-                    className="ml-1 group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
+                    className="group-hover:block hidden dark:hover:[&>*]:!text-white hover:[&>*]:!text-black"
                   >
                     <TrashIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 " />
                   </button>

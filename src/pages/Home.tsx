@@ -94,6 +94,7 @@ export default function Home({ inboxZeroStartDate }: HomeProps) {
           filterThreadsFnc: filterThreadsFncImportant,
           canArchiveThread: true,
           canTrashThread: true,
+          canConvertToActionItem: true,
         }}
         tabs={[
           {
