@@ -79,7 +79,7 @@ import {
   saveSearchQuery,
   upsertLabelIds,
 } from "./util";
-import _, { toNumber } from "lodash";
+import _ from "lodash";
 import { dLog } from "./noProd";
 import { FOLDER_IDS } from "../api/constants";
 import { OUTLOOK_FOLDER_IDS_MAP } from "../api/outlook/constants";
@@ -89,8 +89,6 @@ import toast from "react-hot-toast";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 import { CreateDraftResponseDataType } from "../api/model/users.draft";
 import { SENT_FROM_SPEEDFORCE_HTML } from "../api/templates/sentFromSpeedforce";
-import { updateSharedDraftStatus } from "../api/sharedDrafts";
-import { SharedDraftStatusType } from "../api/model/users.shared.draft";
 
 export async function handleNewDraftsGoogle(
   accessToken: string,

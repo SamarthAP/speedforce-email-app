@@ -4,12 +4,9 @@ import TooltipPopover from "../../components/TooltipPopover";
 import { useTooltip } from "../../components/UseTooltip";
 import { useCallback, useState } from "react";
 import { useQuery } from "react-query";
-import {
-  addCommentToDraft,
-  listCommentsForDraft,
-} from "../../api/sharedDrafts";
 import SimpleButton from "../SimpleButton";
 import toast from "react-hot-toast";
+import { addCommentToDraft, listCommentsForDraft } from "../../api/drafts";
 
 const formatDate = (timestamp: number) => {
   return new Date(timestamp).toLocaleDateString("en-US", {
@@ -31,14 +28,14 @@ interface CommentType {
 }
 
 interface CommentsChainProps {
-  threadId: string;
+  draftId: string;
   visible: boolean;
   editMode: boolean;
   selectedEmail: ISelectedEmail;
 }
 
 export default function CommentsChain({
-  threadId,
+  draftId,
   visible,
   editMode,
   selectedEmail,
@@ -48,11 +45,11 @@ export default function CommentsChain({
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
 
   const { data, refetch } = useQuery(
-    ["sharedDraftComments", threadId],
+    ["sharedDraftComments", draftId],
     async () => {
-      if (!threadId) return;
+      if (!draftId) return;
 
-      const { data, error } = await listCommentsForDraft(threadId);
+      const { data, error } = await listCommentsForDraft(draftId);
       if (error) {
         return null;
       }
@@ -63,7 +60,7 @@ export default function CommentsChain({
 
   const handleComment = useCallback(async () => {
     const { error } = await addCommentToDraft(
-      threadId,
+      draftId,
       selectedEmail.email,
       commentText
     );
@@ -74,7 +71,7 @@ export default function CommentsChain({
       void refetch();
     }
     setCommentText("");
-  }, [threadId, selectedEmail.email, commentText, refetch]);
+  }, [draftId, selectedEmail.email, commentText, refetch]);
 
   return visible ? (
     <div className="w-80 border-l border-slate-200 dark:border-zinc-700">

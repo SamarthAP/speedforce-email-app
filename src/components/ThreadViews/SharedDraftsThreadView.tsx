@@ -15,7 +15,7 @@ import AccountActionsMenu from "../AccountActionsMenu";
 import TooltipPopover from "../TooltipPopover";
 import AssistBar from "../AssistBar";
 import { SharedDraftThreadList } from "../SharedDrafts/ThreadList";
-import { listSharedDrafts } from "../../api/sharedDrafts";
+import { listSharedDrafts } from "../../api/drafts";
 import { useHotkeys } from "react-hotkeys-hook";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../../lib/shortcuts";
 import { useCommandBarOpenContext } from "../../contexts/CommandBarContext";
@@ -33,13 +33,12 @@ export default function SharedDraftsThreadView() {
   const [threads, setThreads] = useState<
     {
       id: string;
-      threadId: string;
       from: string;
       subject: string;
       to: string;
       cc: string;
       bcc: string;
-      snippet: string;
+      date: number;
       html: string;
     }[]
   >([]);
@@ -119,7 +118,7 @@ export default function SharedDraftsThreadView() {
         if (hoveredThreadIndex > -1) {
           const thread = threads[hoveredThreadIndex];
 
-          navigate(`/sharedDraft/${thread.threadId}`);
+          navigate(`/sharedDraft/${thread.id}`);
         }
       }
     },

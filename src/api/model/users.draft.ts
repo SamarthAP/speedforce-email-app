@@ -14,6 +14,17 @@ export enum DraftReplyType {
   FORWARD = "FORWARD",
 }
 
+export enum DraftAccessType {
+  VIEW = "VIEW",
+  EDIT = "EDIT",
+  OWNER = "OWNER",
+}
+
+export interface DraftParticipantType {
+  email: string;
+  accessLevel: DraftAccessType;
+}
+
 export interface GoogleDraftType {
   id: string;
   message?: {

@@ -1,7 +1,11 @@
 import { IDraft } from "../lib/db";
 import { getJWTHeaders } from "./authHeader";
 import { SPEEDFORCE_API_URL } from "./constants";
-import { DraftReplyType, DraftStatusType } from "./model/users.draft";
+import {
+  DraftParticipantType,
+  DraftReplyType,
+  DraftStatusType,
+} from "./model/users.draft";
 
 export const createDraft = async (
   email: string,
@@ -143,4 +147,171 @@ export const updateDraftStatus = async (
   }
 
   return { data: null, error: null };
+};
+
+export const updateDraftParticipants = async (
+  email: string,
+  draftId: string,
+  participants: DraftParticipantType[]
+) => {
+  try {
+    const authHeader = await getJWTHeaders();
+    const res = await fetch(`${SPEEDFORCE_API_URL}/drafts/participants`, {
+      method: "PUT",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        draftId,
+        participants,
+      }),
+    });
+
+    if (!res.ok) {
+      return { data: null, error: "Error sharing draft" };
+    } else {
+      return { data: null, error: null };
+    }
+  } catch (e) {
+    return { data: null, error: "Error sharing draft" };
+  }
+};
+
+export const loadParticipantsForDraft = async (
+  draftId: string,
+  email: string
+) => {
+  const authHeader = await getJWTHeaders();
+  const res = await fetch(
+    `${SPEEDFORCE_API_URL}/drafts/participants?draftId=${draftId}&email=${email}`,
+    {
+      method: "GET",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!res.ok) {
+    return { data: null, error: "Error loading participants for draft" };
+  }
+
+  const data = await res.json();
+  return {
+    data: data.map((participant: any) => ({
+      email: participant.email,
+      accessType: participant.access_level,
+    })),
+    error: null,
+  };
+};
+
+export const listSharedDrafts = async (email: string) => {
+  try {
+    const authHeader = await getJWTHeaders();
+    const res: Response = await fetch(
+      `${SPEEDFORCE_API_URL}/drafts/listForUser?email=${email}`,
+      {
+        method: "GET",
+        headers: {
+          ...authHeader,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!res.ok) {
+      return { data: null, error: "Error loading shared drafts" };
+    } else {
+      const data = await res.json();
+      return {
+        data: data.map((thread: any) => ({
+          id: thread.draft_id,
+          from: thread.draft.email,
+          subject: thread.draft.subject,
+          to: thread.draft.to,
+          cc: thread.draft.cc,
+          bcc: thread.draft.bcc,
+          date: thread.draft.date,
+          html: thread.draft.html,
+        })),
+        error: null,
+      };
+    }
+  } catch (e) {
+    return { data: null, error: "Error loading shared drafts" };
+  }
+};
+
+export const getSharedDraft = async (draftId: string, email: string) => {
+  const authHeader = await getJWTHeaders();
+  const res = await fetch(
+    `${SPEEDFORCE_API_URL}/drafts?draftId=${draftId}&email=${email}`,
+    {
+      method: "GET",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!res.ok) {
+    return { data: null, error: "Error loading draft" };
+  } else {
+    return { data: await res.json(), error: null };
+  }
+};
+
+export const addCommentToDraft = async (
+  draftId: string,
+  email: string,
+  comment: string
+) => {
+  const authHeader = await getJWTHeaders();
+  const res = await fetch(`${SPEEDFORCE_API_URL}/drafts/comment`, {
+    method: "POST",
+    headers: {
+      ...authHeader,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      draftId,
+      email,
+      comment,
+    }),
+  });
+
+  if (!res.ok) {
+    return { data: null, error: "Error adding comment" };
+  } else {
+    return { data: null, error: null };
+  }
+};
+
+export const listCommentsForDraft = async (draftId: string) => {
+  const authHeader = await getJWTHeaders();
+  const res = await fetch(
+    `${SPEEDFORCE_API_URL}/drafts/comments?draftId=${draftId}`,
+    {
+      method: "GET",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!res.ok) {
+    return { data: null, error: "Error loading comments" };
+  }
+
+  const data = await res.json();
+  return {
+    data,
+    error: null,
+  };
 };
