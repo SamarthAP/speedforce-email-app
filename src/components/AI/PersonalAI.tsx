@@ -10,8 +10,9 @@ import {
 import { useNavigate } from "react-router-dom";
 import { PaperAirplaneIcon } from "@heroicons/react/20/solid";
 import { IEmailThread, db } from "../../lib/db";
-import _ from "lodash";
-import { hybridSearch } from "../../api/llm";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { getJWTHeaders } from "../../api/authHeader";
 
 interface PersonalAIProps {
   show: boolean;
@@ -24,7 +25,7 @@ export default function PersonalAI({ show, hide }: PersonalAIProps) {
     {
       role: "system",
       content:
-        "Hi, I'm your personal email assistant. I can help you look for emails that are tricky to find.",
+        "Hi, I'm your personal email assistant. What can I help you with today?",
     },
     // {
     //   role: "user",
@@ -71,10 +72,7 @@ export default function PersonalAI({ show, hide }: PersonalAIProps) {
     });
   }, [messages]);
 
-  const sendMessage = async () => {
-    if (inputMessage.length === 0) {
-      return;
-    }
+  async function sendAIServiceMessage() {
     setLoading(true);
     setInputMessage("");
     setMessages((messages) => [
@@ -85,72 +83,55 @@ export default function PersonalAI({ show, hide }: PersonalAIProps) {
       },
     ]);
 
-    const accessToken = await getAccessToken(selectedEmail.email);
+    const authHeader = await getJWTHeaders();
 
-    const { data, error } = await hybridSearch(
-      selectedEmail.email,
-      inputMessage
-    );
+    const response = await fetch("https://ai-service.speedforce.me/chat", {
+      method: "POST",
+      headers: {
+        ...authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_query: inputMessage,
+        email: selectedEmail.email,
+        provider: selectedEmail.provider,
+      }),
+    });
 
-    let threadIds: string[] = [];
+    const data = await response.json();
 
-    if (!data || error) {
-      setMessages((messages) => [
-        ...messages,
-        {
-          role: "system",
-          content:
-            "I'm sorry, I couldn't find any emails that might be relevant to your query. Sorry!",
-        },
-      ]);
-    } else {
-      threadIds = _.uniq(data.map((itm) => itm.thread_id));
-
-      if (threadIds.length > 0) {
-        if (selectedEmail.provider === "google") {
-          await handleNewThreadsGoogle(
-            accessToken,
-            selectedEmail.email,
-            threadIds
-          );
-        } else if (selectedEmail.provider === "outlook") {
-          await handleNewThreadsOutlook(
-            accessToken,
-            selectedEmail.email,
-            threadIds
-          );
-        }
-        // get the relevant emails from dexie
-        const relevantThreads = await db.emailThreads
-          .where("id")
-          .anyOf(threadIds)
-          .toArray();
-
-        setMessages((messages) => [
-          ...messages,
-          {
-            role: "system",
-            content:
-              relevantThreads.length > 0
-                ? "Here's what I found for you!"
-                : "I couldn't find any emails that might be relevant to your query. Sorry!",
-            relevantThreads: relevantThreads,
-          },
-        ]);
-      } else {
-        setMessages((messages) => [
-          ...messages,
-          {
-            role: "system",
-            content:
-              "I'm sorry, I couldn't find any emails that might be relevant to your query. Sorry!",
-          },
-        ]);
+    if (data.combined_messages.length) {
+      if (selectedEmail.provider === "google") {
+        await handleNewThreadsGoogle(
+          await getAccessToken(selectedEmail.email),
+          selectedEmail.email,
+          data.combined_messages.map((itm: any) => itm.thread_id)
+        );
+      } else if (selectedEmail.provider === "outlook") {
+        await handleNewThreadsOutlook(
+          await getAccessToken(selectedEmail.email),
+          selectedEmail.email,
+          data.combined_messages.map((itm: any) => itm.thread_id)
+        );
       }
     }
 
+    const relevantThreads = await db.emailThreads
+      .where("id")
+      .anyOf(data.combined_messages.map((itm: any) => itm.thread_id))
+      .toArray();
+
+    setMessages((messages) => [
+      ...messages,
+      {
+        role: "system",
+        content: data.llm_response,
+        relevantThreads,
+      },
+    ]);
+
     setLoading(false);
-  };
+  }
 
   return (
     <Transition appear show={show} as={Fragment}>
@@ -178,10 +159,10 @@ export default function PersonalAI({ show, hide }: PersonalAIProps) {
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="h-auto max-h-[400px] w-full max-w-md flex flex-col rounded-2xl bg-white dark:bg-zinc-900 p-4 border border-slate-200 dark:border-zinc-700 text-left align-middle shadow-xl transition-all ease-in-out">
+              <Dialog.Panel className="h-auto max-h-[400px] w-full max-w-[90%] flex flex-col rounded-2xl bg-white dark:bg-zinc-900 p-4 border border-slate-200 dark:border-zinc-700 text-left align-middle shadow-xl transition-all ease-in-out">
                 <div
                   ref={messageContainerRef}
-                  className="h-full space-y-4 overflow-y-scroll hide-scroll transition-all"
+                  className="h-full w-full space-y-4 overflow-y-scroll overflow-x-scroll hide-scroll transition-all"
                 >
                   {messages.map((message, idx) => (
                     <Message key={idx} {...message} />
@@ -199,13 +180,14 @@ export default function PersonalAI({ show, hide }: PersonalAIProps) {
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        void sendMessage();
+                        // void sendMessage();
+                        void sendAIServiceMessage();
                       }
                     }}
                   />
                   <button
                     disabled={loading}
-                    onClick={() => void sendMessage()}
+                    onClick={() => void sendAIServiceMessage()}
                     className="dark:text-white"
                   >
                     <PaperAirplaneIcon className="w-6 h-6" />
@@ -231,18 +213,26 @@ function Message({ role, content, relevantThreads }: AIMessage) {
   return (
     <div
       className={classNames(
-        "p-2 rounded-md",
-        role === "system" ? "border dark:border-zinc-700" : "text-right"
+        "p-2 overflow-x-scroll rounded-md flex flex-col",
+        role === "system"
+          ? "border border-slate-200 dark:border-zinc-700"
+          : "text-right"
       )}
     >
-      <p
+      {/* <p
         className={classNames(
           "dark:text-zinc-200",
           role === "system" ? "" : "text-right"
         )}
       >
         {content}
-      </p>
+      </p> */}
+      <Markdown
+        rehypePlugins={[remarkGfm]}
+        className={"dark:text-zinc-200 text-slate-700 p-2 markdown-body"}
+      >
+        {content}
+      </Markdown>
       {relevantThreads?.map((thread) => (
         <p
           key={thread.id}

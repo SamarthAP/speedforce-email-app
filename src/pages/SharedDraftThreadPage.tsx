@@ -7,7 +7,7 @@ import { ChatBubbleBottomCenterTextIcon } from "@heroicons/react/24/outline";
 import { useQuery } from "react-query";
 import { EmailSelectorInput } from "../components/EmailSelectorInput";
 import ShadowDom from "../components/ShadowDom";
-import { getSharedDraft } from "../api/sharedDrafts";
+import { getSharedDraft } from "../api/drafts";
 import TooltipPopover from "../components/TooltipPopover";
 import { useTooltip } from "../components/UseTooltip";
 import CommentsChain from "../components/SharedDrafts/CommentsChain";
@@ -141,23 +141,23 @@ export default function SharedDraftThreadPage({
                           readOnly
                           toProps={{
                             text: "To",
-                            emails: data?.to || [],
+                            emails: data?.to?.split(",") || [],
                           }}
                           ccProps={{
                             text: "Cc",
-                            emails: data?.cc || [],
+                            emails: data?.cc?.split(",") || [],
                           }}
                           bccProps={{
                             text: "Bcc",
-                            emails: data?.bcc || [],
+                            emails: data?.bcc?.split(",") || [],
                           }}
                         />
 
                         {/* email body */}
                         <div className="py-4">
-                          {data?.html_data ? (
+                          {data?.html ? (
                             <ShadowDom
-                              htmlString={data.html_data}
+                              htmlString={data.html}
                               showImages={true}
                             />
                           ) : (
@@ -169,7 +169,7 @@ export default function SharedDraftThreadPage({
                       </div>
                     )}
                     <CommentsChain
-                      threadId={data?.owner_thread_id || ""}
+                      draftId={data?.id || ""}
                       editMode={true}
                       visible={messagePanelIsOpen}
                       selectedEmail={selectedEmail}

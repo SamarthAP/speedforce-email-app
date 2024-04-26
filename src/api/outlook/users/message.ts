@@ -1,5 +1,8 @@
 import { OUTLOOK_API_URL } from "../constants";
-import { OutlookMessageDataType } from "../../model/users.message";
+import {
+  OutlookMessageDataType,
+  OutlookCreateMessageDataType,
+} from "../../model/users.message";
 import { NewAttachment } from "../../model/users.attachment";
 
 export const get = async (
@@ -117,10 +120,42 @@ export const sendEmailWithAttachments = async (
 
 export const sendReply = async (
   accessToken: string,
+  to: string,
+  cc: string | null,
+  bcc: string | null,
   subject: string,
   messageId: string,
   messageContent: string
 ) => {
+  const messageBody: OutlookCreateMessageDataType = {
+    subject: `Re: ${subject}`,
+    body: {
+      contentType: "html",
+      content: messageContent,
+    },
+    toRecipients: to.split(",").map((email) => ({
+      emailAddress: { address: email.trim() },
+    })),
+  };
+
+  if (cc) {
+    messageBody.ccRecipients = cc
+      .split(",")
+      .filter((email) => email.trim() != "")
+      .map((email) => ({
+        emailAddress: { address: email.trim() },
+      }));
+  }
+
+  if (bcc) {
+    messageBody.bccRecipients = bcc
+      .split(",")
+      .filter((email) => email.trim() != "")
+      .map((email) => ({
+        emailAddress: { address: email.trim() },
+      }));
+  }
+
   const response = await fetch(
     `${OUTLOOK_API_URL}/me/messages/${messageId}/reply`,
     {
@@ -130,45 +165,7 @@ export const sendReply = async (
       },
       method: "POST",
       body: JSON.stringify({
-        message: {
-          subject: `Re: ${subject}`,
-          body: {
-            contentType: "html",
-            content: messageContent,
-          },
-        },
-      }),
-    }
-  );
-
-  // Returns 202 Accepted with no response body if successful
-  if (!response.ok) {
-    throw Error("Error replying to thread");
-  }
-};
-
-export const sendReplyAll = async (
-  accessToken: string,
-  subject: string,
-  messageId: string,
-  messageContent: string
-) => {
-  const response = await fetch(
-    `${OUTLOOK_API_URL}/me/messages/${messageId}/replyAll`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-      body: JSON.stringify({
-        message: {
-          subject: `Re: ${subject}`,
-          body: {
-            contentType: "html",
-            content: messageContent,
-          },
-        },
+        message: messageBody,
       }),
     }
   );

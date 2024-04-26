@@ -21,14 +21,14 @@ import {
   listOtherContacts,
 } from "../api/gmail/people/contact";
 import { watch as watchGmail } from "../api/gmail/notifications/pushNotifications";
-import { getToRecipients, buildForwardedHTML } from "../api/gmail/helpers";
+// import { getToRecipients, buildForwardedHTML } from "../api/gmail/helpers";
 
 import {
   get as mThreadGet,
   // list as mThreadList,
   // listNextPage as mThreadListNextPage,
   markRead as mThreadMarkRead,
-  forward as mForward,
+  // forward as mForward,
   deleteMessage as mDeleteMessage,
   moveMessage as mMoveMessage,
   starMessage as mStarMessage,
@@ -38,7 +38,7 @@ import {
   sendEmail as mSendEmail,
   sendEmailWithAttachments as mSendEmailWithAttachments,
   sendReply as mSendReply,
-  sendReplyAll as mSendReplyAll,
+  // sendReplyAll as mSendReplyAll,
 } from "../api/outlook/users/message";
 import {
   // list as mAttachmentList,
@@ -89,8 +89,6 @@ import toast from "react-hot-toast";
 import { getThreadsExhaustive } from "../api/gmail/reactQuery/reactQueryFunctions";
 import { CreateDraftResponseDataType } from "../api/model/users.draft";
 import { SENT_FROM_SPEEDFORCE_HTML } from "../api/templates/sentFromSpeedforce";
-import { updateSharedDraftStatus } from "../api/sharedDrafts";
-import { SharedDraftStatusType } from "../api/model/users.shared.draft";
 
 export async function handleNewDraftsGoogle(
   accessToken: string,
@@ -105,7 +103,7 @@ export async function handleNewDraftsGoogle(
     const parsedDrafts: IEmailThread[] = [];
     const parsedMessages: IMessage[] = [];
 
-    drafts.forEach((draft) => {
+    for (const draft of drafts) {
       // let hasInboxLabel = false;
       const isStarred = draft.message.labelIds?.includes("STARRED") || false;
       let labelIds: string[] = [];
@@ -183,6 +181,15 @@ export async function handleNewDraftsGoogle(
         labelIds = upsertLabelIds(labelIds, labelId);
       });
 
+      const { actionItemGenerated, actionItemString } = await db.emailThreads
+        .get(draft.id)
+        .then((thread) => {
+          return {
+            actionItemGenerated: thread?.actionItemGenerated || false,
+            actionItemString: thread?.actionItemString || "",
+          };
+        });
+
       parsedDrafts.push({
         id: draft.id,
         historyId: draft.historyId,
@@ -194,8 +201,10 @@ export async function handleNewDraftsGoogle(
         unread: draft.message.labelIds?.includes("UNREAD"),
         labelIds: labelIds,
         hasAttachments,
+        actionItemGenerated: actionItemGenerated,
+        actionItemString: actionItemString,
       });
-    });
+    }
 
     await db.emailThreads.bulkPut(parsedDrafts);
     await db.messages.bulkPut(parsedMessages);
@@ -224,7 +233,7 @@ export async function handleNewThreadsGoogle(
     const parsedThreads: IEmailThread[] = [];
     const parsedMessages: IMessage[] = [];
 
-    threads.forEach((thread) => {
+    for (const thread of threads) {
       // let hasInboxLabel = false;
       let isStarred = false;
       let labelIds: string[] = [];
@@ -324,6 +333,15 @@ export async function handleNewThreadsGoogle(
         });
       });
 
+      const { actionItemGenerated, actionItemString } = await db.emailThreads
+        .get(thread.id)
+        .then((thread) => {
+          return {
+            actionItemGenerated: thread?.actionItemGenerated || false,
+            actionItemString: thread?.actionItemString || "",
+          };
+        });
+
       const lastMessageIndex = thread.messages.length - 1;
       parsedThreads.push({
         id: thread.id,
@@ -339,8 +357,10 @@ export async function handleNewThreadsGoogle(
         unread: thread.messages[lastMessageIndex].labelIds?.includes("UNREAD"),
         labelIds: labelIds,
         hasAttachments,
+        actionItemGenerated: actionItemGenerated,
+        actionItemString: actionItemString,
       });
-    });
+    }
 
     // save threads
     await db.emailThreads.bulkPut(parsedThreads);
@@ -418,6 +438,7 @@ export async function handleNewThreadsOutlook(
         for (const message of thread.value) {
           let textData = "";
           let htmlData = "";
+          if (message.isDraft) continue; // Ignore outlook drafts from threads
 
           if (message.body.contentType === "plain") {
             textData = message.body.content || "";
@@ -473,6 +494,16 @@ export async function handleNewThreadsOutlook(
         }
 
         const lastMessageIndex = thread.value.length - 1;
+
+        const { actionItemGenerated, actionItemString } = await db.emailThreads
+          .get(thread.value[lastMessageIndex].conversationId)
+          .then((thread) => {
+            return {
+              actionItemGenerated: thread?.actionItemGenerated || false,
+              actionItemString: thread?.actionItemString || "",
+            };
+          });
+
         parsedThreads.push({
           id: thread.value[lastMessageIndex].conversationId,
           historyId: "",
@@ -491,6 +522,8 @@ export async function handleNewThreadsOutlook(
           unread: unread,
           labelIds: labelIds,
           hasAttachments: hasAttachments,
+          actionItemGenerated: actionItemGenerated,
+          actionItemString: actionItemString,
         });
       }
 
@@ -503,6 +536,21 @@ export async function handleNewThreadsOutlook(
     dLog("Could not sync mailbox");
     dLog(e);
     return [];
+  }
+}
+
+// Update dexie for a given list of threads
+export async function syncThreadsById(
+  email: string,
+  provider: "google" | "outlook",
+  threadIds: string[]
+) {
+  const accessToken = await getAccessToken(email);
+
+  if (provider === "google") {
+    return handleNewThreadsGoogle(accessToken, email, threadIds);
+  } else if (provider === "outlook") {
+    return handleNewThreadsOutlook(accessToken, email, threadIds);
   }
 }
 
@@ -710,52 +758,51 @@ export async function archiveThread(
 export async function sendReply(
   email: string,
   provider: "google" | "outlook",
-  message: IMessage,
-  html: string
+  to: string,
+  cc: string | null,
+  bcc: string | null,
+  subject: string,
+  html: string,
+  inReplyTo: string,
+  threadId: string
 ) {
   const accessToken = await getAccessToken(email);
-  const wrappedHtml = `
-    ${html}
-    <br>
-    <div class="speedforce_quote">
-      <p>On ${new Date(message.date).toDateString()}, ${message.from} wrote:</p>
-      <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
-        <div dir="ltr">${message.htmlData}</div>
-      </blockquote>
-    </div>
-    <br>
-  `;
-  if (provider === "google") {
-    const from = email;
-    const to =
-      getMessageHeader(message.headers, "From").match(
-        /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g
-      )?.[0] ||
-      getMessageHeader(message.headers, "To") ||
-      "";
-    const subject = getMessageHeader(message.headers, "Subject");
-    const headerMessageId = getMessageHeader(message.headers, "Message-ID");
-    const threadId = message.threadId;
 
+  // TODO: Implement?
+  // const wrappedHtml = `
+  //   ${html}
+  //   <br>
+  //   <div class="speedforce_quote">
+  //     <p>On ${new Date(message.date).toDateString()}, ${message.from} wrote:</p>
+  //     <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+  //       <div dir="ltr">${message.htmlData}</div>
+  //     </blockquote>
+  //   </div>
+  //   <br>
+  // `;
+
+  if (provider === "google") {
     return await gSendReply(
       accessToken,
-      from,
-      [to],
+      email,
+      to,
+      cc,
+      bcc,
       subject,
-      headerMessageId,
+      inReplyTo,
       threadId,
-      wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
+      html.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
   } else if (provider === "outlook") {
-    const subject = getMessageHeader(message.headers, "Subject");
-    const messageId = message.id;
-
     try {
       await mSendReply(
         accessToken,
+        to,
+        cc,
+        bcc,
         subject,
-        messageId,
-        wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
+        inReplyTo,
+        html.concat(SENT_FROM_SPEEDFORCE_HTML)
       );
       return { data: null, error: null };
     } catch (e) {
@@ -769,48 +816,51 @@ export async function sendReply(
 export async function sendReplyAll(
   email: string,
   provider: "google" | "outlook",
-  message: IMessage,
-  html: string
+  to: string,
+  cc: string | null,
+  bcc: string | null,
+  subject: string,
+  html: string,
+  inReplyTo: string,
+  threadId: string
 ) {
   const accessToken = await getAccessToken(email);
-  const wrappedHtml = `
-    ${html}
-    <br>
-    <div class="speedforce_quote">
-      <p>On ${new Date(message.date).toDateString()} ${message.from} wrote:</p>
-      <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
-        <div dir="ltr">${message.htmlData}</div>
-      </blockquote>
-    </div>
-    <br>
-  `;
+
+  // TODO: Implement?
+  // const wrappedHtml = `
+  //   ${html}
+  //   <br>
+  //   <div class="speedforce_quote">
+  //     <p>On ${new Date(message.date).toDateString()} ${message.from} wrote:</p>
+  //     <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+  //       <div dir="ltr">${message.htmlData}</div>
+  //     </blockquote>
+  //   </div>
+  //   <br>
+  // `;
 
   if (provider === "google") {
-    const from = email;
-    const to = getToRecipients(message, email);
-    const subject = getMessageHeader(message.headers, "Subject");
-    const headerMessageId = getMessageHeader(message.headers, "Message-ID");
-    const threadId = message.threadId;
-
     return await gSendReply(
       accessToken,
-      from,
+      email,
       to,
+      cc,
+      bcc,
       subject,
-      headerMessageId,
+      inReplyTo,
       threadId,
-      wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
+      html.concat(SENT_FROM_SPEEDFORCE_HTML)
     );
   } else if (provider === "outlook") {
-    const subject = getMessageHeader(message.headers, "Subject");
-    const messageId = message.id;
-
     try {
-      await mSendReplyAll(
+      await mSendReply(
         accessToken,
+        to,
+        cc,
+        bcc,
         subject,
-        messageId,
-        wrappedHtml.concat(SENT_FROM_SPEEDFORCE_HTML)
+        inReplyTo,
+        html.concat(SENT_FROM_SPEEDFORCE_HTML)
       );
       return { data: null, error: null };
     } catch (e) {
@@ -824,38 +874,36 @@ export async function sendReplyAll(
 export async function forward(
   email: string,
   provider: "google" | "outlook",
-  message: IMessage,
-  toRecipients: string[],
-  ccRecipients: string[],
-  bccRecipients: string[],
-  html: string
+  to: string,
+  cc: string | null,
+  bcc: string | null,
+  subject: string,
+  html: string,
+  inReplyTo: string
 ) {
   const accessToken = await getAccessToken(email);
   if (provider === "google") {
-    const from = email;
-    const subject = getMessageHeader(message.headers, "Subject");
-    const forwardHTML = await buildForwardedHTML(message, html);
-
     return await gForward(
       accessToken,
-      from,
-      toRecipients.join(","),
-      ccRecipients.join(","),
-      bccRecipients.join(","),
+      email,
+      to,
+      cc,
+      bcc,
       subject,
       decodeURIComponent(
-        encodeURIComponent(forwardHTML.concat(SENT_FROM_SPEEDFORCE_HTML))
+        encodeURIComponent(html.concat(SENT_FROM_SPEEDFORCE_HTML))
       )
     );
   } else if (provider === "outlook") {
     try {
       // TODO: rework to use MIME instead of endpoint
-      await mForward(
+      await mSendEmail(
         accessToken,
-        message.id,
-        toRecipients,
-        ccRecipients,
-        bccRecipients
+        to.split(",").filter((email) => email.trim() !== ""),
+        cc?.split(",").filter((email) => email.trim() !== "") || [],
+        bcc?.split(",").filter((email) => email.trim() !== "") || [],
+        subject,
+        html.concat(SENT_FROM_SPEEDFORCE_HTML)
       );
       return { data: null, error: null };
     } catch (e) {

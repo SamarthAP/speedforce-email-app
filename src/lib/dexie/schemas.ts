@@ -228,4 +228,38 @@ export const dexieSchemas = {
       cleanIndexedDb();
     },
   },
+
+  /*
+  Schema Version 8:
+  Oldest Compatible App Version 0.0.16
+  Change description:
+    - Add drafts table
+    - Add action items table
+    - Update emailThreads with action item info
+  */
+  8: {
+    schema: {
+      emails: "email, provider, accessToken, expiresAt, inboxZeroStartDate",
+      selectedEmail: "id, email, provider, inboxZeroStartDate",
+      emailThreads:
+        "id, historyId, email, from, subject, snippet, date, unread, *labelIds, hasAttachments, actionItemGenerated, actionItemString",
+      messages:
+        "id, threadId, *labelIds, from, *toRecipients, snippet, headers, textData, htmlData, date, *attachments",
+      outlookFolders: "id, displayName",
+      contacts:
+        "[email+contactEmailAddress], contactName, isSavedContact, lastInteraction",
+      dailyImageMetadata: "id, date, url",
+      searchHistory: "[email+searchQuery]",
+      cachedSummaryCardData: "threadId, threadSummary",
+      drafts:
+        "id, email, provider, to, cc, bcc, subject, html, threadId, replyType, inReplyTo",
+      actionItems: "threadId, email, actionItemString, completed",
+    },
+    upgradeFnc: async (tx: Transaction) => {
+      dLog("Upgrading schema to version 7");
+
+      // nuke db once again
+      cleanIndexedDb();
+    },
+  },
 };

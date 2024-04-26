@@ -354,7 +354,7 @@ export default function AppRouter({ session }: AppRouterProps) {
               element={<ComposeMessage selectedEmail={selectedEmail} />}
             ></Route>
             <Route
-              path="/draft/:threadId"
+              path="/draft/:draftId"
               element={<EditDraft selectedEmail={selectedEmail} />}
             ></Route>
             <Route

@@ -18,6 +18,7 @@ export interface ClientInboxTabType {
   // outlookQuery?: string;
   canArchiveThread?: boolean;
   canTrashThread?: boolean;
+  canConvertToActionItem?: boolean;
   isSearchMode?: boolean;
   isDraftMode?: boolean;
   canDeletePermanentlyThread?: true;

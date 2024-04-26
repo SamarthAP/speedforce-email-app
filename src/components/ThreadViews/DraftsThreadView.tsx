@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import PersonalAI from "../AI/PersonalAI";
 import Sidebar from "../Sidebar";
 import Titlebar from "../Titlebar";
 import { classNames } from "../../lib/util";
-import { IEmail, db } from "../../lib/db";
+import { IDraft, IEmail, db } from "../../lib/db";
 import { useTooltip } from "../UseTooltip";
 import {
   PencilSquareIcon,
@@ -14,8 +14,6 @@ import { useNavigate } from "react-router-dom";
 import AccountActionsMenu from "../AccountActionsMenu";
 import TooltipPopover from "../TooltipPopover";
 import AssistBar from "../AssistBar";
-import { SharedDraftThreadList } from "../SharedDrafts/ThreadList";
-import { listSharedDrafts } from "../../api/drafts";
 import { useHotkeys } from "react-hotkeys-hook";
 import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../../lib/shortcuts";
 import { useCommandBarOpenContext } from "../../contexts/CommandBarContext";
@@ -24,24 +22,14 @@ import { useEmailPageOutletContext } from "../../pages/_emailPage";
 import CommandBar from "../CommandBar";
 import { useDebounceCallback } from "usehooks-ts";
 import { DisableMouseHoverContext } from "../../contexts/DisableMouseHoverContext";
+import { useLiveQuery } from "dexie-react-hooks";
+import { DraftThreadList } from "../DraftsThreadList";
 
-export default function SharedDraftsThreadView() {
+export default function DraftsThreadView() {
   const { selectedEmail } = useEmailPageOutletContext();
   const [showPersonalAi, setShowPersonalAi] = useState(false);
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const navigate = useNavigate();
-  const [threads, setThreads] = useState<
-    {
-      id: string;
-      from: string;
-      subject: string;
-      to: string;
-      cc: string;
-      bcc: string;
-      date: number;
-      html: string;
-    }[]
-  >([]);
   const { commandBarIsOpen } = useCommandBarOpenContext();
   const [hoveredThreadIndex, setHoveredThreadIndex] = useState<number>(-1);
   const [disableMouseHover, setDisableMouseHover] = useState(false);
@@ -53,6 +41,40 @@ export default function SharedDraftsThreadView() {
   const debouncedDisableMouseHover = useDebounceCallback(
     setDisableMouseHover,
     300
+  );
+
+  const drafts = useLiveQuery(
+    async () => {
+      const allDrafts = await db.drafts
+        .where("email")
+        .equals(selectedEmail.email)
+        .toArray();
+      const latestDraftsByThread: { [key: string]: IDraft } = {};
+
+      // Filter to keep only the most recent draft per threadId
+      allDrafts.forEach((draft) => {
+        const threadId = draft.threadId;
+        if (threadId) {
+          // Group by threadId if present
+          if (
+            !latestDraftsByThread[threadId] ||
+            latestDraftsByThread[threadId].date < draft.date
+          ) {
+            latestDraftsByThread[threadId] = draft;
+          }
+        } else {
+          // Include all drafts that do not have a threadId
+          const noThreadIdKey = `noThread-${draft.id}`; // Unique key for drafts without threadId
+          latestDraftsByThread[noThreadIdKey] = draft;
+        }
+      });
+
+      return Object.values(latestDraftsByThread).sort(
+        (a, b) => b.date - a.date
+      );
+    },
+    [selectedEmail.email],
+    []
   );
 
   useHotkeys(DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE], () => {
@@ -74,17 +96,17 @@ export default function SharedDraftsThreadView() {
         setHoveredThreadIndex((prev) => {
           if (prev <= -1) {
             return 0;
-          } else if (prev < threads.length - 1) {
+          } else if (prev < drafts.length - 1) {
             setDisableMouseHover(true);
             debouncedDisableMouseHover(false);
             return prev + 1;
           } else {
-            return threads.length - 1;
+            return drafts.length - 1;
           }
         });
       }
     },
-    [threads, commandBarIsOpen, setHoveredThreadIndex]
+    [drafts, commandBarIsOpen, setHoveredThreadIndex]
   );
 
   // move hovered thread up
@@ -108,7 +130,7 @@ export default function SharedDraftsThreadView() {
         });
       }
     },
-    [threads, commandBarIsOpen, setHoveredThreadIndex]
+    [drafts, commandBarIsOpen, setHoveredThreadIndex]
   );
 
   useHotkeys(
@@ -116,15 +138,19 @@ export default function SharedDraftsThreadView() {
     () => {
       if (!commandBarIsOpen) {
         if (hoveredThreadIndex > -1) {
-          const thread = threads[hoveredThreadIndex];
+          const draft = drafts[hoveredThreadIndex];
 
-          navigate(`/sharedDraft/${thread.id}`);
+          if (draft.threadId) {
+            navigate(`/thread/${draft.threadId}`);
+          } else {
+            navigate(`/draft/${draft.id}`);
+          }
         }
       }
     },
     [
       hoveredThreadIndex,
-      threads,
+      drafts,
       selectedEmail.email,
       selectedEmail.provider,
       commandBarIsOpen,
@@ -138,19 +164,6 @@ export default function SharedDraftsThreadView() {
     }),
     [hoveredThreadIndex, setHoveredThreadIndex]
   );
-
-  useEffect(() => {
-    const getSharedDrafts = async () => {
-      const { data, error } = await listSharedDrafts(selectedEmail.email);
-      if (error) {
-        return;
-      }
-
-      setThreads(data);
-    };
-
-    void getSharedDrafts();
-  }, [selectedEmail.email]);
 
   const setSelectedEmail = async (email: IEmail) => {
     await db.selectedEmail.put({
@@ -181,7 +194,7 @@ export default function SharedDraftsThreadView() {
                   "font-medium text-black dark:text-white"
                 )}
               >
-                Shared With Me
+                Drafts
               </h2>
             </nav>
             <div className="flex items-center">
@@ -254,7 +267,7 @@ export default function SharedDraftsThreadView() {
             <DisableMouseHoverContext.Provider
               value={disableMouseHoverContextValue}
             >
-              <SharedDraftThreadList threads={threads} />
+              <DraftThreadList drafts={drafts} />
             </DisableMouseHoverContext.Provider>
           </HoveredThreadContext.Provider>
         </div>

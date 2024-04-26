@@ -49,13 +49,13 @@ export default function GoToPageHotkeys({
     }
   );
 
-  useKeyPressSequence(
-    DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO],
-    "shift+4", // "$"
-    () => {
-      navigate("/sharedDrafts");
-    }
-  );
+  // useKeyPressSequence(
+  //   DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO],
+  //   "shift+4", // "$"
+  //   () => {
+  //     navigate("/sharedDrafts");
+  //   }
+  // );
 
   return <>{children}</>;
 }

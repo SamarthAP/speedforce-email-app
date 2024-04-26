@@ -3,17 +3,27 @@ import { useNavigate } from "react-router-dom";
 import { useHoveredThreadContext } from "../../contexts/HoveredThreadContext";
 import { useDisableMouseHoverContext } from "../../contexts/DisableMouseHoverContext";
 import { useEffect, useRef } from "react";
+import { getSnippetFromHtml } from "../../lib/util";
+
+function isToday(date: Date) {
+  const today = new Date();
+
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
+}
 
 interface SharedDraftThreadListProps {
-  threads: {
+  threads?: {
     id: string;
-    threadId: string;
     from: string;
     subject: string;
     to: string;
     cc: string;
     bcc: string;
-    snippet: string;
+    date: number;
     html: string;
   }[];
 }
@@ -23,7 +33,7 @@ export const SharedDraftThreadList = ({
 }: SharedDraftThreadListProps) => {
   return (
     <div className="h-full flex flex-col overflow-y-scroll hide-scroll">
-      {threads.length > 0 ? (
+      {threads && threads.length > 0 ? (
         threads.map((thread, index) => (
           <SharedDraftThreadListRow
             thread={thread}
@@ -45,13 +55,12 @@ export const SharedDraftThreadList = ({
 interface SharedDraftThreadListRowProps {
   thread: {
     id: string;
-    threadId: string;
     from: string;
     subject: string;
     to: string;
     cc: string;
     bcc: string;
-    snippet: string;
+    date: number;
     html: string;
   };
   index: number;
@@ -66,8 +75,8 @@ export const SharedDraftThreadListRow = ({
   const itemRef = useRef<HTMLDivElement>(null);
   const disableMouseHoverContext = useDisableMouseHoverContext();
   const isHovered = hoveredThreadContext.threadIndex === index;
-  function handleThreadClick(threadId: string) {
-    navigate(`/sharedDraft/${threadId}`);
+  function handleThreadClick(draftId: string) {
+    navigate(`/sharedDraft/${draftId}`);
   }
 
   useEffect(() => {
@@ -83,7 +92,7 @@ export const SharedDraftThreadListRow = ({
   return (
     <div className="relative" ref={itemRef}>
       <div
-        onClick={() => handleThreadClick(thread.threadId)}
+        onClick={() => handleThreadClick(thread.id)}
         onMouseOver={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
           if (!disableMouseHoverContext.disableMouseHover) {
             hoveredThreadContext.setThreadIndex(index);
@@ -109,17 +118,17 @@ export const SharedDraftThreadListRow = ({
 
           <div className="flex flex-grow overflow-hidden">
             <div className="text-sm truncate text-slate-400 dark:text-zinc-500 w-full">
-              {he.decode(thread.snippet)}
+              {he.decode(getSnippetFromHtml(thread.html))}
             </div>
             <div className="text-sm pl-2 pr-4 flex-shrink-0 text-slate-400 dark:text-zinc-500 font-medium flex flex-col justify-center">
-              {/* <span className="group-hover:hidden block">
-                    {isToday(new Date(thread.date))
-                      ? new Date(thread.date).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : new Date(thread.date).toDateString()}
-                  </span> */}
+              <span className="group-hover:hidden block">
+                {isToday(new Date(thread.date))
+                  ? new Date(thread.date).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : new Date(thread.date).toDateString()}
+              </span>
             </div>
           </div>
         </div>

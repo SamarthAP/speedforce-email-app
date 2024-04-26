@@ -33,12 +33,12 @@ const navigation = [
   { name: "Done", href: "/done", icon: ArchiveBoxIcon, current: false },
   { name: "Spam", href: "/spam", icon: ExclamationCircleIcon, current: false },
   { name: "Deleted Items", href: "/deleted", icon: TrashIcon, current: false },
-  {
-    name: "Shared Drafts",
-    href: "/sharedDrafts",
-    icon: UserGroupIcon,
-    current: false,
-  },
+  // {
+  //   name: "Shared Drafts",
+  //   href: "/sharedDrafts",
+  //   icon: UserGroupIcon,
+  //   current: false,
+  // },
   // { name: "Scheduled", href: "#", icon: ClockIcon, current: false },
   // { name: "Settings", href: "/settings", icon: Cog6ToothIcon, current: false },
   // {
