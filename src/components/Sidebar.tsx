@@ -1,5 +1,5 @@
 import {
-  ClipboardDocumentIcon,
+  DocumentIcon,
   ClockIcon,
   ExclamationCircleIcon,
   InboxIcon,
@@ -24,12 +24,7 @@ const navigation = [
   { name: "Calendar", href: "/calendar", icon: CalendarIcon, current: false },
   { name: "Starred", href: "/starred", icon: StarIcon, current: false },
   { name: "Sent", href: "/sent", icon: PaperAirplaneIcon, current: false },
-  {
-    name: "Drafts",
-    href: "/drafts",
-    icon: ClipboardDocumentIcon,
-    current: false,
-  },
+  { name: "Drafts", href: "/drafts", icon: DocumentIcon, current: false },
   { name: "Done", href: "/done", icon: ArchiveBoxIcon, current: false },
   { name: "Spam", href: "/spam", icon: ExclamationCircleIcon, current: false },
   { name: "Deleted Items", href: "/deleted", icon: TrashIcon, current: false },

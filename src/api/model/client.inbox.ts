@@ -20,6 +20,6 @@ export interface ClientInboxTabType {
   canTrashThread?: boolean;
   canConvertToActionItem?: boolean;
   isSearchMode?: boolean;
-  isDraftMode?: boolean;
+  isSentMode?: boolean;
   canDeletePermanentlyThread?: true;
 }

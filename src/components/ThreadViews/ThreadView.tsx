@@ -196,11 +196,8 @@ export default function ThreadView({
         if (thread.unread) {
           void markRead(selectedEmail.email, selectedEmail.provider, thread.id);
         }
-        if (data.isDraftMode) {
-          navigate(`/draft/${thread.id}`);
-        } else {
-          navigate(`/thread/${thread.id}`);
-        }
+
+        navigate(`/thread/${thread.id}`);
       }
     },
     [
@@ -376,7 +373,7 @@ export default function ThreadView({
                 canArchiveThread={data.canArchiveThread}
                 canTrashThread={data.canTrashThread}
                 canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
-                isDrafts={data.isDraftMode}
+                isSent={data.isSentMode}
               />
             </DisableMouseHoverContext.Provider>
           </HoveredThreadContext.Provider>
