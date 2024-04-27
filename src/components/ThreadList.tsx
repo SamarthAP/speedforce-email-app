@@ -7,9 +7,7 @@ import {
   markRead,
   starThread,
   unstarThread,
-  trashThread,
   deleteThread,
-  deleteDraft,
 } from "../lib/sync";
 import {
   CheckCircleIcon,
