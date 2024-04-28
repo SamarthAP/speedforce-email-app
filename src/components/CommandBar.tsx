@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArchiveBoxIcon,
   ArrowLeftOnRectangleIcon,
-  ClipboardDocumentIcon,
+  DocumentTextIcon,
   ExclamationCircleIcon,
   InboxIcon,
   PaperAirplaneIcon,
@@ -149,7 +149,7 @@ export default function CommandBar({ data }: CommandBarProps) {
           },
         },
         {
-          icon: ClipboardDocumentIcon,
+          icon: DocumentTextIcon,
           description: "Go To Drafts",
           action: () => {
             navigate("/drafts");

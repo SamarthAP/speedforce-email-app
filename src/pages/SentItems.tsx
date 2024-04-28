@@ -66,6 +66,7 @@ export default function SentItems() {
           filterThreadsFnc: filterThreadsFnc,
           canArchiveThread: true,
           canTrashThread: true,
+          isSentMode: true,
         }}
         fetchNextPage={fetchNextPage}
         hasNextPage={hasNextPage}

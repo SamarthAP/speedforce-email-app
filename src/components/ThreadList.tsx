@@ -7,9 +7,7 @@ import {
   markRead,
   starThread,
   unstarThread,
-  trashThread,
   deleteThread,
-  deleteDraft,
 } from "../lib/sync";
 import {
   CheckCircleIcon,
@@ -86,7 +84,7 @@ interface ThreadListProps {
   canTrashThread?: boolean;
   canPermanentlyDeleteThread?: boolean;
   canConvertToActionItem?: boolean;
-  isDrafts?: boolean;
+  isSent?: boolean;
   navigateToFeed?: string;
 }
 
@@ -100,7 +98,7 @@ export default function ThreadList({
   canTrashThread = false,
   canPermanentlyDeleteThread = false,
   canConvertToActionItem = false,
-  isDrafts = false,
+  isSent = false,
   navigateToFeed,
 }: ThreadListProps) {
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
@@ -200,7 +198,7 @@ export default function ThreadList({
               canTrashThread={canTrashThread}
               canPermanentlyDeleteThread={canPermanentlyDeleteThread}
               canConvertToActionItem={canConvertToActionItem}
-              isDrafts={isDrafts}
+              isSent={isSent}
               setDeleteThreadModalData={setDeleteThreadModalData}
               handleShowTooltip={handleShowTooltip}
               handleHideTooltip={handleHideTooltip}
@@ -245,7 +243,7 @@ interface ThreadListRowProps {
   canTrashThread: boolean;
   canPermanentlyDeleteThread: boolean;
   canConvertToActionItem: boolean;
-  isDrafts: boolean;
+  isSent: boolean;
   setDeleteThreadModalData: (data: DeleteThreadModalData) => void;
   handleShowTooltip: (
     event: React.MouseEvent<HTMLElement>,
@@ -263,7 +261,7 @@ function ThreadListRow({
   canTrashThread,
   canPermanentlyDeleteThread,
   canConvertToActionItem,
-  isDrafts,
+  isSent,
   setDeleteThreadModalData,
   handleShowTooltip,
   handleHideTooltip,
@@ -288,18 +286,14 @@ function ThreadListRow({
 
   function handleThreadClick(thread: IEmailThread) {
     // setScrollPosition(scrollRef.current?.scrollTop || 0);
-    if (isDrafts) {
-      navigate(`/draft/${thread.id}`);
-    } else {
-      if (thread.unread) {
-        void markRead(selectedEmail.email, selectedEmail.provider, thread.id);
-      }
+    if (thread.unread) {
+      void markRead(selectedEmail.email, selectedEmail.provider, thread.id);
+    }
 
-      if (navigateToFeed) {
-        navigate(`${navigateToFeed}/${hoveredThreadContext.threadIndex}`);
-      } else {
-        navigate(`/thread/${thread.id}`);
-      }
+    if (navigateToFeed) {
+      navigate(`${navigateToFeed}/${hoveredThreadContext.threadIndex}`);
+    } else {
+      navigate(`/thread/${thread.id}`);
     }
   }
 
@@ -435,9 +429,15 @@ function ThreadListRow({
     thread.id,
   ]);
 
-  const message = useLiveQuery(() => {
-    return db.messages.where("threadId").equals(thread.id).first();
-  });
+  const mostRecentMessage = useLiveQuery(() =>
+    db.messages
+      .where("threadId")
+      .equals(thread.id)
+      .sortBy("date")
+      .then((messages) =>
+        messages.length > 0 ? messages[messages.length - 1] : null
+      )
+  );
 
   return (
     <div ref={itemRef} className="relative">
@@ -458,7 +458,7 @@ function ThreadListRow({
             : ""
         }`}
       >
-        <div className="text-sm flex items-center font-medium pr-4 col-span-2 gap-x-2 pl-2">
+        <div className="text-sm flex items-center font-medium pr-4 col-span-3 gap-x-2 pl-2">
           <div className="flex flex-col items-center justify-center">
             {thread.labelIds.includes("STARRED") ? (
               <button
@@ -518,8 +518,10 @@ function ThreadListRow({
           <span className="truncate text-black dark:text-zinc-100">
             {
               // TODO: Should we make a DraftThreadView or DraftThreadList component to avoid need for live query?
-              (isDrafts
-                ? message?.toRecipients
+              (isSent
+                ? "To: " +
+                  mostRecentMessage?.toRecipients
+                    .filter((recipient) => recipient.trim().length > 0)
                     .map((recipient) =>
                       recipient.slice(0, recipient.lastIndexOf("<"))
                     )
@@ -529,7 +531,7 @@ function ThreadListRow({
             }
           </span>
         </div>
-        <div className="col-span-8 flex overflow-hidden">
+        <div className="col-span-7 flex overflow-hidden">
           <div className="flex max-w-[50%]">
             <div className="text-sm truncate pr-4 col-span-2 text-black dark:text-zinc-100">
               {thread.subject || "(no subject)"}
@@ -580,10 +582,7 @@ function ThreadListRow({
                 {canTrashThread && (
                   <button
                     onMouseEnter={(event) => {
-                      handleShowTooltip(
-                        event,
-                        isDrafts ? "Discard Draft" : "Delete"
-                      );
+                      handleShowTooltip(event, "Delete");
                     }}
                     onMouseLeave={handleHideTooltip}
                     onClick={(
