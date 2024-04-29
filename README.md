@@ -35,6 +35,12 @@ electron-forge publish --arch=arm64,x64 --debug
 spctl -a -vvv -t install /Applications/Speedforce.app/
 ```
 
+#### Check status of notarization
+
+```
+xcrun notarytool history --apple-id=<apple-id> --password=<password> --team-id=<team-id>
+```
+
 ### Environment variables
 
 Create a `.env.main` file in the root directory with the following variables:
