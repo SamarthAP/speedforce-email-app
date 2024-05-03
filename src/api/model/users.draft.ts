@@ -1,6 +1,30 @@
 // import { OutlookAttachmentDataType } from "./users.attachment";
 import { OutlookEmailAddress } from "./users.message";
 
+export enum DraftStatusType {
+  OPEN = "OPEN",
+  SENT = "SENT",
+  DISCARDED = "DISCARDED",
+}
+
+export enum DraftReplyType {
+  STANDALONE = "STANDALONE",
+  REPLY = "REPLY",
+  REPLYALL = "REPLYALL",
+  FORWARD = "FORWARD",
+}
+
+export enum DraftAccessType {
+  VIEW = "VIEW",
+  EDIT = "EDIT",
+  OWNER = "OWNER",
+}
+
+export interface DraftParticipantType {
+  email: string;
+  accessLevel: DraftAccessType;
+}
+
 export interface GoogleDraftType {
   id: string;
   message?: {

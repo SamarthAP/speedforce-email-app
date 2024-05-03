@@ -169,7 +169,9 @@ export const addLabelIds = async (
 export const sendReply = async (
   accessToken: string,
   from: string,
-  to: string[],
+  to: string,
+  cc: string | null,
+  bcc: string | null,
   subject: string,
   headerMessageId: string,
   threadId: string,
@@ -187,7 +189,10 @@ export const sendReply = async (
         `References: ${headerMessageId}\n` +
         `Subject: Re: ${subject}\n` +
         `From: ${from}\n` +
-        `To: ${to.join(",")}\n\n` +
+        `To: ${to}\n` +
+        (cc ? `Cc: ${cc}\n` : "") +
+        (bcc ? `Bcc: ${bcc}\n` : "") +
+        "\n" +
         messageContent
     )
       .replace(/\+/g, "-")

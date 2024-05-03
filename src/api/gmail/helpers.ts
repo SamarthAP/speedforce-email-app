@@ -31,7 +31,7 @@ export function addTabbedMessageToForwardedHTML(
     "";
   const cc = getMessageHeader(message.headers, "Cc");
   const subject = getMessageHeader(message.headers, "Subject");
-  const date = getMessageHeader(message.headers, "Date");
+  const date = getMessageHeader(message.headers, "Date") || message.date;
 
   if (!from || !date) {
     return { beforeString, afterString };

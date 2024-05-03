@@ -507,6 +507,7 @@ export default function InboxThreadView({
                   canArchiveThread={data.canArchiveThread}
                   canTrashThread={data.canTrashThread}
                   canPermanentlyDeleteThread={data.canDeletePermanentlyThread}
+                  canConvertToActionItem={data.canConvertToActionItem}
                   navigateToFeed={
                     data.title === "Important"
                       ? "/importantThreadFeed"
@@ -516,7 +517,7 @@ export default function InboxThreadView({
               </DisableMouseHoverContext.Provider>
             </HoveredThreadContext.Provider>
           </div>
-          <AssistBar thread={threads[hoveredThreadIndex]} />
+          <AssistBar />
         </div>
       </InboxZeroBackgroundContext.Provider>
       <AccountBar />

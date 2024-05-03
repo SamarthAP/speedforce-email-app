@@ -9,6 +9,7 @@ interface EditLinkModalProps {
   isDialogOpen: boolean;
   setIsDialogOpen: (isOpen: boolean) => void;
   editLink: (displayText: string, link: string) => void;
+  removeLink: () => void;
 }
 
 export const EditLinkModal = ({
@@ -17,6 +18,7 @@ export const EditLinkModal = ({
   isDialogOpen,
   setIsDialogOpen,
   editLink,
+  removeLink,
 }: EditLinkModalProps) => {
   const [textToDisplay, setTextToDisplay] = useState("");
   const [url, setUrl] = useState("");
@@ -110,30 +112,46 @@ export const EditLinkModal = ({
                     </div>
                   </div>
                 </div>
-                <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                <div className="w-full flex flex-row mt-6 justify-between">
                   <button
                     type="button"
-                    className={classNames(
-                      "inline-flex w-full justify-center rounded-md bg-gray-600 px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 sm:col-start-2",
-                      isUrlValid ? "hover:bg-gray-500" : ""
-                    )}
-                    onClick={() => {
-                      setIsDialogOpen(false);
-                      editLink(textToDisplay, url);
-                    }}
-                    disabled={!isUrlValid}
-                  >
-                    Edit link
-                  </button>
-                  <button
-                    type="button"
-                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
+                    className="mt-3 inline-flex justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
                     onClick={() => {
                       setIsDialogOpen(false);
                     }}
                   >
                     Cancel
                   </button>
+                  <span className="space-x-3">
+                    <button
+                      type="button"
+                      className={classNames(
+                        "inline-flex justify-center rounded-md bg-red-500 px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:col-start-2",
+                        isUrlValid ? "hover:bg-red-400" : ""
+                      )}
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        removeLink();
+                      }}
+                      disabled={!isUrlValid}
+                    >
+                      Remove Link
+                    </button>
+                    <button
+                      type="button"
+                      className={classNames(
+                        "inline-flex justify-center rounded-md bg-gray-600 px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 sm:col-start-2",
+                        isUrlValid ? "hover:bg-gray-500" : ""
+                      )}
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        editLink(textToDisplay, url);
+                      }}
+                      disabled={!isUrlValid}
+                    >
+                      Save
+                    </button>
+                  </span>
                 </div>
               </Dialog.Panel>
             </Transition.Child>

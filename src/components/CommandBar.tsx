@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArchiveBoxIcon,
   ArrowLeftOnRectangleIcon,
-  ClipboardDocumentIcon,
+  DocumentTextIcon,
   ExclamationCircleIcon,
   InboxIcon,
   PaperAirplaneIcon,
@@ -149,7 +149,7 @@ export default function CommandBar({ data }: CommandBarProps) {
           },
         },
         {
-          icon: ClipboardDocumentIcon,
+          icon: DocumentTextIcon,
           description: "Go To Drafts",
           action: () => {
             navigate("/drafts");
@@ -192,17 +192,17 @@ export default function CommandBar({ data }: CommandBarProps) {
             isSequential: true,
           },
         },
-        {
-          icon: UserGroupIcon,
-          description: "Go To Shared Drafts",
-          action: () => {
-            navigate("/sharedDrafts");
-          },
-          keybind: {
-            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "$"],
-            isSequential: true,
-          },
-        },
+        // {
+        //   icon: UserGroupIcon,
+        //   description: "Go To Shared Drafts",
+        //   action: () => {
+        //     navigate("/sharedDrafts");
+        //   },
+        //   keybind: {
+        //     keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "$"],
+        //     isSequential: true,
+        //   },
+        // },
       ],
     },
     {

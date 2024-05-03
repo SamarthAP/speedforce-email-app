@@ -3,6 +3,23 @@ export interface OutlookEmailAddress {
   address: string;
 }
 
+export interface OutlookCreateMessageDataType {
+  subject: string;
+  body: {
+    contentType: string;
+    content: string;
+  };
+  toRecipients: {
+    emailAddress: OutlookEmailAddress;
+  }[];
+  ccRecipients?: {
+    emailAddress: OutlookEmailAddress;
+  }[];
+  bccRecipients?: {
+    emailAddress: OutlookEmailAddress;
+  }[];
+}
+
 export interface OutlookMessageDataType {
   id: string;
   subject: string;

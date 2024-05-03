@@ -1,24 +1,23 @@
 import { Transition, Dialog, Popover, Combobox } from "@headlessui/react";
 import { IContact, ISelectedEmail, db } from "../../lib/db";
 import React, { useCallback, useEffect, useState } from "react";
-import { SharedDraftAccessType } from "../../api/model/users.shared.draft";
 import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { classNames } from "../../lib/util";
 import toast from "react-hot-toast";
 import { string } from "zod";
-import { loadParticipantsForDraft, shareDraft } from "../../api/sharedDrafts";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useQuery } from "react-query";
+import { updateDraftParticipants } from "../../api/drafts";
+import { DraftAccessType } from "../../api/model/users.draft";
 
 const emailSchema = string().email({ message: "Invalid email" });
 
-const getAccessTypeString = (accessType: SharedDraftAccessType) => {
+const getAccessTypeString = (accessType: DraftAccessType) => {
   switch (accessType) {
-    case SharedDraftAccessType.OWNER:
+    case DraftAccessType.OWNER:
       return "Owner";
-    case SharedDraftAccessType.VIEW:
+    case DraftAccessType.VIEW:
       return "Read Only";
-    case SharedDraftAccessType.EDIT:
+    case DraftAccessType.EDIT:
       return "Editor";
   }
 };
@@ -49,11 +48,11 @@ const SharedDraftOwner = ({ email }: SharedDraftOwnerProps) => {
 
 interface SharedDraftParticipantProps {
   email: string;
-  accessType: SharedDraftAccessType;
-  setAccessType: (accessType: SharedDraftAccessType) => void;
-  participants: { email: string; accessType: SharedDraftAccessType }[];
+  accessType: DraftAccessType;
+  setAccessType: (accessType: DraftAccessType) => void;
+  participants: { email: string; accessType: DraftAccessType }[];
   setParticipants: (
-    participants: { email: string; accessType: SharedDraftAccessType }[]
+    participants: { email: string; accessType: DraftAccessType }[]
   ) => void;
 }
 
@@ -89,7 +88,7 @@ const SharedDraftParticipant = ({
                     "hover:bg-slate-200"
                   )}
                   onClick={() => {
-                    setAccessType(SharedDraftAccessType.VIEW);
+                    setAccessType(DraftAccessType.VIEW);
                     close();
                   }}
                 >
@@ -97,14 +96,14 @@ const SharedDraftParticipant = ({
                     <span
                       className={classNames(
                         "block truncate",
-                        accessType === SharedDraftAccessType.VIEW
+                        accessType === DraftAccessType.VIEW
                           ? "font-medium"
                           : "font-normal"
                       )}
                     >
                       Read Only
                     </span>
-                    {accessType === SharedDraftAccessType.VIEW ? (
+                    {accessType === DraftAccessType.VIEW ? (
                       <span className="inset-y-0 left-0 flex items-center pl-3 text-slate-700">
                         <CheckIcon className="w-5 h-5" aria-hidden="true" />
                       </span>
@@ -117,7 +116,7 @@ const SharedDraftParticipant = ({
                     "hover:bg-slate-200"
                   )}
                   onClick={() => {
-                    setAccessType(SharedDraftAccessType.EDIT);
+                    setAccessType(DraftAccessType.EDIT);
                     close();
                   }}
                 >
@@ -125,14 +124,14 @@ const SharedDraftParticipant = ({
                     <span
                       className={classNames(
                         "block truncate",
-                        accessType === SharedDraftAccessType.EDIT
+                        accessType === DraftAccessType.EDIT
                           ? "font-medium"
                           : "font-normal"
                       )}
                     >
                       Editor
                     </span>
-                    {accessType === SharedDraftAccessType.EDIT ? (
+                    {accessType === DraftAccessType.EDIT ? (
                       <span className="inset-y-0 left-0 flex items-center pl-3 text-slate-700">
                         <CheckIcon className="w-5 h-5" aria-hidden="true" />
                       </span>
@@ -164,14 +163,7 @@ const SharedDraftParticipant = ({
 interface SharedDraftModalProps {
   selectedEmail: ISelectedEmail;
   draftId: string;
-  sharedParticipants: { email: string; accessType: SharedDraftAccessType }[];
-  to: string[];
-  cc: string[];
-  bcc: string[];
-  subject: string;
-  date: number;
-  snippet: string;
-  html: string;
+  sharedParticipants: { email: string; accessType: DraftAccessType }[];
   isDialogOpen: boolean;
   setIsDialogOpen: (isOpen: boolean) => void;
 }
@@ -180,18 +172,11 @@ export const SharedDraftModal = ({
   selectedEmail,
   draftId,
   sharedParticipants,
-  to,
-  cc,
-  bcc,
-  subject,
-  date,
-  snippet,
-  html,
   isDialogOpen,
   setIsDialogOpen,
 }: SharedDraftModalProps) => {
   const [participants, setParticipants] =
-    useState<{ email: string; accessType: SharedDraftAccessType }[]>(
+    useState<{ email: string; accessType: DraftAccessType }[]>(
       sharedParticipants
     );
   const [emailText, setEmailText] = useState("");
@@ -241,7 +226,7 @@ export const SharedDraftModal = ({
       ) {
         setParticipants([
           ...participants,
-          { email: emailText, accessType: SharedDraftAccessType.EDIT },
+          { email: emailText, accessType: DraftAccessType.EDIT },
         ]);
         setEmailText("");
       }
@@ -253,7 +238,7 @@ export const SharedDraftModal = ({
       ...participants,
       {
         email: contact.contactEmailAddress,
-        accessType: SharedDraftAccessType.EDIT,
+        accessType: DraftAccessType.EDIT,
       },
     ]);
     setEmailText("");
@@ -262,18 +247,9 @@ export const SharedDraftModal = ({
   const handleOnClickDone = useCallback(async () => {
     setSubmitting(true);
 
-    const { error } = await shareDraft(
+    const { error } = await updateDraftParticipants(
       selectedEmail.email,
-      {
-        id: draftId,
-        to,
-        cc,
-        bcc,
-        subject,
-        date,
-        snippet,
-        html,
-      },
+      draftId,
       participants.map((participant) => ({
         email: participant.email,
         accessLevel: participant.accessType,
@@ -289,19 +265,7 @@ export const SharedDraftModal = ({
     setParticipants([]);
     setIsDialogOpen(false);
     setSubmitting(false);
-  }, [
-    participants,
-    selectedEmail,
-    draftId,
-    to,
-    cc,
-    bcc,
-    subject,
-    date,
-    snippet,
-    html,
-    setIsDialogOpen,
-  ]);
+  }, [draftId, participants, selectedEmail.email, setIsDialogOpen]);
 
   return (
     <Transition.Root show={isDialogOpen}>

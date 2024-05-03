@@ -101,6 +101,12 @@ export default function AccountActions(props: AccountActionsProps) {
                   <div className="flex flex-row items-center">
                     <div
                       className="py-2 px-2 bg-white hover:bg-slate-100 rounded-md"
+                      onMouseEnter={(event: React.MouseEvent<HTMLElement>) => {
+                        props.handleShowtooltip(event, "Sign Out");
+                      }}
+                      onMouseLeave={() => {
+                        props.handleHideTooltip();
+                      }}
                       onClick={() => void handleClickSignOut(email.email)}
                     >
                       <ArrowLeftOnRectangleIcon className="h-4 w-4 shrink-0 text-black cursor-pointer" />

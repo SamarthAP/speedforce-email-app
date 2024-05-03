@@ -37,6 +37,8 @@ export interface IEmailThread {
   unread: boolean;
   labelIds: string[];
   hasAttachments: boolean;
+  actionItemGenerated?: boolean;
+  actionItemString?: string;
 }
 
 export interface IMessage {
@@ -57,6 +59,21 @@ export interface IMessage {
   date: number;
   attachments: IAttachment[];
   // TODO: add more fields like cc, bcc, attachments, etc.
+}
+
+export interface IDraft {
+  id: string;
+  email: string;
+  provider: "google" | "outlook";
+  to: string;
+  cc: string;
+  bcc: string;
+  subject: string;
+  html: string;
+  date: number;
+  threadId: string | null;
+  replyType: string;
+  inReplyTo: string | null; // message header for Gmail, messageID for Outlook
 }
 
 // Outlook messages do not contain folder names in response. Store names when fetching to avoid refetching unecessarily
@@ -92,16 +109,25 @@ export interface ICachedSummaryCardData {
   threadSummary: string;
 }
 
+export interface IActionItem {
+  threadId: string;
+  email: string;
+  actionItemString: string;
+  completed: boolean;
+}
+
 export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
   emailThreads!: Table<IEmailThread, string>;
   messages!: Table<IMessage, string>;
+  drafts!: Table<IDraft, string>;
   outlookFolders!: Table<IOutlookFolder, string>;
   contacts!: Table<IContact, string>;
   dailyImageMetadata!: Table<IDailyImageMetadata, number>;
   searchHistory!: Table<ISearchQuery, string>;
   cachedSummaryCardData!: Table<ICachedSummaryCardData, string>;
+  actionItems!: Table<IActionItem, string>;
 
   constructor() {
     super("SpeedforceDB");
@@ -126,6 +152,9 @@ export class SubClassedDexie extends Dexie {
     this.version(7)
       .stores(dexieSchemas[7].schema)
       .upgrade(dexieSchemas[7].upgradeFnc);
+    this.version(8)
+      .stores(dexieSchemas[8].schema)
+      .upgrade(dexieSchemas[8].upgradeFnc);
   }
 }
 
