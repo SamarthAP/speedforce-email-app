@@ -754,7 +754,7 @@ export async function sendReply(
         .concat(addPixelTracking(trackRead))
     );
     if (data) {
-      updateThreadMapper(emailUuid, data.id);
+      updatePixelMessageMapper(emailUuid, data.id);
     }
     return { data: null, error: null };
   } else if (provider === "outlook") {
@@ -771,7 +771,7 @@ export async function sendReply(
           .concat(addPixelTracking(trackRead))
       );
       if (data) {
-        updateThreadMapper(emailUuid, data.messageId);
+        updatePixelMessageMapper(emailUuid, data.messageId);
       }
       return { data: null, error: null };
     } catch (e) {
@@ -881,7 +881,10 @@ export async function forward(
   return { data: null, error: "Not implemented" };
 }
 
-export async function updateThreadMapper(uuid: string, messageId: string) {
+export async function updatePixelMessageMapper(
+  uuid: string,
+  messageId: string
+) {
   const authHeader = await getJWTHeaders();
   console.log("MESSAGE ID", messageId);
   const res = await fetch(`${SPEEDFORCE_API_URL}/sendMessage/updateMapper`, {
@@ -925,7 +928,7 @@ export async function sendEmail(
     );
 
     if (data) {
-      updateThreadMapper(emailUuid, data.id);
+      updatePixelMessageMapper(emailUuid, data.id);
     }
     return { data, error };
   } else if (provider === "outlook") {
@@ -942,7 +945,7 @@ export async function sendEmail(
       );
 
       if (data) {
-        updateThreadMapper(emailUuid, data.messageId);
+        updatePixelMessageMapper(emailUuid, data.messageId);
       }
       return { data: data, error: null };
     } catch (e) {
@@ -982,7 +985,7 @@ export async function sendEmailWithAttachments(
     );
 
     if (data) {
-      updateThreadMapper(emailUuid, data.id);
+      updatePixelMessageMapper(emailUuid, data.id);
     }
     return { data, error };
   } else if (provider === "outlook") {
@@ -1000,7 +1003,7 @@ export async function sendEmailWithAttachments(
       );
 
       if (data) {
-        updateThreadMapper(emailUuid, data.id);
+        updatePixelMessageMapper(emailUuid, data.id);
       }
       return { data: null, error: null };
     } catch (e) {

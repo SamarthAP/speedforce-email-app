@@ -1,6 +1,7 @@
 import { OUTLOOK_API_URL } from "../constants";
 import { OutlookMessageDataType } from "../../model/users.message";
 import { NewAttachment } from "../../model/users.attachment";
+import { delay } from "../../../lib/util";
 
 export const get = async (
   accessToken: string,
@@ -66,6 +67,9 @@ export const sendEmail = async (
   if (!response.ok) {
     error = "Error sending email";
   } else {
+    // wait for message to send before fetching most recent
+    await delay(1000);
+
     // Get the details of the sent message
     const messageResponse = await fetch(
       `${OUTLOOK_API_URL}/me/mailfolders/sentitems/messages?$orderby=createdDateTime desc&$top=1`,

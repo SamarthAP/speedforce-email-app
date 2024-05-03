@@ -102,7 +102,6 @@ export default function Message({
   }, []);
 
   const htmlWithoutTrackingPixel = removeTrackingPixel(message.htmlData);
-  message.htmlData = htmlWithoutTrackingPixel;
 
   const handleClickReply = () => {
     setShowReply((prev) => !prev || editorMode !== "reply");
@@ -366,7 +365,7 @@ export default function Message({
         <div className="pb-4 px-4">
           {/* TODO: Verify that this is valid solution -> Assume google HTML is encoded and outlook is not */}
           <ShadowDom
-            htmlString={cleanHtmlString(message.htmlData)}
+            htmlString={cleanHtmlString(htmlWithoutTrackingPixel)}
             showImages={showImages}
           />
         </div>
