@@ -3,6 +3,7 @@ import { useState } from "react";
 import { IEmailThread, db } from "../lib/db";
 import toast from "react-hot-toast";
 import { handleArchiveClick } from "../lib/asyncHelpers";
+import { newEvent } from "../api/emailActions";
 
 interface ConvertToActionItemProps {
   thread: IEmailThread;
@@ -37,6 +38,8 @@ export default function ConvertToActionItem({
         });
         await handleArchiveClick(thread, email, provider);
       }
+
+      void newEvent(provider, "CONVERT_TO_ACTION_ITEM", { from: "threadlist" });
     } catch (error) {
       toast("Failed to convert to action item");
     }

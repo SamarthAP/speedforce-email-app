@@ -26,6 +26,7 @@ import {
 } from "../contexts/DisableMouseHoverContext";
 import { useDebounceCallback } from "usehooks-ts";
 import { fullSignout } from "../lib/auth";
+import { newEvent } from "../api/emailActions";
 
 interface CommandBarGroupData {
   title: string;
@@ -388,6 +389,7 @@ export default function CommandBar({ data }: CommandBarProps) {
     const down = (e: any) => {
       if (e.key === "k" && e.metaKey) {
         e.preventDefault();
+        void newEvent("n/a", "OPEN_COMMAND_BAR", { from: "hotkeys" });
         setOpen((open) => !open);
       }
 

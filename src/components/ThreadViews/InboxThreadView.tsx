@@ -37,6 +37,7 @@ import { useCommandBarOpenContext } from "../../contexts/CommandBarContext";
 import CommandBar from "../CommandBar";
 import { useDebounceCallback } from "usehooks-ts";
 import { DisableMouseHoverContext } from "../../contexts/DisableMouseHoverContext";
+import { newEvent } from "../../api/emailActions";
 
 interface InboxThreadViewProps {
   data: ClientInboxTabType;
@@ -431,6 +432,11 @@ export default function InboxThreadView({
                     onMouseLeave={handleHideTooltip}
                     onClick={() => {
                       setShowPersonalAi(true);
+                      void newEvent(
+                        selectedEmail.provider,
+                        "OPEN_PERSONAL_AI",
+                        { from: "click" }
+                      );
                     }}
                   >
                     <SparklesIcon

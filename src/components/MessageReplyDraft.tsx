@@ -20,6 +20,7 @@ import { handleDiscardDraft, handleUpdateDraft } from "../lib/asyncHelpers";
 import { TrashIcon } from "@heroicons/react/20/solid";
 import { useTooltip } from "./UseTooltip";
 import TooltipPopover from "./TooltipPopover";
+import { newEvent } from "../api/emailActions";
 
 interface MessageDraftProps {
   selectedEmail: ISelectedEmail;
@@ -205,6 +206,18 @@ const MessageDraft = forwardRef<MessageHandle, MessageDraftProps>(
         draft.id,
         DraftStatusType.SENT
       );
+      void newEvent(
+        selectedEmail.provider,
+        draft.replyType === DraftReplyType.FORWARD
+          ? "SEND_EMAIL_FWD"
+          : "SEND_EMAIL_REPLY",
+        {
+          from: "reply",
+          countAttachments: attachments.length,
+          countCc: cc.length,
+          countBcc: bcc.length,
+        }
+      );
 
       toast.success("Email sent");
       setSendingEmail(false);
@@ -212,6 +225,7 @@ const MessageDraft = forwardRef<MessageHandle, MessageDraftProps>(
         navigate(-1);
       }
     }, [
+      attachments.length,
       bcc,
       cc,
       draft,
