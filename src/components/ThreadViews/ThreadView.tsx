@@ -297,7 +297,7 @@ export default function ThreadView({
             <div className="flex items-center">
               {selectedEmail.provider === "google" && (
                 <button
-                  className="mr-3"
+                  className="mr-3 outline-none"
                   onMouseEnter={(event) => {
                     handleShowTooltip(event, "AI");
                   }}
@@ -315,7 +315,7 @@ export default function ThreadView({
                 </button>
               )}
               <button
-                className="mr-3"
+                className="mr-3 outline-none"
                 onMouseEnter={(event) => {
                   handleShowTooltip(event, "Compose");
                 }}
@@ -332,7 +332,7 @@ export default function ThreadView({
                 />
               </button>
               <button
-                className="mr-3"
+                className="mr-3 outline-none"
                 onMouseEnter={(event) => {
                   handleShowTooltip(event, "Search");
                 }}
