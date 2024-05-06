@@ -16,6 +16,7 @@ import {
   list as gContactList,
   listDirectoryPeople,
   listOtherContacts,
+  getProfilePicture,
 } from "../api/gmail/people/contact";
 import { watch as watchGmail } from "../api/gmail/notifications/pushNotifications";
 
@@ -46,6 +47,7 @@ import {
   removeLabelIdsOutlook,
   getFolderNameFromIdOutlook,
   getOutlookSubscriptionExpirationDateTime,
+  getProfilePictureOutlook,
 } from "../api/outlook/helpers";
 import { getAccessToken } from "../api/accessToken";
 import { IAttachment, IContact, IEmailThread, IMessage, db } from "./db";
@@ -385,6 +387,37 @@ export async function handleNewThreadsOutlook(
     dLog("Could not sync mailbox");
     dLog(e);
     return [];
+  }
+}
+
+export async function downloadProfilePictures() {
+  const emails = await db.emails.toArray();
+  for (const email of emails) {
+    if (
+      email.lastProfilePictureUpdateDate <
+      new Date().getTime() - 1000 * 60 * 60 * 24
+    ) {
+      if (email.provider === "google") {
+        const { data, error } = await getProfilePicture(email.accessToken);
+        if (error || !data) {
+          dLog("Error downloading Google ProfilePicture");
+          return;
+        }
+        await db.emails.update(email, {
+          profilePictureUrl: data?.photos?.[0].url,
+        });
+      } else {
+        const { data, error } = await getProfilePictureOutlook(
+          email.accessToken
+        );
+        if (error || !data) {
+          dLog("Error downloading Outlook ProfilePicture");
+          return;
+        }
+        await db.emails.update(email, { profilePictureUrl: data });
+      }
+      email.lastProfilePictureUpdateDate = new Date().getTime();
+    }
   }
 }
 

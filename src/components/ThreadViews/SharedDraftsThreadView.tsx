@@ -24,6 +24,7 @@ import { useEmailPageOutletContext } from "../../pages/_emailPage";
 import CommandBar from "../CommandBar";
 import { useDebounceCallback } from "usehooks-ts";
 import { DisableMouseHoverContext } from "../../contexts/DisableMouseHoverContext";
+import AccountBar from "../AccountBar";
 import { newEvent } from "../../api/emailActions";
 
 export default function SharedDraftsThreadView() {
@@ -265,6 +266,7 @@ export default function SharedDraftsThreadView() {
         <AssistBar />
       </div>
       <CommandBar data={[]} />
+      <AccountBar />
     </div>
   );
 }

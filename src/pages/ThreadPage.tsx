@@ -11,7 +11,6 @@ import {
 } from "@heroicons/react/20/solid";
 import Message from "../components/Message";
 import { useHotkeys } from "react-hotkeys-hook";
-import SelectedThreadBar from "../components/SelectedThreadBar";
 import {
   KeyPressProvider,
   useKeyPressContext,
@@ -23,6 +22,7 @@ import { DEFAULT_KEYBINDS, KEYBOARD_ACTIONS } from "../lib/shortcuts";
 import CommandBar from "../components/CommandBar";
 import { handleStarClick } from "../lib/asyncHelpers";
 import { getMessageHeader, listUnsubscribe } from "../lib/util";
+import { AccountBarOpenContext } from "../contexts/AccountBarContext";
 import MessageDraft, { MessageHandle } from "../components/MessageReplyDraft";
 
 interface ThreadPageProps {
@@ -34,6 +34,7 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
   const { sequenceInitiated } = useKeyPressContext();
   const { threadId } = useParams();
   const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
+  const [accountBarIsOpen, setAccountBarIsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef<MessageHandle>(null);
 
@@ -83,6 +84,14 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
       setCommandBarIsOpen: (isOpen: boolean) => setCommandBarIsOpen(isOpen),
     }),
     [commandBarIsOpen, setCommandBarIsOpen]
+  );
+
+  const accountBarContextValue = useMemo(
+    () => ({
+      accountBarIsOpen: accountBarIsOpen,
+      setAccountBarIsOpen: (isOpen: boolean) => setAccountBarIsOpen(isOpen),
+    }),
+    [accountBarIsOpen, setAccountBarIsOpen]
   );
 
   useHotkeys(
@@ -138,154 +147,159 @@ export default function ThreadPage({ selectedEmail }: ThreadPageProps) {
     <div className="h-screen w-screen overflow-hidden flex flex-col dark:bg-zinc-900">
       <KeyPressProvider>
         <CommandBarOpenContext.Provider value={commandBarContextValue}>
-          <GoToPageHotkeys>
-            <Titlebar />
-            <div className="w-full h-full flex overflow-hidden">
-              {/* <Sidebar /> */}
-              <div className="w-full h-full flex flex-col overflow-hidden">
-                <div className="flex px-4 pt-4">
-                  <div
-                    className="flex flex-row cursor-pointer items-center"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (draftRef.current) {
-                        draftRef.current.saveOnExit();
-                      }
-                      navigate(-1);
-                    }}
-                  >
-                    <ArrowSmallLeftIcon className="h-4 w-4 dark:text-zinc-400 text-slate-500" />
-                    <p className="dark:text-zinc-400 text-slate-500 text-xs px-1">
-                      Back
-                    </p>
+          <AccountBarOpenContext.Provider value={accountBarContextValue}>
+            <GoToPageHotkeys>
+              <Titlebar />
+              <div className="w-full h-full flex overflow-hidden">
+                {/* <Sidebar /> */}
+                <div className="w-full h-full flex flex-col overflow-hidden">
+                  <div className="flex px-4 pt-4">
+                    <div
+                      className="flex flex-row cursor-pointer items-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (draftRef.current) {
+                          draftRef.current.saveOnExit();
+                        }
+                        navigate(-1);
+                      }}
+                    >
+                      <ArrowSmallLeftIcon className="h-4 w-4 dark:text-zinc-400 text-slate-500" />
+                      <p className="dark:text-zinc-400 text-slate-500 text-xs px-1">
+                        Back
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="p-4 w-full flex justify-between">
-                  <div className="dark:text-white">{thread?.subject}</div>
-                  <div className="pl-2">
-                    {thread ? (
-                      thread.labelIds.includes("STARRED") ? (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void handleStarClick(
-                              thread,
-                              selectedEmail.email,
-                              selectedEmail.provider
-                            );
-                          }}
-                        >
-                          <StarIconSolid className="h-4 w-4 text-yellow-400" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void handleStarClick(
-                              thread,
-                              selectedEmail.email,
-                              selectedEmail.provider
-                            );
-                          }}
-                        >
-                          <StarIconOutline className="h-4 w-4 dark:text-zinc-400 text-slate-500" />
-                        </button>
-                      )
+                  <div className="p-4 w-full flex justify-between">
+                    <div className="dark:text-white">{thread?.subject}</div>
+                    <div className="pl-2">
+                      {thread ? (
+                        thread.labelIds.includes("STARRED") ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleStarClick(
+                                thread,
+                                selectedEmail.email,
+                                selectedEmail.provider
+                              );
+                            }}
+                          >
+                            <StarIconSolid className="h-4 w-4 text-yellow-400" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleStarClick(
+                                thread,
+                                selectedEmail.email,
+                                selectedEmail.provider
+                              );
+                            }}
+                          >
+                            <StarIconOutline className="h-4 w-4 dark:text-zinc-400 text-slate-500" />
+                          </button>
+                        )
+                      ) : null}
+                    </div>
+                  </div>
+                  <div
+                    className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll"
+                    ref={scrollRef}
+                  >
+                    {messages?.map((message, idx) => {
+                      return (
+                        <Message
+                          message={message}
+                          key={message.id}
+                          selectedEmail={selectedEmail}
+                          isLast={idx === messages.length - 1}
+                          scrollToBottom={scrollToBottom}
+                        />
+                      );
+                    })}
+
+                    {drafts && drafts.length > 0 ? (
+                      <MessageDraft
+                        ref={draftRef}
+                        selectedEmail={selectedEmail}
+                        draft={drafts[0]}
+                        threadId={threadId || ""}
+                      />
                     ) : null}
                   </div>
                 </div>
-                <div
-                  className="h-full w-full flex flex-col space-y-2 px-4 pb-4 overflow-y-scroll hide-scroll"
-                  ref={scrollRef}
-                >
-                  {messages?.map((message, idx) => {
-                    return (
-                      <Message
-                        message={message}
-                        key={message.id}
-                        selectedEmail={selectedEmail}
-                        isLast={idx === messages.length - 1}
-                        scrollToBottom={scrollToBottom}
-                      />
-                    );
-                  })}
-
-                  {drafts && drafts.length > 0 ? (
-                    <MessageDraft
-                      ref={draftRef}
-                      selectedEmail={selectedEmail}
-                      draft={drafts[0]}
-                      threadId={threadId || ""}
-                    />
-                  ) : null}
-                </div>
-              </div>
-              <SelectedThreadBar
-                thread={threadId || ""}
-                email={selectedEmail.email}
-              />
-            </div>
-            <ShortcutsFloater
-              items={[
-                {
-                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN]],
-                  description: "Move Down",
-                },
-                {
-                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP]],
-                  description: "Move Up",
-                },
-                {
-                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
-                  description: "Star",
-                },
-                {
-                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SELECT]],
-                  description: "View Thread",
-                },
-                {
-                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SEARCH]],
-                  description: "Search",
-                },
-                {
-                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE]],
-                  description: "Compose",
-                },
-                {
-                  keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "s"],
-                  isSequential: true,
-                  description: "Go to Starred",
-                },
-              ]}
-            />
-            <CommandBar
-              data={
-                listUnsubscribeHeader
-                  ? [
-                      {
-                        title: "Email Actions",
-                        commands: [
+                <ShortcutsFloater
+                  items={[
+                    {
+                      keystrokes: [
+                        DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_DOWN],
+                      ],
+                      description: "Move Down",
+                    },
+                    {
+                      keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.MOVE_UP]],
+                      description: "Move Up",
+                    },
+                    {
+                      keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.STAR]],
+                      description: "Star",
+                    },
+                    {
+                      keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SELECT]],
+                      description: "View Thread",
+                    },
+                    {
+                      keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.SEARCH]],
+                      description: "Search",
+                    },
+                    {
+                      keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.COMPOSE]],
+                      description: "Compose",
+                    },
+                    {
+                      keystrokes: [
+                        DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO],
+                        "s",
+                      ],
+                      isSequential: true,
+                      description: "Go to Starred",
+                    },
+                  ]}
+                />
+                <CommandBar
+                  data={
+                    listUnsubscribeHeader
+                      ? [
                           {
-                            icon: ArchiveBoxXMarkIcon,
-                            description: "Unsubscribe from email list",
-                            action: () => {
-                              unsubscribeFromList();
-                            },
-                            keybind: {
-                              keystrokes: [
-                                "⌘",
-                                DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.UNSUBSCRIBE],
-                              ],
-                              isSequential: false,
-                            },
+                            title: "Email Actions",
+                            commands: [
+                              {
+                                icon: ArchiveBoxXMarkIcon,
+                                description: "Unsubscribe from email list",
+                                action: () => {
+                                  unsubscribeFromList();
+                                },
+                                keybind: {
+                                  keystrokes: [
+                                    "⌘",
+                                    DEFAULT_KEYBINDS[
+                                      KEYBOARD_ACTIONS.UNSUBSCRIBE
+                                    ],
+                                  ],
+                                  isSequential: false,
+                                },
+                              },
+                            ],
                           },
-                        ],
-                      },
-                    ]
-                  : []
-              }
-            />
-          </GoToPageHotkeys>
+                        ]
+                      : []
+                  }
+                />
+              </div>
+            </GoToPageHotkeys>
+          </AccountBarOpenContext.Provider>
         </CommandBarOpenContext.Provider>
       </KeyPressProvider>
     </div>

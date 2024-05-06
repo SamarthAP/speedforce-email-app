@@ -15,6 +15,8 @@ export interface IEmail {
   accessToken: string;
   expiresAt: number;
   inboxZeroStartDate: number;
+  profilePictureUrl?: string;
+  lastProfilePictureUpdateDate: number;
 }
 
 export interface ISelectedEmail {
