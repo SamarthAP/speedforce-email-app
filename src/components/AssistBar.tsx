@@ -23,7 +23,7 @@ export default function AssistBar() {
         .equals(selectedEmail.email)
         .and((item) => !item.completed)
         .toArray(),
-    []
+    [selectedEmail.email]
   );
 
   // Note: this is just to set a custom inboxzero start date
