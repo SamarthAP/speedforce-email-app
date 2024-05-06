@@ -11,7 +11,6 @@ import {
 } from "@heroicons/react/20/solid";
 import Message from "../components/Message";
 import { useHotkeys } from "react-hotkeys-hook";
-import SelectedThreadBar from "../components/SelectedThreadBar";
 import {
   KeyPressProvider,
   useKeyPressContext,

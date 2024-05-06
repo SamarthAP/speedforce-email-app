@@ -45,7 +45,7 @@ export default function AccountBar() {
     const fetchProfilePictures = async () => {
       await downloadProfilePictures();
     };
-    fetchProfilePictures();
+    void fetchProfilePictures();
   }, []);
 
   const signedInEmails = useLiveQuery(() => {
@@ -85,7 +85,7 @@ export default function AccountBar() {
       document.removeEventListener("keydown", down);
       document.addEventListener("keyup", up);
     };
-  }, []);
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -96,11 +96,11 @@ export default function AccountBar() {
       // Timeout to prevent accountBar re-ordering before it closes
       setTimeout(() => {
         if (currentEmail) {
-          setSelectedEmail(currentEmail);
+          void setSelectedEmail(currentEmail);
         }
       }, 200);
     }
-  }, [open, accountBarContext]);
+  }, [open, accountBarContext, currentEmail]);
 
   const hoveredAccountBarItemContextValue = useMemo(
     () => ({
@@ -130,7 +130,7 @@ export default function AccountBar() {
         }
       }
 
-      var currentIndex = Array.from(items).findIndex(
+      let currentIndex = Array.from(items).findIndex(
         (item) => item.innerHTML === hoveredAccountBarItemId
       );
 

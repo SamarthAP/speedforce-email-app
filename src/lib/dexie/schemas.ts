@@ -239,7 +239,8 @@ export const dexieSchemas = {
   */
   8: {
     schema: {
-      emails: "email, provider, accessToken, expiresAt, inboxZeroStartDate",
+      emails:
+        "email, provider, accessToken, expiresAt, inboxZeroStartDate, profilePictureUrl, lastProfilePictureUpdateDate",
       selectedEmail: "id, email, provider, inboxZeroStartDate",
       emailThreads:
         "id, historyId, email, from, subject, snippet, date, unread, *labelIds, hasAttachments, actionItemGenerated, actionItemString",

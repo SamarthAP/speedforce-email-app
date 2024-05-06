@@ -391,32 +391,36 @@ export async function handleNewThreadsOutlook(
 }
 
 export async function downloadProfilePictures() {
-  db.emails.toArray().then((emails) => {
-    emails.forEach(async (email) => {
-      if (email.lastUpdateDate < new Date().getTime() - 1000 * 60 * 60 * 24) {
-        if (email.provider === "google") {
-          const { data, error } = await getProfilePicture(email.accessToken);
-          if (error || !data) {
-            dLog("Error downloading Google ProfilePicture");
-            return;
-          }
-          await db.emails.update(email, {
-            profilePictureUrl: data?.photos?.[0].url,
-          });
-        } else {
-          const { data, error } = await getProfilePictureOutlook(
-            email.accessToken
-          );
-          if (error || !data) {
-            dLog("Error downloading Outlook ProfilePicture");
-            return;
-          }
-          await db.emails.update(email, { profilePictureUrl: data });
+  const emails = await db.emails.toArray();
+  for (const email of emails) {
+    if (
+      email.lastProfilePictureUpdateDate <
+      new Date().getTime() - 1000 * 60 * 60 * 24
+    ) {
+      if (email.provider === "google") {
+        const { data, error } = await getProfilePicture(email.accessToken);
+        if (error || !data) {
+          dLog("Error downloading Google ProfilePicture");
+          return;
         }
-        email.lastUpdateDate = new Date().getTime();
+        await db.emails.update(email, {
+          profilePictureUrl: data?.photos?.[0].url,
+        });
+      } else {
+        const { data, error } = await getProfilePictureOutlook(
+          email.accessToken
+        );
+        if (error || !data) {
+          dLog("Error downloading Outlook ProfilePicture");
+          return;
+        }
+        await db.emails.update(email, { profilePictureUrl: data });
       }
-    });
-  });
+      email.lastProfilePictureUpdateDate = new Date().getTime();
+    }
+  }
+}
+
 // Update dexie for a given list of threads
 export async function syncThreadsById(
   email: string,
