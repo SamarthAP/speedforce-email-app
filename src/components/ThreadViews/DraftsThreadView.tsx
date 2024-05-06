@@ -24,6 +24,7 @@ import { useDebounceCallback } from "usehooks-ts";
 import { DisableMouseHoverContext } from "../../contexts/DisableMouseHoverContext";
 import { useLiveQuery } from "dexie-react-hooks";
 import { DraftThreadList } from "../DraftsThreadList";
+import { newEvent } from "../../api/emailActions";
 
 export default function DraftsThreadView() {
   const { selectedEmail } = useEmailPageOutletContext();
@@ -207,6 +208,9 @@ export default function DraftsThreadView() {
                   onMouseLeave={handleHideTooltip}
                   onClick={() => {
                     setShowPersonalAi(true);
+                    void newEvent(selectedEmail.provider, "OPEN_PERSONAL_AI", {
+                      from: "click",
+                    });
                   }}
                 >
                   <SparklesIcon

@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useEmailPageOutletContext } from "../pages/_emailPage";
 import { useTooltip } from "./UseTooltip";
 import TooltipPopover from "./TooltipPopover";
+import { newEvent } from "../api/emailActions";
 
 export default function AssistBar() {
   const { isBackgroundOn } = useInboxZeroBackgroundContext();
@@ -65,6 +66,11 @@ export default function AssistBar() {
                       .catch((error) => {
                         dLog("Failed to update action item", error);
                       });
+                    void newEvent(
+                      selectedEmail.provider,
+                      "MARK_ACTION_COMPLETE",
+                      { from: "assistbar" }
+                    );
                   }}
                   className="h-3 w-3 rounded-sm flex-shrink-0 bg-slate-50 dark:bg-zinc-500/10 ring-1 ring-inset ring-slate-600/20 dark:ring-zinc-500/20"
                 ></button>

@@ -249,7 +249,12 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
       draftId,
       DraftStatusType.SENT
     );
-    void newEvent("SEND_EMAIL");
+    void newEvent(selectedEmail.provider, "SEND_EMAIL", {
+      from: "compose",
+      countAttachments: attachments.length,
+      countCc: cc.length,
+      countBcc: bcc.length,
+    });
 
     toast.success("Email sent");
     navigate(-1);

@@ -26,6 +26,7 @@ import CommentsChain from "../components/SharedDrafts/CommentsChain";
 import { useQuery } from "react-query";
 import { handleDiscardDraft, handleUpdateDraft } from "../lib/asyncHelpers";
 import { DraftStatusType } from "../api/model/users.draft";
+import { newEvent } from "../api/emailActions";
 
 interface EditDraftProps {
   selectedEmail: ISelectedEmail;
@@ -219,6 +220,13 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       draftId,
       DraftStatusType.SENT
     );
+    void newEvent(selectedEmail.provider, "SEND_EMAIL", {
+      from: "edit",
+      countAttachments: attachments.length,
+      countCc: cc.length,
+      countBcc: bcc.length,
+    });
+
     toast.success("Email sent");
     navigate(-1);
   }, [

@@ -35,7 +35,12 @@ export const unsubscribe = async (unsubscribeUrl: string) => {
   return { error };
 };
 
-export const newEvent = async (eventName: string) => {
+export const newEvent = async (
+  provider: string,
+  eventName: string,
+  data: object | null = null
+) => {
+  if (process.env.NODE_ENV === "development") return;
   const authHeader = await getJWTHeaders();
 
   const response = await fetch(SPEEDFORCE_API_URL + "/emailActions/newEvent", {
@@ -44,7 +49,11 @@ export const newEvent = async (eventName: string) => {
       ...authHeader,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ eventName }),
+    body: JSON.stringify({
+      eventName,
+      provider,
+      data,
+    }),
   });
 
   if (!response.ok) {
