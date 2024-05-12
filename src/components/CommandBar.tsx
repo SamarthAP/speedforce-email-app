@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArchiveBoxIcon,
   ArrowLeftOnRectangleIcon,
+  CodeBracketIcon,
   DocumentTextIcon,
   ExclamationCircleIcon,
   InboxIcon,
@@ -193,6 +194,17 @@ export default function CommandBar({ data }: CommandBarProps) {
             isSequential: true,
           },
         },
+        {
+          icon: CodeBracketIcon,
+          description: "Go To Templates",
+          action: () => {
+            navigate("/templates");
+          },
+          keybind: {
+            keystrokes: [DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO], "%"],
+            isSequential: true,
+          },
+        },
         // {
         //   icon: UserGroupIcon,
         //   description: "Go To Shared Drafts",
@@ -252,6 +264,7 @@ export default function CommandBar({ data }: CommandBarProps) {
 
   let filteredData = mergedData;
 
+  // TODO: Fix search - if both group title and item contain the search string, we get dupes
   if (search) {
     filteredData = [];
 

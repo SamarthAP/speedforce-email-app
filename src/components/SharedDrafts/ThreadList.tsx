@@ -3,17 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useHoveredThreadContext } from "../../contexts/HoveredThreadContext";
 import { useDisableMouseHoverContext } from "../../contexts/DisableMouseHoverContext";
 import { useEffect, useRef } from "react";
-import { getSnippetFromHtml } from "../../lib/util";
-
-function isToday(date: Date) {
-  const today = new Date();
-
-  return (
-    date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear()
-  );
-}
+import { getSnippetFromHtml, isToday } from "../../lib/util";
 
 interface SharedDraftThreadListProps {
   threads?: {

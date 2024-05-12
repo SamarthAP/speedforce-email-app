@@ -263,4 +263,38 @@ export const dexieSchemas = {
       cleanIndexedDb();
     },
   },
+
+  /*
+  Schema Version 9:
+  Oldest Compatible App Version 0.1.7
+  Change description:
+    - Add drafts table
+    - Add action items table
+    - Update emailThreads with action item info
+  */
+  9: {
+    schema: {
+      emails:
+        "email, provider, accessToken, expiresAt, inboxZeroStartDate, profilePictureUrl, lastProfilePictureUpdateDate",
+      selectedEmail: "id, email, provider, inboxZeroStartDate",
+      emailThreads:
+        "id, historyId, email, from, subject, snippet, date, unread, *labelIds, hasAttachments, actionItemGenerated, actionItemString",
+      messages:
+        "id, threadId, *labelIds, from, *toRecipients, snippet, headers, textData, htmlData, date, *attachments",
+      outlookFolders: "id, displayName",
+      contacts:
+        "[email+contactEmailAddress], contactName, isSavedContact, lastInteraction",
+      dailyImageMetadata: "id, date, url",
+      searchHistory: "[email+searchQuery]",
+      cachedSummaryCardData: "threadId, threadSummary",
+      drafts:
+        "id, email, provider, to, cc, bcc, subject, html, threadId, replyType, inReplyTo",
+      actionItems: "threadId, email, actionItemString, completed",
+      emailTemplates:
+        "[name+email], email, createdAt, to, cc, bcc, subject, html",
+    },
+    upgradeFnc: async (tx: Transaction) => {
+      dLog("Upgrading schema to version 9");
+    },
+  },
 };

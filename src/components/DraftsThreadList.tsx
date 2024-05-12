@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useHoveredThreadContext } from "../contexts/HoveredThreadContext";
 import { useDisableMouseHoverContext } from "../contexts/DisableMouseHoverContext";
 import { useEffect, useRef } from "react";
-import { getSnippetFromHtml } from "../lib/util";
+import { getSnippetFromHtml, isToday } from "../lib/util";
 import { db, IDraft, ISelectedEmail } from "../lib/db";
 import { TrashIcon } from "@heroicons/react/20/solid";
 import { useTooltip } from "./UseTooltip";
@@ -15,16 +15,6 @@ import { DraftStatusType } from "../api/model/users.draft";
 
 interface DraftThreadListProps {
   drafts: IDraft[];
-}
-
-function isToday(date: Date) {
-  const today = new Date();
-
-  return (
-    date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear()
-  );
 }
 
 export const DraftThreadList = ({ drafts }: DraftThreadListProps) => {
