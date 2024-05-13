@@ -59,7 +59,7 @@ export default function GoToPageHotkeys({
 
   useKeyPressSequence(
     DEFAULT_KEYBINDS[KEYBOARD_ACTIONS.GO_TO],
-    "shift+5", // "#"
+    "shift+5", // "%"
     () => {
       navigate("/templates");
     }
