@@ -424,6 +424,12 @@ export function ComposeMessage({ selectedEmail }: ComposeMessageProps) {
                             sendingEmail={sendingEmail}
                             sendEmail={handleSendEmail}
                             saveDraft={saveDraftWithHtml}
+                            templateProps={{
+                              onCreateTemplate: () =>
+                                setTemplateModalIsOpen(true),
+                              onImportTemplate: () =>
+                                void handleShowImportTemplateModal(),
+                            }}
                           />
                         </div>
                       </div>

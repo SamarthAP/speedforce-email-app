@@ -418,6 +418,12 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                             sendEmail={handleSendEmail}
                             // setContent={setContentHtml}
                             saveDraft={saveDraftWithHtml}
+                            templateProps={{
+                              onCreateTemplate: () =>
+                                setTemplateModalIsOpen(true),
+                              onImportTemplate: () =>
+                                setImportTemplateModalIsOpen(true),
+                            }}
                           />
                         </div>
                       </div>

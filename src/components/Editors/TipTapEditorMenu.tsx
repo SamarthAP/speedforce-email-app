@@ -18,15 +18,24 @@ import { useTooltip } from "../UseTooltip";
 import { PaperClipIcon, LinkIcon } from "@heroicons/react/20/solid";
 import { AddLinkModal } from "../modals/AddLinkModal";
 import { useThemeContext } from "../../contexts/ThemeContext";
+import {
+  ArrowDownOnSquareIcon,
+  CodeBracketIcon,
+} from "@heroicons/react/24/outline";
 
 interface TiptapMenuBarProps {
   editor: Editor;
   addAttachments: () => Promise<void>;
+  templateProps?: {
+    onCreateTemplate: () => void;
+    onImportTemplate: () => void;
+  };
 }
 
 export default function TiptapMenuBar({
   editor,
   addAttachments,
+  templateProps,
 }: TiptapMenuBarProps) {
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const [isAddLinkModalOpen, setIsAddLinkModalOpen] = useState(false);
@@ -391,6 +400,30 @@ export default function TiptapMenuBar({
           />
         </button>
       </span>
+      {templateProps && (
+        <span>
+          <button
+            onClick={() => templateProps.onCreateTemplate()}
+            className="p-1.5 h-full"
+            onMouseEnter={(event) => {
+              handleShowTooltip(event, "Create New Template From Draft");
+            }}
+            onMouseLeave={handleHideTooltip}
+          >
+            <CodeBracketIcon className="w-4 h-4 text-black dark:text-white" />
+          </button>
+          <button
+            onClick={() => templateProps.onImportTemplate()}
+            className="p-1.5 h-full"
+            onMouseEnter={(event) => {
+              handleShowTooltip(event, "Import From Template");
+            }}
+            onMouseLeave={handleHideTooltip}
+          >
+            <ArrowDownOnSquareIcon className="w-4 h-4 text-black dark:text-white" />
+          </button>
+        </span>
+      )}
 
       <TooltipPopover
         message={tooltipData.message}

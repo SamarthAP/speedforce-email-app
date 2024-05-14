@@ -3,6 +3,7 @@ import { db, IEmailTemplate, ISelectedEmail } from "../../lib/db";
 import { useCallback } from "react";
 import { getTemplateSnippet } from "../../lib/util";
 import { useQuery } from "react-query";
+import { useLiveQuery } from "dexie-react-hooks";
 
 interface ImportTemplateProps {
   selectedEmail: ISelectedEmail;
@@ -17,16 +18,13 @@ export const ImportTemplateModal = ({
   isDialogOpen,
   setIsDialogOpen,
 }: ImportTemplateProps) => {
-  const { isLoading, data } = useQuery(
-    ["fetchTemplates", selectedEmail.email],
-    async () => {
-      return await db.emailTemplates
-        .where("email")
-        .equals(selectedEmail.email)
-        .reverse()
-        .sortBy("createdAt");
-    }
-  );
+  const templates = useLiveQuery(() => {
+    return db.emailTemplates
+      .where("email")
+      .equals(selectedEmail.email)
+      .reverse()
+      .sortBy("createdAt");
+  });
 
   const handleUpdateFromTemplate = useCallback(
     async (template: IEmailTemplate) => {
@@ -77,10 +75,8 @@ export const ImportTemplateModal = ({
                       Import From Template
                     </Dialog.Title>
                     <div className="mt-6">
-                      {isLoading ? (
-                        <div>Loading...</div>
-                      ) : data && data.length > 0 ? (
-                        data.map((template) => (
+                      {templates && templates.length > 0 ? (
+                        templates.map((template) => (
                           <div
                             key={template.createdAt}
                             className={
@@ -106,8 +102,7 @@ export const ImportTemplateModal = ({
                         <div className="h-1/2 w-96">
                           <p className="text-slate-500 text-sm italic">
                             Looks like you don&apos;t have any templates saved.
-                            Create a new template from a draft using the command
-                            bar (&#x2318;K).
+                            Create a new template from a draft to import it.
                           </p>
                         </div>
                       )}

@@ -171,7 +171,8 @@ export default function TemplatesThreadView() {
             ) : (
               <div className="h-1/2">
                 <p className="text-slate-400 dark:text-zinc-500 text-sm italic pl-8">
-                  Looks like you don&apos;t have any templates saved
+                  Looks like you don&apos;t have any templates saved. Create a
+                  new template from a draft to import it.
                 </p>
               </div>
             )}

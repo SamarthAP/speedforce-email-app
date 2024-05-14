@@ -8,6 +8,7 @@ import {
   StarIcon,
   ArchiveBoxIcon,
   CalendarIcon,
+  CodeBracketIcon,
   Cog6ToothIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
@@ -28,6 +29,12 @@ const navigation = [
   { name: "Done", href: "/done", icon: ArchiveBoxIcon, current: false },
   { name: "Spam", href: "/spam", icon: ExclamationCircleIcon, current: false },
   { name: "Deleted Items", href: "/deleted", icon: TrashIcon, current: false },
+  {
+    name: "Templates",
+    href: "/templates",
+    icon: CodeBracketIcon,
+    current: false,
+  },
   // {
   //   name: "Shared Drafts",
   //   href: "/sharedDrafts",
