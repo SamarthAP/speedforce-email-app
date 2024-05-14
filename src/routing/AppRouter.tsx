@@ -30,6 +30,7 @@ import SharedDrafts from "../pages/SharedDrafts";
 import SharedDraftThreadPage from "../pages/SharedDraftThreadPage";
 import ImportantThreadFeedPage from "../pages/ImportantThreadFeedPage";
 import OtherThreadFeedPage from "../pages/OtherThreadFeedPage";
+import Dashboard from "../pages/Dashboard";
 
 interface AppRouterProps {
   session: Session;
@@ -270,6 +271,12 @@ export default function AppRouter({ session }: AppRouterProps) {
           <>
             <Route
               path="/"
+              element={<EmailPage selectedEmail={selectedEmail} />}
+            >
+              <Route index element={<Dashboard />} />
+            </Route>
+            <Route
+              path="/inbox"
               element={<EmailPage selectedEmail={selectedEmail} />}
             >
               <Route

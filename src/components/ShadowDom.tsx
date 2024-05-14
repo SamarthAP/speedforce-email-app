@@ -6,10 +6,12 @@ import {
   applyDarkModeToElement,
 } from "../lib/colorMod/colorConversion";
 import { dLog } from "../lib/noProd";
+import { classNames } from "../lib/util";
 
 interface ShadowDomProps {
   htmlString: string;
   showImages: boolean;
+  bgColorOverride?: string;
 }
 // doesn't use querySelectorAll, recureses through all children
 function recursivelyApplyDarkMode(element: HTMLElement): void {
@@ -41,7 +43,11 @@ function recursivelyApplyDarkMode(element: HTMLElement): void {
   }
 }
 
-export default function ShadowDom({ htmlString, showImages }: ShadowDomProps) {
+export default function ShadowDom({
+  htmlString,
+  showImages,
+  bgColorOverride,
+}: ShadowDomProps) {
   const shadowRef = useRef<HTMLDivElement>(null);
   const { theme } = useThemeContext();
 
@@ -99,7 +105,10 @@ export default function ShadowDom({ htmlString, showImages }: ShadowDomProps) {
 
   return (
     <div
-      className="bg-white dark:bg-zinc-900 w-full overflow-x-scroll hide-scroll"
+      className={classNames(
+        bgColorOverride || "bg-white dark:bg-zinc-900",
+        "w-full overflow-x-scroll hide-scroll"
+      )}
       ref={shadowRef}
     />
   );

@@ -2,6 +2,7 @@ import {
   DocumentIcon,
   ClockIcon,
   ExclamationCircleIcon,
+  HomeIcon,
   InboxIcon,
   PaperAirplaneIcon,
   TrashIcon,
@@ -20,7 +21,8 @@ import { useLDClient } from "launchdarkly-react-client-sdk";
 import { useInboxZeroBackgroundContext } from "../contexts/InboxZeroBackgroundContext";
 
 const navigation = [
-  { name: "Inbox", href: "/", icon: InboxIcon, current: false },
+  { name: "Home", href: "/", icon: HomeIcon, current: false },
+  { name: "Inbox", href: "/inbox", icon: InboxIcon, current: false },
   { name: "Calendar", href: "/calendar", icon: CalendarIcon, current: false },
   { name: "Starred", href: "/starred", icon: StarIcon, current: false },
   { name: "Sent", href: "/sent", icon: PaperAirplaneIcon, current: false },
