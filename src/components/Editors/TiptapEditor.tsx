@@ -70,6 +70,10 @@ interface TiptapProps {
   saveDraft: (html: string) => Promise<{ error: string | null }>;
   canSendEmail: boolean;
   sendingEmail: boolean;
+  templateProps?: {
+    onCreateTemplate: () => void;
+    onImportTemplate: () => void;
+  };
 }
 
 export interface TipTapEditorHandle {
@@ -87,6 +91,7 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
       saveDraft,
       canSendEmail,
       sendingEmail,
+      templateProps,
     }: TiptapProps,
     ref: React.ForwardedRef<TipTapEditorHandle>
   ) {
@@ -235,7 +240,11 @@ const TiptapEditor = forwardRef<TipTapEditorHandle, TiptapProps>(
 
     return (
       <div>
-        <TiptapMenuBar editor={editor} addAttachments={addAttachments} />
+        <TiptapMenuBar
+          editor={editor}
+          addAttachments={addAttachments}
+          templateProps={templateProps}
+        />
         <div className="text-sm flex gap-x-1 overflow-scroll hide-scroll">
           {attachments.map((attachment, idx) => {
             return (

@@ -1,14 +1,12 @@
 import { Base64 } from "js-base64";
 import DomPurify from "dompurify";
-import { db, IEmailThread, IMessage } from "./db";
+import { db, IEmailTemplate, IEmailThread, IMessage } from "./db";
 import { dLog } from "./noProd";
 import { FOLDER_IDS } from "../api/constants";
-// import { GMAIL_FOLDER_IDS_MAP } from "../api/gmail/constants";
 import { OUTLOOK_SELECT_THREADLIST } from "../api/outlook/constants";
 import toast from "react-hot-toast";
 import { sendEmail } from "./sync";
 import { unsubscribe } from "../api/emailActions";
-// import { BidirectionalMap } from "../api/model/bidirectionalMap";
 
 export function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -346,4 +344,41 @@ export async function listUnsubscribe(
       toast("Successfully unsubscribed from mailing list");
     }
   }
+}
+
+export async function createNewTemplate(
+  email: string,
+  name: string,
+  to: string,
+  cc: string,
+  bcc: string,
+  subject: string,
+  html: string
+) {
+  await db.emailTemplates.put({
+    email,
+    name,
+    createdAt: new Date().getTime(),
+    to,
+    cc,
+    bcc,
+    subject,
+    html: html,
+  });
+
+  toast.success("Template created successfully");
+}
+
+export function isToday(date: Date) {
+  const today = new Date();
+
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
+}
+
+export function getTemplateSnippet(template: IEmailTemplate) {
+  return template.subject || getSnippetFromHtml(template.html);
 }

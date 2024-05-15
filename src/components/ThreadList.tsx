@@ -27,6 +27,7 @@ import {
   addDexieThread,
   deleteDexieThread,
   updateLabelIdsForEmailThread,
+  isToday,
 } from "../lib/util";
 import { FOLDER_IDS } from "../api/constants";
 import _ from "lodash";
@@ -39,16 +40,6 @@ import { useDisableMouseHoverContext } from "../contexts/DisableMouseHoverContex
 import ConvertToActionItem from "./ConvertToActionItem";
 import { getJWTHeaders } from "../api/authHeader";
 import { dLog } from "../lib/noProd";
-
-function isToday(date: Date) {
-  const today = new Date();
-
-  return (
-    date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear()
-  );
-}
 
 function isLastSevenDaysButNotToday(date: Date) {
   const today = new Date();

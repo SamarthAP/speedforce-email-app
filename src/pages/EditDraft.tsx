@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmailSelectorInput } from "../components/EmailSelectorInput";
-import { ArrowSmallLeftIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowDownOnSquareIcon,
+  ArrowSmallLeftIcon,
+  CodeBracketIcon,
+} from "@heroicons/react/24/outline";
 import { ISelectedEmail, db } from "../lib/db";
 import { useNavigate, useParams } from "react-router-dom";
 import Titlebar from "../components/Titlebar";
@@ -27,6 +31,8 @@ import { useQuery } from "react-query";
 import { handleDiscardDraft, handleUpdateDraft } from "../lib/asyncHelpers";
 import { DraftStatusType } from "../api/model/users.draft";
 import { newEvent } from "../api/emailActions";
+import { CreateTemplateModal } from "../components/modals/CreateTemplateModal";
+import { ImportTemplateModal } from "../components/modals/ImportTemplateModal";
 
 interface EditDraftProps {
   selectedEmail: ISelectedEmail;
@@ -50,6 +56,9 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   const [commandBarIsOpen, setCommandBarIsOpen] = useState(false);
   const [shareModalIsOpen, setShareModalIsOpen] = useState(false);
   const [messagePanelIsOpen, setMessagePanelIsOpen] = useState(false);
+  const [templateModalIsOpen, setTemplateModalIsOpen] = useState(false);
+  const [importTemplateModalIsOpen, setImportTemplateModalIsOpen] =
+    useState(false);
   const { tooltipData, handleShowTooltip, handleHideTooltip } = useTooltip();
   const editorRef = useRef<TipTapEditorHandle>(null);
 
@@ -262,6 +271,8 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
   }, [navigate, shareModalIsOpen, saveDraftWithHtml, commandBarIsOpen]);
 
   useEffect(() => {
+    if (importTemplateModalIsOpen) return;
+
     const loadDraft = async (draftId: string) => {
       const draft = await db.drafts.get(draftId);
       if (draft) {
@@ -289,7 +300,7 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
       dLog("Unable to load draft");
       navigate(-1);
     }
-  }, [draftId, navigate]);
+  }, [draftId, navigate, importTemplateModalIsOpen]);
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col dark:bg-zinc-900">
@@ -319,6 +330,18 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                 </div>
                 <span className="flex flex-row items-start justify-between px-4">
                   <div className="dark:text-white py-4 w-full">Edit Draft</div>
+                  <div className="flex flex-row items-center space-x-2">
+                    <button
+                      className="p-2 mt-2 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-full"
+                      onMouseEnter={(event) => {
+                        handleShowTooltip(event, "Import Template");
+                      }}
+                      onMouseLeave={handleHideTooltip}
+                      onClick={() => setImportTemplateModalIsOpen(true)}
+                    >
+                      <ArrowDownOnSquareIcon className="h-5 w-5 shrink-0 dark:text-zinc-300 text-black" />
+                    </button>
+                  </div>
                   {/* <div className="flex flex-row items-center space-x-2">
                     <button
                       className="p-2 mt-2 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-full"
@@ -395,6 +418,12 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
                             sendEmail={handleSendEmail}
                             // setContent={setContentHtml}
                             saveDraft={saveDraftWithHtml}
+                            templateProps={{
+                              onCreateTemplate: () =>
+                                setTemplateModalIsOpen(true),
+                              onImportTemplate: () =>
+                                setImportTemplateModalIsOpen(true),
+                            }}
                           />
                         </div>
                       </div>
@@ -443,7 +472,34 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
               ]}
             />
             <CommandBar
-              data={[]}
+              data={[
+                {
+                  title: "Actions",
+                  commands: [
+                    {
+                      description: "Create New Template",
+                      icon: CodeBracketIcon,
+                      action: () => setTemplateModalIsOpen(true),
+                      keybind: {
+                        keystrokes: [],
+                        isSequential: false,
+                      },
+                    },
+                    {
+                      description: "Import From Template",
+                      icon: ArrowDownOnSquareIcon,
+                      action: () => {
+                        // import from template
+                        setImportTemplateModalIsOpen(true);
+                      },
+                      keybind: {
+                        keystrokes: [],
+                        isSequential: false,
+                      },
+                    },
+                  ],
+                },
+              ]}
               // data={[
               //   {
               //     title: "Email Commands",
@@ -473,6 +529,22 @@ export function EditDraft({ selectedEmail }: EditDraftProps) {
         sharedParticipants={sharedDraftParticipants || []}
         isDialogOpen={shareModalIsOpen}
         setIsDialogOpen={setShareModalIsOpen}
+      />
+      <CreateTemplateModal
+        selectedEmail={selectedEmail}
+        to={to.join(",")}
+        cc={cc.join(",")}
+        bcc={bcc.join(",")}
+        subject={subject}
+        html={editorRef.current?.getHTML() || ""}
+        isDialogOpen={templateModalIsOpen}
+        setIsDialogOpen={setTemplateModalIsOpen}
+      />
+      <ImportTemplateModal
+        selectedEmail={selectedEmail}
+        draftId={draftId || ""}
+        isDialogOpen={importTemplateModalIsOpen}
+        setIsDialogOpen={setImportTemplateModalIsOpen}
       />
       <TooltipPopover
         message={tooltipData.message}

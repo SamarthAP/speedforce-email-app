@@ -116,6 +116,17 @@ export interface IActionItem {
   completed: boolean;
 }
 
+export interface IEmailTemplate {
+  createdAt: number;
+  email: string;
+  name: string;
+  to: string;
+  cc: string;
+  bcc: string;
+  subject: string;
+  html: string;
+}
+
 export class SubClassedDexie extends Dexie {
   emails!: Table<IEmail, string>;
   selectedEmail!: Table<ISelectedEmail, number>;
@@ -128,6 +139,7 @@ export class SubClassedDexie extends Dexie {
   searchHistory!: Table<ISearchQuery, string>;
   cachedSummaryCardData!: Table<ICachedSummaryCardData, string>;
   actionItems!: Table<IActionItem, string>;
+  emailTemplates!: Table<IEmailTemplate, string>;
 
   constructor() {
     super("SpeedforceDB");
@@ -155,6 +167,9 @@ export class SubClassedDexie extends Dexie {
     this.version(8)
       .stores(dexieSchemas[8].schema)
       .upgrade(dexieSchemas[8].upgradeFnc);
+    this.version(9)
+      .stores(dexieSchemas[9].schema)
+      .upgrade(dexieSchemas[9].upgradeFnc);
   }
 }
 
