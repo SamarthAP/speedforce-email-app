@@ -1,0 +1,4 @@
+owner: SamarthAP
+repo: speedforce-releases
+provider: github
+updaterCacheDirName: speedforce-updater
