@@ -24,10 +24,10 @@ function runNotProd<T>(fn: () => T): T | undefined {
  * @returns undefined
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function dLog(message?: any, ...optionalParams: any[]) {
+function lg(message?: any, ...optionalParams: any[]) {
   runNotProd(() => {
     console.log(message, ...optionalParams);
   });
 }
 
-export { dLog, runNotProd };
+export { lg, runNotProd };
