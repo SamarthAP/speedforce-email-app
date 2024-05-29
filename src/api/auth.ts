@@ -1,5 +1,21 @@
-import { getJWTHeaders } from "./authHeader";
 import { SPEEDFORCE_API_URL } from "./constants";
+
+import supabase from "../lib/supabase";
+export const getJWTHeaders = async () => {
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error) {
+    return {
+      Authorization: "",
+    };
+  }
+
+  const jwt = data?.session?.access_token;
+
+  return {
+    Authorization: `Bearer ${jwt}`,
+  };
+};
 
 interface GetAuthURLDataType {
   url: string;
@@ -34,14 +50,18 @@ export const getAuthURL = async (provider: "google" | "outlook") => {
 };
 
 // provider can be 'google' or 'outlook'
-export const getReAuthURL = async (email: string, provider: "google" | "outlook") => {
+export const getReAuthURL = async (
+  email: string,
+  provider: "google" | "outlook"
+) => {
   const authHeader = await getJWTHeaders();
   let data: GetAuthURLDataType | null = null;
   let error: string | null = null;
 
   try {
     const res: Response = await fetch(
-      SPEEDFORCE_API_URL + `/auth/getReAuthURL?email=${email}&provider=${provider}`,
+      SPEEDFORCE_API_URL +
+        `/auth/getReAuthURL?email=${email}&provider=${provider}`,
       {
         headers: {
           ...authHeader,
@@ -69,7 +89,6 @@ interface ExchangeCodeForTokenDataType {
 }
 
 export const exchangeCodeForToken = async (
-  clientId: string,
   provider: "google" | "outlook",
   code: string
 ) => {
@@ -84,7 +103,6 @@ export const exchangeCodeForToken = async (
         method: "POST",
         headers: {
           ...authHeader,
-          "speedforce-client-id": clientId,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -112,8 +130,7 @@ interface RefreshAccessTokenDataType {
 
 export const refreshAccessToken = async (
   email: string,
-  provider: "google" | "outlook",
-  clientId: string
+  provider: "google" | "outlook"
 ) => {
   const authHeader = await getJWTHeaders();
   let data: RefreshAccessTokenDataType | null = null;
@@ -126,7 +143,6 @@ export const refreshAccessToken = async (
         method: "POST",
         headers: {
           ...authHeader,
-          "speedforce-client-id": clientId,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

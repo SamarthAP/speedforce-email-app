@@ -41,6 +41,15 @@ spctl -a -vvv -t install /Applications/Speedforce.app/
 xcrun notarytool history --apple-id=<apple-id> --password=<password> --team-id=<team-id>
 ```
 
+### Vite Environment
+
+Create a `.env.development` and `.env.production` file in the root directory with the following variables:
+
+```
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+```
+
 ### Environment variables
 
 Create a `.env.main` file in the root directory with the following variables:
