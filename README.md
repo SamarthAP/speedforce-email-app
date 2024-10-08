@@ -1,4 +1,8 @@
-# Speedforce
+# Speedforce [Deprecated]
+
+AI based email client, similar to Superhuman. [Website](https://testoldwebsite--speedforce-website.netlify.app)
+
+Note: This project is no longer maintained and transformed into an AI based customer support platform: [Website](https://speedforce.me/)
 
 ### Start
 
